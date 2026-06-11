@@ -17,6 +17,7 @@
   # "private" remote and check out a tracking branch automatically.
   # Leave empty or omit entirely to use the default public submodule remotes.
   submodules = {
-    # claude = "git@github.com:youruser/your-private-claude-config.git";
+    # claude   = "git@github.com:youruser/your-private-claude-config.git";
+    # gitalias = "git@github.com:youruser/gitalias.git";  # personal fork override
   };
 }

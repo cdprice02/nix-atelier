@@ -1,6 +1,6 @@
 [submodule "config/git/gitalias"]
 	path = config/git/gitalias
-	url = git@github.com:cdprice02/gitalias.git
+	url = git@github.com:GitAlias/gitalias.git
 [submodule "config/claude"]
 	path = config/claude
 	url = git@github.com:cdprice02/claude-config.git
