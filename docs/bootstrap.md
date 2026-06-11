@@ -23,6 +23,12 @@ git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-co
 
 This also clones `config/claude` (Claude Code config), `config/copilot` (Copilot config, personal only), and `config/git/gitalias`. Home Manager symlinks these into `~` on first activation.
 
+If you forgot `--recurse-submodules`, initialize them after the fact:
+
+```sh
+git -C ~/.nix-config submodule update --init --recursive
+```
+
 ### 3. Set up local identity
 
 Copy the example and fill in your values before running home-manager:
@@ -83,21 +89,26 @@ After the next login the default shell will be zsh.
 
 ### 7. Apply the profile
 
+Pick **one** profile that matches your machine — `work` for a work machine, `personal` for a personal machine.
+
 ```sh
 nix run home-manager -- switch --flake ~/.nix-config#work --impure      # work machine
 nix run home-manager -- switch --flake ~/.nix-config#personal --impure  # personal machine
 ```
 
-After first apply, `home-manager` is on PATH:
+> **`--impure` is always required** — every `home-manager switch` needs it, not just
+> bootstrap. `user.nix` is gitignored and read from the filesystem via
+> `builtins.getEnv "HOME"`, which is an impure operation in Nix.
+
+After first apply, `home-manager` and `just` are on PATH:
 
 ```sh
-home-manager switch --flake ~/.nix-config#work --impure
-# or use the alias:
-nix-sw  # expands to: home-manager switch --flake ~/.nix-config --impure
-```
+# subsequent applies
+just switch PROFILE=work      # or: home-manager switch --flake ~/.nix-config#work --impure
+just switch PROFILE=personal  # or: home-manager switch --flake ~/.nix-config#personal --impure
 
-> `--impure` is required because `user.nix` is gitignored and read directly from the
-> filesystem via `builtins.getEnv "HOME"` — not tracked in the Nix store.
+just --list  # shows all available commands
+```
 
 ### 8. SSH key
 

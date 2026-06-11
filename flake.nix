@@ -20,7 +20,9 @@
       # ── Identity ────────────────────────────────────────────────────────────
       # Identity is loaded from user.nix (gitignored, never committed).
       # Copy user.nix.example to user.nix and fill in your values.
-      # Requires --impure flag (builtins.getEnv reads HOME at eval time).
+      # builtins.getEnv is impure (value varies per eval), so all home-manager
+      # switch calls require --impure. Alternatives (absolute path, sops-nix)
+      # trade portability or simplicity — see docs for tradeoff discussion.
       homeDir     = builtins.getEnv "HOME";
       userNixPath = homeDir + "/.nix-config/user.nix";
       userBase    = if homeDir != "" && builtins.pathExists userNixPath
@@ -44,6 +46,8 @@
         overlays = [ rust-overlay.overlays.default ];
       };
 
+      # context and user are threaded into all modules via specialArgs so modules
+      # can gate features (work.nix inclusion, copilot symlink, CLAUDE_PROFILE) on them.
       mkSpecialArgs = system: context: { inherit system self user context; };
 
       # ── Profile compositor ───────────────────────────────────────────────────
@@ -87,7 +91,8 @@
         };
 
       # ── Darwin (nix-darwin + home-manager) ──────────────────────────────────
-      # Darwin configs always include GUI; gui-darwin.nix is auto-selected.
+      # Darwin always includes GUI — nix-darwin implies a graphical macOS environment.
+      # Linux profiles use withGui to opt in; macOS never runs headless via nix-darwin.
       mkDarwinConfig = { context, system }:
         nix-darwin.lib.darwinSystem {
           inherit system;

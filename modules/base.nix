@@ -3,14 +3,11 @@
 let
   home = config.home.homeDirectory;
 
-  commonAliases = {
-    nix-up = "nix flake update --flake ~/.nix-config";
-    nix-rb = "sudo darwin-rebuild switch --flake ~/.nix-config";
-    nix-sw = "home-manager switch --flake ~/.nix-config --impure";
-  };
+  commonAliases = {};
 
-  # Single-user Nix (WSL2/Linux) sets up PATH via the per-user profile script.
-  # Multi-user Nix (daemon mode) uses nix-daemon.sh. Try both so this works on all targets.
+  # Both paths are tried: single-user Nix (common on WSL2/macOS standalone) sources
+  # ~/.nix-profile/...; multi-user Nix daemon sources /nix/var/nix/profiles/...
+  # Only the installed variant will exist; the other source is a no-op.
   nixProfileInit = ''
     # Single-user Nix
     if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
@@ -30,6 +27,8 @@ let
 in
 {
   home.username      = user.username;
+  # mkForce overrides HM's default homeDirectory derivation, which is unreliable
+  # on WSL2 and non-standard Linux setups where /home may not match expectations.
   home.homeDirectory = lib.mkForce (
     if pkgs.stdenv.isDarwin then "/Users/${user.username}"
     else "/home/${user.username}"
@@ -48,6 +47,9 @@ in
 
     # Home Manager — needed for setup across all profiles and devices
     pkgs.home-manager
+
+    # just — task runner / discoverability layer (`just --list` shows all commands)
+    just
 
     # CLI essentials
     jq
@@ -69,8 +71,8 @@ in
     enable           = true;
     enableCompletion = true;
     shellAliases     = commonAliases;
-    # envExtra → .zshenv: sourced before .zshrc, ensures Nix is on PATH
-    # before any tool integrations (atuin, fnm, zoxide) are evaluated
+    # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
+    # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
     envExtra    = nixProfileInit;
     initContent = envLocalInit;
   };
@@ -293,7 +295,7 @@ in
     };
   };
 
-  # Generate SSH key on first activation if missing
+  # entryAfter writeBoundary — ~/.ssh must exist (written by HM) before ssh-keygen runs.
   home.activation.sshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ ! -f "$HOME/.ssh/${user.sshKey}" ]; then
       $DRY_RUN_CMD mkdir -p "$HOME/.ssh"
@@ -367,6 +369,7 @@ in
   # For each entry in user.submodules, wire up a private remote in the
   # corresponding config/ submodule and check out a tracking branch.
   # Idempotent — skips if the remote already exists.
+  # entryAfter writeBoundary — submodule dirs must be cloned before we can add remotes.
   # user.submodules = { claude = "git@github.com:you/private-claude.git"; };
   home.activation.submoduleOverrides = lib.hm.dag.entryAfter [ "writeBoundary" ] (
     let

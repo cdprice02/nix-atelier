@@ -6,7 +6,8 @@
   name     = "Your Name";
   email    = "you@example.com";
 
-  # Work git identity — used by modules/work.nix to override base git config
+  # Work git identity — used by modules/work.nix to override base git config.
+  # Only used by work profiles; safe to leave placeholder values if you don't use work contexts.
   work = {
     name  = "Your Work Name";
     email = "you@work.example.com";
@@ -16,6 +17,9 @@
   # For each key matching a submodule name, home-manager activation will add a
   # "private" remote and check out a tracking branch automatically.
   # Leave empty or omit entirely to use the default public submodule remotes.
+  # Activation is idempotent — safe to rerun. If the first run skipped the fetch
+  # because your SSH key wasn't added yet, rerun `home-manager switch --impure` after
+  # adding the key to GitHub.
   submodules = {
     # claude   = "git@github.com:youruser/your-private-claude-config.git";
     # gitalias = "git@github.com:youruser/gitalias.git";  # personal fork override
