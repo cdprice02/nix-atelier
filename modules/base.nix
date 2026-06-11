@@ -74,7 +74,15 @@ in
     # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
     # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
     envExtra    = nixProfileInit;
-    initContent = envLocalInit;
+    initContent = envLocalInit + ''
+      # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
+      # xterm-style sequences on macOS; Linux terminals send the same sequences.
+      bindkey '^[[1;3D' backward-word
+      bindkey '^[[1;3C' forward-word
+      # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
+      bindkey '^[[H' beginning-of-line
+      bindkey '^[[F' end-of-line
+    '';
   };
 
   programs.bash = {
@@ -321,7 +329,7 @@ in
     includes = [
       # self doesn't include submodule contents in the Nix store; use live path instead.
       # Safe because --impure is already required for user.nix.
-      { path = "${builtins.getEnv "HOME"}/.nix-config/config/git/gitalias/gitalias.txt"; }
+      { path = "${home}/.nix-config/config/git/gitalias/gitalias.txt"; }
     ];
 
     ignores = [
