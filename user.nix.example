@@ -1,0 +1,22 @@
+# Copy to user.nix and fill in your values before running home-manager switch.
+# user.nix is gitignored and never committed — each machine has its own copy.
+# sshKey is derived automatically from the personal email prefix.
+{
+  username = "yourusername";
+  name     = "Your Name";
+  email    = "you@example.com";
+
+  # Work git identity — used by modules/work.nix to override base git config
+  work = {
+    name  = "Your Work Name";
+    email = "you@work.example.com";
+  };
+
+  # Optional: private remote overrides for config/ submodules.
+  # For each key matching a submodule name, home-manager activation will add a
+  # "private" remote and check out a tracking branch automatically.
+  # Leave empty or omit entirely to use the default public submodule remotes.
+  submodules = {
+    # claude = "git@github.com:youruser/your-private-claude-config.git";
+  };
+}
