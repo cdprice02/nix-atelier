@@ -101,7 +101,8 @@
             ./system/darwin.nix
             home-manager.darwinModules.home-manager
             {
-              nixpkgs.config = pkgsConfig;
+              nixpkgs.config   = pkgsConfig;
+              nixpkgs.overlays = [ rust-overlay.overlays.default ];
               home-manager.useGlobalPkgs        = true;
               home-manager.useUserPackages      = false;
               home-manager.backupFileExtension  = "bk";

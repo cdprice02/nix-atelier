@@ -23,8 +23,8 @@ in
         then [ "x86_64-apple-darwin"      "aarch64-apple-darwin"      ]
         else [ "x86_64-unknown-linux-gnu"  "aarch64-unknown-linux-gnu" ];
     })
-    # Nightly rust-analyzer only — minimal install to avoid path conflicts with stable
-    rust-bin.nightly.latest.rust-analyzer
+    # nixpkgs standalone rust-analyzer — avoids wasm-component-ld collision with stable rust-std
+    rust-analyzer
 
     # Cargo tools
     cargo-edit
@@ -59,8 +59,11 @@ in
   #   npm install -g @anthropic-ai/claude-code
   home.activation.claudeCode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ -z "$DRY_RUN_CMD" ] && ! command -v claude &>/dev/null && command -v npm &>/dev/null; then
+      # Ensure user-local npm prefix so global installs land under the user's home
       mkdir -p "$HOME/.npm-global/bin"
+      npm config set prefix "$HOME/.npm-global" 2>/dev/null || true
       export PATH="$HOME/.nix-profile/bin:$HOME/.npm-global/bin:$PATH"
+      # Reinstall idempotently into the user prefix
       npm install -g @anthropic-ai/claude-code
     fi
   '';
