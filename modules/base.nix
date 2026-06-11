@@ -379,10 +379,15 @@ in
           _has_private=$(${git} -C "$_sm_dir" remote get-url private 2>/dev/null && echo yes || echo no)
           if [ "$_has_private" = "no" ]; then
             $DRY_RUN_CMD ${git} -C "$_sm_dir" remote add private "${url}"
-            $DRY_RUN_CMD ${git} -C "$_sm_dir" fetch private
-            $DRY_RUN_CMD ${git} -C "$_sm_dir" checkout -b work --track private/main \
-              || ${git} -C "$_sm_dir" checkout work
-            echo "submodule ${name}: private remote configured (${url})"
+            if $DRY_RUN_CMD ${git} -C "$_sm_dir" fetch private; then
+              $DRY_RUN_CMD ${git} -C "$_sm_dir" checkout -b work --track private/main \
+                || ${git} -C "$_sm_dir" checkout work
+              echo "submodule ${name}: private remote configured (${url})"
+            else
+              echo "WARNING: submodule ${name}: fetch from private remote failed."
+              echo "  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-config --impure"
+              $DRY_RUN_CMD ${git} -C "$_sm_dir" remote remove private
+            fi
           fi
         fi
       '';

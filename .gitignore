@@ -1,3 +1,11 @@
 result
 result-*
 user.nix
+
+# Secrets and local certs — never commit
+secrets.env
+.config/secrets/
+.certs/
+
+# Claude Code runtime data
+.claude/

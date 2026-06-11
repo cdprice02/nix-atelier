@@ -26,16 +26,18 @@
     NODE_EXTRA_CA_CERTS = "$HOME/.certs/corporate.pem";
   };
 
-  home.activation.mergeCorporateCerts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    $DRY_RUN_CMD mkdir -p "$HOME/.certs"
-    if [ -f "$HOME/.certs/corporate.pem" ]; then
-      $DRY_RUN_CMD cat /etc/ssl/certs/ca-certificates.crt \
-        "$HOME/.certs/corporate.pem" \
-        > "$HOME/.certs/combined-ca-bundle.crt"
-    else
-      echo "WARNING: ~/.certs/corporate.pem not found — see docs/bootstrap.md"
-    fi
-  '';
+  # Linux only — macOS trusts corporate certs via system keychain, not this bundle
+  home.activation.mergeCorporateCerts = lib.mkIf (!pkgs.stdenv.isDarwin)
+    (lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD mkdir -p "$HOME/.certs"
+      if [ -f "$HOME/.certs/corporate.pem" ]; then
+        _bundle=$(cat /etc/ssl/certs/ca-certificates.crt "$HOME/.certs/corporate.pem")
+        $DRY_RUN_CMD sh -c 'printf "%s" "$1" > "$2"' -- "$_bundle" \
+          "$HOME/.certs/combined-ca-bundle.crt"
+      else
+        echo "WARNING: ~/.certs/corporate.pem not found — see docs/bootstrap.md"
+      fi
+    '');
 
   # Work SSH stubs — included via the `Include ~/.ssh/config.d/*` in base.nix programs.ssh
   home.file.".ssh/config.d/work".text = ''
