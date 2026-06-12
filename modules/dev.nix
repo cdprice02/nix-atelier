@@ -59,12 +59,17 @@ in
   #   npm install -g @anthropic-ai/claude-code
   home.activation.claudeCode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ -z "$DRY_RUN_CMD" ] && ! command -v claude &>/dev/null && command -v npm &>/dev/null; then
-      # Ensure user-local npm prefix so global installs land under the user's home
-      mkdir -p "$HOME/.npm-global/bin"
-      npm config set prefix "$HOME/.npm-global" 2>/dev/null || true
       export PATH="$HOME/.nix-profile/bin:$HOME/.npm-global/bin:$PATH"
-      # Reinstall idempotently into the user prefix
-      npm install -g @anthropic-ai/claude-code
+      if [ "$(id -u)" -eq 0 ]; then
+        # darwin-rebuild switch runs as root; delegate to the target user so npm
+        # never creates root-owned files in $HOME (fixes issue #8)
+        /usr/bin/sudo -u ${user.username} \
+          env HOME="$HOME" PATH="$PATH" NPM_CONFIG_PREFIX="$HOME/.npm-global" \
+          sh -c 'mkdir -p "$NPM_CONFIG_PREFIX/bin" && npm install -g @anthropic-ai/claude-code'
+      else
+        mkdir -p "$HOME/.npm-global/bin"
+        NPM_CONFIG_PREFIX="$HOME/.npm-global" npm install -g @anthropic-ai/claude-code
+      fi
     fi
   '';
 
