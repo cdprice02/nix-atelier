@@ -4,7 +4,9 @@
   user,
   ...
 }: {
-  # AWS tools — present on all work tiers (minimal, dev, server)
+  # AWS tools — present on all work tiers (minimal, dev, server).
+  # Also declared in dev.nix for personal-dev profiles; Nix deduplicates.
+  # Kept here so work-minimal and work-server get AWS without the full dev tier.
   home = {
     packages = with pkgs; [
       awscli2

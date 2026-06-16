@@ -5,7 +5,22 @@
   user,
   ...
 }: let
-  # QMK is pinned on x86_64 to avoid build failures on unstable
+  tmuxBase = {
+    enable = true;
+    keyMode = "vi";
+    mouse = true;
+    terminal = "screen-256color";
+    extraConfig = ''
+      set -g status-style bg=black,fg=white
+      set -g status-left  "#[fg=green]#S "
+      set -g status-right "#[fg=yellow]%H:%M"
+      bind | split-window -h
+      bind - split-window -v
+    '';
+  };
+
+  # QMK is pinned on x86_64 to a known-good nixpkgs commit (2026-06) due to build
+  # failures on nixpkgs-unstable. Unpin when qmk builds cleanly on unstable again.
   qmkPackage =
     if lib.strings.hasPrefix "x86_64" system
     then let
@@ -49,7 +64,8 @@ in {
     python3Packages.jupyterlab
     python3Packages.ipython
 
-    # AWS
+    # AWS — also declared in work.nix for work-minimal/server tiers that don't include dev.
+    # Nix deduplicates; both declarations are intentional.
     awscli2
     aws-vault
 
@@ -89,19 +105,6 @@ in {
       eval "$(fnm env --use-on-cd)"
     '';
 
-    tmux = {
-      enable = true;
-      keyMode = "vi";
-      mouse = true;
-      terminal = "screen-256color";
-      historyLimit = 10000;
-      extraConfig = ''
-        set -g status-style bg=black,fg=white
-        set -g status-left  "#[fg=green]#S "
-        set -g status-right "#[fg=yellow]%H:%M"
-        bind | split-window -h
-        bind - split-window -v
-      '';
-    };
+    tmux = tmuxBase // {historyLimit = 10000;};
   };
 }

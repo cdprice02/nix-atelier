@@ -31,12 +31,12 @@
     vscode.enable = true;
 
     # credential.helper for Linux GUI machines
-    git.extraConfig.credential.helper = lib.mkForce "store";
+    git.extraConfig = {
+      credential.helper = lib.mkForce "store";
+      diff.tool = "vscode";
+      merge.tool = "vscode";
+      difftool."vscode".cmd = "code --wait --diff $LOCAL $REMOTE";
+      mergetool."vscode".cmd = "code --wait $MERGED";
+    };
   };
-
-  # Stubs for future NixOS desktop services — uncomment when running bare NixOS
-  # services.picom.enable = true;
-  # services.dunst.enable = true;
-  # programs.rofi.enable  = true;
-  # programs.waybar.enable = true;
 }

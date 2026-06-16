@@ -8,9 +8,13 @@
   ];
 
   # Raw TOML for Cmd/Option+arrow bindings. The chars values are literal
-  # control-character bytes (Ctrl-A, Ctrl-E, Ctrl-U, ESC-b, ESC-f) — Nix
-  # heredoc strings do not support \u escapes, so the bytes are embedded
-  # directly. Alacritty reads chars as a raw byte sequence, not TOML escapes.
+  # control-character bytes — Nix heredoc strings do not support \u escapes,
+  # so the bytes are embedded directly. Alacritty reads chars as a raw byte
+  # sequence, not TOML escapes. Byte identities:
+  #   Cmd+Left  → 0x01 (Ctrl-A) = readline beginning-of-line
+  #   Cmd+Right → 0x05 (Ctrl-E) = readline end-of-line
+  #   Cmd+Back  → 0x15 (Ctrl-U) = readline kill-to-beginning-of-line
+  #   Opt+Left/Right → ESC b / ESC f = readline backward/forward-word
   home.file.".config/alacritty/keybindings.toml".text = ''
     [[keyboard.bindings]]
     key = "Left"
@@ -64,6 +68,12 @@
       };
     };
     vscode.enable = true;
-    git.extraConfig.credential.helper = lib.mkForce "osxkeychain";
+    git.extraConfig = {
+      credential.helper = lib.mkForce "osxkeychain";
+      diff.tool = "vscode";
+      merge.tool = "vscode";
+      difftool."vscode".cmd = "code --wait --diff $LOCAL $REMOTE";
+      mergetool."vscode".cmd = "code --wait $MERGED";
+    };
   };
 }

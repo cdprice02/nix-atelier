@@ -8,8 +8,6 @@
 }: let
   homeDir = config.home.homeDirectory;
 
-  commonAliases = {};
-
   # Both paths are tried: single-user Nix (common on WSL2/macOS standalone) sources
   # ~/.nix-profile/...; multi-user Nix daemon sources /nix/var/nix/profiles/...
   # Only the installed variant will exist; the other source is a no-op.
@@ -144,7 +142,6 @@ in {
     zsh = {
       enable = true;
       enableCompletion = true;
-      shellAliases = commonAliases;
       # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
       # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
       envExtra = nixProfileInit;
@@ -164,7 +161,6 @@ in {
     bash = {
       enable = true;
       enableCompletion = true;
-      shellAliases = commonAliases;
       profileExtra = nixProfileInit;
       initExtra = envLocalInit;
     };
@@ -432,10 +428,7 @@ in {
         push.default = "simple";
         push.autoSetupRemote = true;
         core.autocrlf = "input";
-        diff.tool = "vscode";
-        merge.tool = "vscode";
-        difftool."vscode".cmd = "code --wait --diff $LOCAL $REMOTE";
-        mergetool."vscode".cmd = "code --wait $MERGED";
+        # diff.tool and merge.tool are set by gui-darwin/gui-linux (where `code` is available)
         # credential.helper intentionally absent — set by gui-darwin or gui-linux
       };
     };

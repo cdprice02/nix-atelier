@@ -8,7 +8,7 @@ switch PROFILE="personal":
 
 # Apply nix-darwin config (macOS) — PROFILE=personal-darwin or PROFILE=work-darwin
 rebuild PROFILE="personal-darwin":
-    sudo darwin-rebuild switch --flake ~/.nix-config#{{PROFILE}}
+    sudo darwin-rebuild switch --flake ~/.nix-config#{{PROFILE}} --impure
 
 # Update all flake inputs
 update:
