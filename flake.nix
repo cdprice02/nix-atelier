@@ -15,165 +15,220 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, nix-darwin, home-manager, rust-overlay, ... }:
-    let
-      # ── Identity ────────────────────────────────────────────────────────────
-      # Identity is loaded from user.nix (gitignored, never committed).
-      # Copy user.nix.example to user.nix and fill in your values.
-      # builtins.getEnv is impure (value varies per eval), so all home-manager
-      # switch calls require --impure. Alternatives (absolute path, sops-nix)
-      # trade portability or simplicity — see docs for tradeoff discussion.
-      homeDir     = builtins.getEnv "HOME";
-      userNixPath = homeDir + "/.nix-config/user.nix";
-      userBase    = if homeDir != "" && builtins.pathExists userNixPath
-                    then import userNixPath
-                    else import (self + /user.nix.example);
-      user = userBase // {
+  outputs = {
+    self,
+    nixpkgs,
+    nix-darwin,
+    home-manager,
+    rust-overlay,
+    ...
+  }: let
+    # ── Identity ────────────────────────────────────────────────────────────
+    # Identity is loaded from user.nix (gitignored, never committed).
+    # Copy user.nix.example to user.nix and fill in your values.
+    # builtins.getEnv is impure (value varies per eval), so all home-manager
+    # switch calls require --impure. Alternatives (absolute path, sops-nix)
+    # trade portability or simplicity — see docs for tradeoff discussion.
+    homeDir = builtins.getEnv "HOME";
+    userNixPath = homeDir + "/.nix-config/user.nix";
+    userBase =
+      if homeDir != "" && builtins.pathExists userNixPath
+      then import userNixPath
+      else import (self + /user.nix.example);
+    user =
+      userBase
+      // {
         # Derive SSH key name from email prefix — key file: ~/.ssh/<sshKey>
         sshKey = builtins.elemAt (builtins.split "@" userBase.email) 0;
       };
 
-      pkgsConfig = { allowUnfree = true; };
+    pkgsConfig = {allowUnfree = true;};
 
-      # ── Helpers ──────────────────────────────────────────────────────────────
-      isLinux  = s: builtins.elem s [ "x86_64-linux"  "aarch64-linux"  ];
-      isDarwin = s: builtins.elem s [ "x86_64-darwin" "aarch64-darwin" ];
+    # ── Helpers ──────────────────────────────────────────────────────────────
+    isLinux = s: builtins.elem s ["x86_64-linux" "aarch64-linux"];
 
-      # nixpkgs with rust-overlay applied
-      mkPkgs = system: import nixpkgs {
+    # nixpkgs with rust-overlay applied
+    mkPkgs = system:
+      import nixpkgs {
         inherit system;
-        config   = pkgsConfig;
-        overlays = [ rust-overlay.overlays.default ];
+        config = pkgsConfig;
+        overlays = [rust-overlay.overlays.default];
       };
 
-      # context and user are threaded into all modules via specialArgs so modules
-      # can gate features (work.nix inclusion, copilot symlink, CLAUDE_PROFILE) on them.
-      mkSpecialArgs = system: context: { inherit system self user context; };
+    # context and user are threaded into all modules via specialArgs so modules
+    # can gate features (work.nix inclusion, copilot symlink, CLAUDE_PROFILE) on them.
+    mkSpecialArgs = system: context: {inherit system self user context;};
 
-      # ── Profile compositor ───────────────────────────────────────────────────
-      # Produces the ordered module list for a profile.
-      # context : "personal" | "work"
-      # tier    : "minimal" | "dev" | "server"
-      # withGui : bool — gui module auto-selected from system
-      mkProfile = { context, tier, withGui, system }:
-        let
-          tierMods = {
-            minimal = [];
-            dev     = [ ./modules/dev.nix ];
-            server  = [ ./modules/server.nix ];
-          }.${tier};
-
-          contextMods =
-            if context == "work" then [ ./modules/work.nix ] else [];
-
-          guiMods =
-            if !withGui     then []
-            else if isLinux  system then [ ./modules/gui-linux.nix  ]
-            else                         [ ./modules/gui-darwin.nix ];
-        in
-          [ ./modules/base.nix ] ++ tierMods ++ contextMods ++ guiMods;
-
-      # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
-      mkHomeConfig = { context, tier, withGui, system, ... }:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = mkPkgs system;
-          extraSpecialArgs = mkSpecialArgs system context;
-          modules =
-            (mkProfile { inherit context tier withGui system; })
-            ++ [ { nixpkgs.config = pkgsConfig; } ];
-        };
-
-      # Both x86_64 and aarch64 variants for a Linux profile
-      mkLinuxPair = args:
+    # ── Profile compositor ────────────────────────────────────────────────────
+    # Produces the ordered module list for a profile.
+    # context : "personal" | "work"
+    # tier    : "minimal" | "dev" | "server"
+    # withGui : bool — gui module auto-selected from system
+    mkProfile = {
+      context,
+      tier,
+      withGui,
+      system,
+    }: let
+      tierMods =
         {
-          "${args.name}"         = mkHomeConfig (args // { system = "x86_64-linux";  });
-          "${args.name}-aarch64" = mkHomeConfig (args // { system = "aarch64-linux"; });
+          minimal = [];
+          dev = [./modules/dev.nix];
+          server = [./modules/server.nix];
+        }.${
+          tier
         };
 
-      # ── Darwin (nix-darwin + home-manager) ──────────────────────────────────
-      # Darwin always includes GUI — nix-darwin implies a graphical macOS environment.
-      # Linux profiles use withGui to opt in; macOS never runs headless via nix-darwin.
-      mkDarwinConfig = { context, system }:
-        nix-darwin.lib.darwinSystem {
-          inherit system;
-          specialArgs = mkSpecialArgs system context;
-          modules = [
-            ./system/darwin.nix
-            home-manager.darwinModules.home-manager
-            {
-              nixpkgs.config   = pkgsConfig;
-              nixpkgs.overlays = [ rust-overlay.overlays.default ];
-              home-manager.useGlobalPkgs        = true;
-              home-manager.useUserPackages      = false;
-              home-manager.backupFileExtension  = "bk";
-              home-manager.extraSpecialArgs     = mkSpecialArgs system context;
-              home-manager.users.${user.username} = {
-                imports = mkProfile {
-                  inherit context system;
-                  tier    = "dev";
-                  withGui = true;
-                };
-              };
-            }
-          ];
-        };
+      contextMods =
+        if context == "work"
+        then [./modules/work.nix]
+        else [];
 
-      # ── NixOS ────────────────────────────────────────────────────────────────
-      mkNixosConfig = { context, system }:
-        nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = mkSpecialArgs system context;
-          modules = [
-            ./system/nixos.nix
-            home-manager.nixosModules.home-manager
-            {
-              nixpkgs.config = pkgsConfig;
-              home-manager.useGlobalPkgs        = true;
-              home-manager.useUserPackages      = true;
-              home-manager.backupFileExtension  = "bk";
-              home-manager.extraSpecialArgs     = mkSpecialArgs system context;
-              home-manager.users.${user.username} = {
-                imports = mkProfile {
-                  inherit context system;
-                  tier    = "dev";
-                  withGui = true;
-                };
-              };
-            }
-          ];
-        };
+      guiMods =
+        if !withGui
+        then []
+        else if isLinux system
+        then [./modules/gui-linux.nix]
+        else [./modules/gui-darwin.nix];
+    in
+      [./modules/base.nix] ++ tierMods ++ contextMods ++ guiMods;
 
-    in {
-      # ── homeConfigurations ──────────────────────────────────────────────────
-      # Bootstrap: nix run home-manager -- switch --flake ~/.nix-config#<name>
-      # After first apply: home-manager switch --flake ~/.nix-config#<name>
-      #
-      # To add a profile: add a mkLinuxPair call below and pick context/tier/withGui.
-      # See modules/ for what each tier/context/gui module provides.
-      homeConfigurations =
-        (mkLinuxPair { name = "personal";         context = "personal"; tier = "dev";     withGui = false; }) //
-        (mkLinuxPair { name = "personal-gui";     context = "personal"; tier = "dev";     withGui = true;  }) //
-        (mkLinuxPair { name = "personal-minimal"; context = "personal"; tier = "minimal"; withGui = false; }) //
-        (mkLinuxPair { name = "personal-server";  context = "personal"; tier = "server";  withGui = false; }) //
-        (mkLinuxPair { name = "work";             context = "work";     tier = "dev";     withGui = false; }) //
-        (mkLinuxPair { name = "work-gui";         context = "work";     tier = "dev";     withGui = true;  }) //
-        (mkLinuxPair { name = "work-minimal";     context = "work";     tier = "minimal"; withGui = false; }) //
-        (mkLinuxPair { name = "work-server";      context = "work";     tier = "server";  withGui = false; });
-
-      # ── darwinConfigurations ────────────────────────────────────────────────
-      # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-config#<name>
-      darwinConfigurations = {
-        "personal-darwin"         = mkDarwinConfig { context = "personal"; system = "x86_64-darwin";  };
-        "personal-darwin-aarch64" = mkDarwinConfig { context = "personal"; system = "aarch64-darwin"; };
-        "work-darwin"             = mkDarwinConfig { context = "work";     system = "x86_64-darwin";  };
-        "work-darwin-aarch64"     = mkDarwinConfig { context = "work";     system = "aarch64-darwin"; };
+    # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
+    mkHomeConfig = {
+      context,
+      tier,
+      withGui,
+      system,
+      ...
+    }:
+      home-manager.lib.homeManagerConfiguration {
+        pkgs = mkPkgs system;
+        extraSpecialArgs = mkSpecialArgs system context;
+        modules =
+          (mkProfile {inherit context tier withGui system;})
+          ++ [{nixpkgs.config = pkgsConfig;}];
       };
 
-      # ── nixosConfigurations ─────────────────────────────────────────────────
-      # Uncomment and add hardware-configuration.nix when setting up a real NixOS machine.
-      # nixosConfigurations = {
-      #   "personal-nixos" = mkNixosConfig { context = "personal"; system = "x86_64-linux"; };
-      #   "work-nixos"     = mkNixosConfig { context = "work";     system = "x86_64-linux"; };
-      # };
+    # Both x86_64 and aarch64 variants for a Linux profile
+    mkLinuxPair = args: {
+      "${args.name}" = mkHomeConfig (args // {system = "x86_64-linux";});
+      "${args.name}-aarch64" = mkHomeConfig (args // {system = "aarch64-linux";});
     };
+
+    # ── Darwin (nix-darwin + home-manager) ──────────────────────────────────
+    # Darwin always includes GUI — nix-darwin implies a graphical macOS environment.
+    # Linux profiles use withGui to opt in; macOS never runs headless via nix-darwin.
+    mkDarwinConfig = {
+      context,
+      system,
+    }:
+      nix-darwin.lib.darwinSystem {
+        inherit system;
+        specialArgs = mkSpecialArgs system context;
+        modules = [
+          ./system/darwin.nix
+          home-manager.darwinModules.home-manager
+          {
+            nixpkgs = {
+              config = pkgsConfig;
+              overlays = [rust-overlay.overlays.default];
+            };
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = false;
+              backupFileExtension = "bk";
+              extraSpecialArgs = mkSpecialArgs system context;
+              users.${user.username} = {
+                imports = mkProfile {
+                  inherit context system;
+                  tier = "dev";
+                  withGui = true;
+                };
+              };
+            };
+          }
+        ];
+      };
+  in {
+    # ── homeConfigurations ──────────────────────────────────────────────────
+    # Bootstrap: nix run home-manager -- switch --flake ~/.nix-config#<name>
+    # After first apply: home-manager switch --flake ~/.nix-config#<name>
+    #
+    # To add a profile: add a mkLinuxPair call below and pick context/tier/withGui.
+    # See modules/ for what each tier/context/gui module provides.
+    homeConfigurations =
+      (mkLinuxPair {
+        name = "personal";
+        context = "personal";
+        tier = "dev";
+        withGui = false;
+      })
+      // (mkLinuxPair {
+        name = "personal-gui";
+        context = "personal";
+        tier = "dev";
+        withGui = true;
+      })
+      // (mkLinuxPair {
+        name = "personal-minimal";
+        context = "personal";
+        tier = "minimal";
+        withGui = false;
+      })
+      // (mkLinuxPair {
+        name = "personal-server";
+        context = "personal";
+        tier = "server";
+        withGui = false;
+      })
+      // (mkLinuxPair {
+        name = "work";
+        context = "work";
+        tier = "dev";
+        withGui = false;
+      })
+      // (mkLinuxPair {
+        name = "work-gui";
+        context = "work";
+        tier = "dev";
+        withGui = true;
+      })
+      // (mkLinuxPair {
+        name = "work-minimal";
+        context = "work";
+        tier = "minimal";
+        withGui = false;
+      })
+      // (mkLinuxPair {
+        name = "work-server";
+        context = "work";
+        tier = "server";
+        withGui = false;
+      });
+
+    # ── darwinConfigurations ────────────────────────────────────────────────
+    # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-config#<name>
+    darwinConfigurations = {
+      "personal-darwin" = mkDarwinConfig {
+        context = "personal";
+        system = "x86_64-darwin";
+      };
+      "personal-darwin-aarch64" = mkDarwinConfig {
+        context = "personal";
+        system = "aarch64-darwin";
+      };
+      "work-darwin" = mkDarwinConfig {
+        context = "work";
+        system = "x86_64-darwin";
+      };
+      "work-darwin-aarch64" = mkDarwinConfig {
+        context = "work";
+        system = "aarch64-darwin";
+      };
+    };
+
+    # ── nixosConfigurations ─────────────────────────────────────────────────
+    # NixOS support is tracked in issue #5. Requires hardware-configuration.nix
+    # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
+  };
 }

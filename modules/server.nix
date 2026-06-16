@@ -1,6 +1,4 @@
-{ pkgs, lib, ... }:
-
-{
+{pkgs, ...}: {
   home.packages = with pkgs; [
     rsync
     tree
@@ -10,12 +8,12 @@
   ];
 
   programs.tmux = {
-    enable       = true;
-    keyMode      = "vi";
-    mouse        = true;
-    terminal     = "screen-256color";
-    historyLimit = 50000;  # larger than dev — server sessions are long-lived
-    extraConfig  = ''
+    enable = true;
+    keyMode = "vi";
+    mouse = true;
+    terminal = "screen-256color";
+    historyLimit = 50000; # larger than dev — server sessions are long-lived
+    extraConfig = ''
       set -g status-style bg=black,fg=white
       set -g status-left  "#[fg=green]#S "
       set -g status-right "#[fg=yellow]%H:%M"

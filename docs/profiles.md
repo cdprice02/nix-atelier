@@ -16,7 +16,7 @@
 
 Profiles are composed from three axes by `mkProfile` in `flake.nix`. You never manually list modules.
 
-```
+```text
 context : personal | work
 tier    : minimal | dev | server
 withGui : false | true  (auto-selects gui-linux or gui-darwin)

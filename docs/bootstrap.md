@@ -122,6 +122,20 @@ cat ~/.ssh/<sshKey>.pub
 
 `<sshKey>` is the prefix of your personal email (derived automatically from `user.nix`).
 
+### 9. Activate pre-commit hooks (dev profile only)
+
+`pre-commit` is installed by the `dev` profile — no separate install needed. After first `home-manager switch`, wire up the hooks for this repo clone:
+
+```sh
+pre-commit install
+```
+
+This runs automatically on every `git commit` from that point on. To run all checks manually:
+
+```sh
+pre-commit run --all-files
+```
+
 ---
 
 ## macOS (nix-darwin)
@@ -156,7 +170,7 @@ $EDITOR ~/.config/secrets/env
 ### 5. Apply
 
 ```sh
-sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin
+sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 ---

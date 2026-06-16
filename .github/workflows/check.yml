@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Evaluate the flake and output profile name lists for downstream matrices ──
+  get-profiles:
+    runs-on: ubuntu-latest
+    outputs:
+      linux:  ${{ steps.list.outputs.linux }}
+      darwin: ${{ steps.list.outputs.darwin }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-linux-eval-
+          gc-max-store-size-linux: 2147483648
+      - id: list
+        run: |
+          mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+          LINUX=$(nix eval .#homeConfigurations --apply builtins.attrNames --json --impure)
+          echo "linux=$LINUX" >> "$GITHUB_OUTPUT"
+          DARWIN=$(nix eval .#darwinConfigurations --apply builtins.attrNames --json --impure \
+            | jq -c '[.[] | {config: .}]')
+          echo "darwin=$DARWIN" >> "$GITHUB_OUTPUT"
+
+  # ── nix flake check + validate the example identity file ─────────────────────
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-linux-eval-
+          gc-max-store-size-linux: 2147483648
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      - run: nix flake check --impure
+      - run: nix eval --file user.nix.example
+
+  # ── Full activation-package build for every Linux profile (including aarch64) ─
+  # All 16 profiles share one cache key — profiles overlap heavily in store
+  # content, so separate keys would fragment the 10 GB GHA cache quota.
+  build-linux:
+    needs: get-profiles
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.get-profiles.outputs.linux) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-platforms = aarch64-linux
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-linux-build-
+          gc-max-store-size-linux: 4294967296
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      - run: nix build .#homeConfigurations.${{ matrix.profile }}.activationPackage --impure
+
+  # ── Full system build for every Darwin profile ────────────────────────────────
+  # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built
+  # via Rosetta 2 using extra-platforms = x86_64-darwin — same pattern as QEMU
+  # for aarch64-linux. macos-13 (Intel) runners are deprecated and unavailable.
+  build-darwin:
+    needs: get-profiles
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.get-profiles.outputs.darwin) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-platforms = x86_64-darwin
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-macos-build-
+          gc-max-store-size-macos: 4294967296
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      - run: nix build .#darwinConfigurations.${{ matrix.config }}.system --impure
+
+  # ── Lint: each tool is a separate job so failures are individually named ──────
+  # All lint jobs share one cache key — they all pull from the same nixpkgs
+  # revision, so their store content overlaps almost entirely.
+  lint-alejandra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
+      - run: nix shell nixpkgs#alejandra -c alejandra --check .
+
+  lint-statix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
+      - run: nix shell nixpkgs#statix -c statix check
+
+  lint-deadnix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
+      - run: nix shell nixpkgs#deadnix -c deadnix --fail .
+
+  lint-markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-linux-lint-
+          gc-max-store-size-linux: 1073741824
+      - run: nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md'
