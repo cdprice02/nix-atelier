@@ -1,6 +1,11 @@
 # nix-config
 
+[![CI](https://github.com/cdprice02/nix-config/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-config/actions/workflows/check.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/LnL7/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS, NixOS, and any Linux/WSL2.
+
+Structured as a composable framework — fork it, fill in `user.nix`, and get a full dev environment on any machine with one command. See [docs/profiles.md](docs/profiles.md) for the profile system and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt it to your own setup.
 
 ## Quick start
 
@@ -18,8 +23,7 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 # 3. Clone and configure identity
-git clone git@github.com:cdprice02/nix-config.git ~/.nix-config
-git -C ~/.nix-config submodule update --init
+git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
 cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix  # fill in username, name, email
 
@@ -31,11 +35,16 @@ nix run home-manager -- switch --flake ~/.nix-config#personal --impure  # person
 ### macOS
 
 ```sh
-git clone git@github.com:cdprice02/nix-config.git ~/.nix-config
-git -C ~/.nix-config submodule update --init
+# 1. Install Nix
+sh <(curl -L https://nixos.org/nix/install)
+
+# 2. Clone and configure identity
+git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
 cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix
-sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin
+
+# 3. Apply
+sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 ## Daily commands
@@ -43,7 +52,7 @@ sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin
 | Task | Command |
 |------|---------|
 | Apply config (Linux) | `nix-sw` → `home-manager switch --flake ~/.nix-config#<profile> --impure` |
-| Apply config (Mac) | `nix-rb` → `sudo darwin-rebuild switch --flake ~/.nix-config` |
+| Apply config (Mac) | `nix-rb` → `sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure` |
 | Update flake inputs | `nix-up` → `nix flake update --flake ~/.nix-config` |
 
 ## Profiles
@@ -80,11 +89,3 @@ docs/
   tools.md         # Tool reference
 ```
 
-## Separate repos
-
-Claude Code and Copilot configs are not in this repo:
-
-```sh
-git clone git@github.com:cdprice02/claude-config ~/.claude
-git clone git@github.com:cdprice02/copilot-config ~/.copilot
-```

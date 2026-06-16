@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an improvement to the framework (not personal tool preferences)
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a feature request, consider whether this is a framework improvement (welcome here)
+        or a personal preference (better suited to your own fork). See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the distinction.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the gap or pain point in the current framework
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: How would you implement this? What would change in flake.nix, a module, or docs?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Is this framework or personal preference?
+      description: Framework improvements (module system, CI, helpers) belong here. Personal tool choices belong in your fork.
+      options:
+        - Framework improvement (benefits all adopters)
+        - Personal preference (better as a fork)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider?

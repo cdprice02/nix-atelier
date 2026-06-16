@@ -68,7 +68,7 @@ Darwin always includes GUI (`gui-darwin.nix`). Tier is always `dev`.
 
 Bootstrap:
 ```sh
-sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin
+sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 ## Adding a new profile
