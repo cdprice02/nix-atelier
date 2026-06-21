@@ -7,39 +7,38 @@
     obsidian
   ];
 
-  # Raw TOML for Cmd/Option+arrow bindings. The chars values are literal
-  # control-character bytes — Nix heredoc strings do not support \u escapes,
-  # so the bytes are embedded directly. Alacritty reads chars as a raw byte
-  # sequence, not TOML escapes. Byte identities:
-  #   Cmd+Left  → 0x01 (Ctrl-A) = readline beginning-of-line
-  #   Cmd+Right → 0x05 (Ctrl-E) = readline end-of-line
-  #   Cmd+Back  → 0x15 (Ctrl-U) = readline kill-to-beginning-of-line
-  #   Opt+Left/Right → ESC b / ESC f = readline backward/forward-word
+  # Cmd/Option+arrow keybindings using TOML \uXXXX escapes (literal control
+  # bytes are invalid TOML). Identities:
+  #   Cmd+Left  -> \u0001 (Ctrl-A) = readline beginning-of-line
+  #   Cmd+Right -> \u0005 (Ctrl-E) = readline end-of-line
+  #   Cmd+Back  -> \u0015 (Ctrl-U) = readline kill-to-beginning-of-line
+  #   Opt+Left  -> \u001bb (ESC b)  = readline backward-word
+  #   Opt+Right -> \u001bf (ESC f)  = readline forward-word
   home.file.".config/alacritty/keybindings.toml".text = ''
     [[keyboard.bindings]]
     key = "Left"
     mods = "Command"
-    chars = ""
+    chars = "\u0001"
 
     [[keyboard.bindings]]
     key = "Right"
     mods = "Command"
-    chars = ""
+    chars = "\u0005"
 
     [[keyboard.bindings]]
     key = "Back"
     mods = "Command"
-    chars = ""
+    chars = "\u0015"
 
     [[keyboard.bindings]]
     key = "Left"
     mods = "Option"
-    chars = "b"
+    chars = "\u001bb"
 
     [[keyboard.bindings]]
     key = "Right"
     mods = "Option"
-    chars = "f"
+    chars = "\u001bf"
   '';
 
   programs = {
