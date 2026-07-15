@@ -69,6 +69,12 @@ in {
     awscli2
     aws-vault
 
+    # Kubernetes — homelab cluster ops (queen.local k3s); kubeconfig lives at
+    # ~/.kube/config (contains client certs — never committed, not Nix-managed)
+    kubectl
+    kubernetes-helm
+    helmfile
+
     # Dev tools
     gh
     pre-commit

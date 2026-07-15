@@ -18,7 +18,10 @@
     onActivation = {
       autoUpdate = true;
       upgrade = true;
-      cleanup = "zap";
+      # TODO: restore "zap" after `nix flake update nix-darwin` — the locked
+      # nix-darwin (Sep 2025) emits the deprecated `brew bundle --cleanup`,
+      # which newer Homebrew treats as a dry-run and fails the activation.
+      cleanup = "none";
     };
     brews = [
       "screenresolution"
