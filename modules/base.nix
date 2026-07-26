@@ -74,9 +74,12 @@ in {
       # retrieved from Bitwarden at deploy time. See homelab deploy/secrets/.
       # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
       # broken in the current nixpkgs pin); its agent caches unlock for scripting.
+      # pinentry-tty lets rbw prompt for the master password from the terminal
+      # (cross-platform; macOS has no pinentry by default).
       sops
       age
       rbw
+      pinentry-tty
     ];
 
     activation = {
