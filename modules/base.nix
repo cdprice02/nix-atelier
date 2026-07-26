@@ -69,6 +69,14 @@ in {
       wget
       btop
       neofetch
+
+      # Secrets — SOPS-encrypted secrets in git (age recipients), master key
+      # retrieved from Bitwarden at deploy time. See homelab deploy/secrets/.
+      # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
+      # broken in the current nixpkgs pin); its agent caches unlock for scripting.
+      sops
+      age
+      rbw
     ];
 
     activation = {
