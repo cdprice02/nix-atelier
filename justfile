@@ -1,14 +1,16 @@
+# Default profile: read from user.nix's `profile` field if set, else
+# "personal". Backtick assignment runs once when just parses this file.
+default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "personal"' 2>/dev/null | tr -d '"' || echo personal`
+
 # List available commands
 default:
     @just --list
 
-# Apply home-manager profile (Linux/WSL2) — PROFILE=work or PROFILE=personal
-# -b bk backs up any conflicting file (e.g. a real ~/.claude dir) instead of
-# hard-failing, matching nix-darwin's backupFileExtension = "bk" behavior.
-switch PROFILE="personal":
+# Apply home-manager profile (Linux/WSL2): `just switch work`, or `just switch` for the default
+switch PROFILE=default_profile:
     home-manager switch --flake {{justfile_directory()}}#{{PROFILE}} --impure -b bk
 
-# Apply nix-darwin config (macOS) — PROFILE=personal-darwin or PROFILE=work-darwin
+# Apply nix-darwin config (macOS): `just rebuild work-darwin`, or `just rebuild` for the default
 rebuild PROFILE="personal-darwin":
     sudo darwin-rebuild switch --flake {{justfile_directory()}}#{{PROFILE}} --impure
 
@@ -24,12 +26,11 @@ check:
 sync:
     git -C {{justfile_directory()}} submodule update --remote --merge
 
-# Enter a nightly Rust shell (rust-overlay's stable toolchain stays the
-# profile default — see docs/tools.md for why rustup is not installed
-# alongside it). Exits back to the stable toolchain on shell exit.
+# Enter a nightly Rust shell for feature-gated code (stable stays the profile default)
 rust-nightly:
     nix develop {{justfile_directory()}}#rust-nightly
 
 # Format all Nix files with alejandra
 fmt:
     nix fmt {{justfile_directory()}}
+

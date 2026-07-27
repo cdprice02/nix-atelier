@@ -125,6 +125,6 @@ sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
 After the first apply, `just` and `home-manager` are on PATH and you can use the short forms:
 
 ```sh
-just switch PROFILE=<profile>   # Linux
-just rebuild PROFILE=<profile>  # macOS
+just switch <profile>   # Linux — e.g. just switch work
+just rebuild <profile>  # macOS — e.g. just rebuild work-darwin
 ```
