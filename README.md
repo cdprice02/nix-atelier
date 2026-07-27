@@ -15,10 +15,11 @@ See [docs/bootstrap.md](docs/bootstrap.md) for the full setup checklist. The sho
 
 ```sh
 # 1. Install Nix (single-user for WSL2, daemon for native Linux)
-sh <(curl -L https://nixos.org/nix/install) --no-daemon   # WSL2
-sh <(curl -L https://nixos.org/nix/install)               # native Linux
+sh <(curl -L https://nixos.org/nix/install) --no-daemon
+# OR
+sh <(curl -L https://nixos.org/nix/install) --daemon
 
-# 2. Enable flakes (single-user only)
+# 2. Enable required experimental features
 mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
@@ -46,14 +47,6 @@ $EDITOR ~/.nix-config/user.nix
 # 3. Apply
 sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 ```
-
-## Daily commands
-
-| Task | Command |
-|------|---------|
-| Apply config (Linux) | `nix-sw` → `home-manager switch --flake ~/.nix-config#<profile> --impure` |
-| Apply config (Mac) | `nix-rb` → `sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure` |
-| Update flake inputs | `nix-up` → `nix flake update --flake ~/.nix-config` |
 
 ## Profiles
 
