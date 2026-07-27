@@ -29,11 +29,24 @@
     # builtins.getEnv is impure (value varies per eval), so all home-manager
     # switch calls require --impure. Alternatives (absolute path, sops-nix)
     # trade portability or simplicity — see docs for tradeoff discussion.
+    #
+    # Default location is $HOME/.nix-config/user.nix. If you've cloned this
+    # repo somewhere else, set NIX_CONFIG_USER_FILE to the full path of your
+    # user.nix instead of relying on the default.
     homeDir = builtins.getEnv "HOME";
-    userNixPath = homeDir + "/.nix-config/user.nix";
+    userNixPathOverride = builtins.getEnv "NIX_CONFIG_USER_FILE";
+    userNixPath =
+      if userNixPathOverride != ""
+      then userNixPathOverride
+      else homeDir + "/.nix-config/user.nix";
     userBase =
-      if homeDir != "" && builtins.pathExists userNixPath
-      then import userNixPath
+      if userNixPathOverride != "" || homeDir != ""
+      then
+        (
+          if builtins.pathExists userNixPath
+          then import userNixPath
+          else import (self + /user.nix.example)
+        )
       else import (self + /user.nix.example);
     user =
       userBase
@@ -230,5 +243,80 @@
     # ── nixosConfigurations ─────────────────────────────────────────────────
     # NixOS support is tracked in issue #5. Requires hardware-configuration.nix
     # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
+
+    # ── devShells ────────────────────────────────────────────────────────────
+    # `nix develop` — lint tools for contributors (matches .pre-commit-config.yaml
+    # and CI's lint-* jobs) plus a nightly Rust toolchain, so `rustup` is never
+    # needed alongside rust-overlay's stable default (avoids two cargo/rustc on
+    # PATH). Also invoked by `just rust-nightly`.
+    devShells =
+      nixpkgs.lib.genAttrs
+      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      (system: let
+        pkgs = mkPkgs system;
+      in {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            alejandra
+            statix
+            deadnix
+            markdownlint-cli
+            pre-commit
+          ];
+        };
+        rust-nightly = pkgs.mkShell {
+          packages = [
+            (pkgs.rust-bin.nightly.latest.default.override {
+              extensions = ["rust-src" "rustfmt" "clippy"];
+            })
+          ];
+        };
+      });
+
+    # ── formatter ────────────────────────────────────────────────────────────
+    # `nix fmt` — alejandra, matching .pre-commit-config.yaml and CI's
+    # lint-alejandra job so all three (editor, pre-commit, CI) agree.
+    formatter =
+      nixpkgs.lib.genAttrs
+      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      (system: (mkPkgs system).alejandra);
+
+    # ── checks ───────────────────────────────────────────────────────────────
+    # `nix flake check` — previously eval-only (see docs/troubleshooting.md
+    # history); this makes it build every Linux activation package and run the
+    # same lints CI runs, so a green `just check` actually means something
+    # locally, not just "the flake evaluates."
+    checks = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
+      system: let
+        pkgs = mkPkgs system;
+        homeConfigsForSystem =
+          nixpkgs.lib.filterAttrs
+          (
+            _: cfg:
+              cfg.activationPackage.system or null == system
+          )
+          self.homeConfigurations;
+      in
+        (nixpkgs.lib.mapAttrs'
+          (name: cfg: {
+            name = "activation-${name}";
+            value = cfg.activationPackage;
+          })
+          homeConfigsForSystem)
+        // {
+          alejandra = pkgs.runCommand "check-alejandra" {} ''
+            ${pkgs.alejandra}/bin/alejandra --check ${self}
+            touch $out
+          '';
+          statix = pkgs.runCommand "check-statix" {} ''
+            ${pkgs.statix}/bin/statix check ${self}
+            touch $out
+          '';
+          deadnix = pkgs.runCommand "check-deadnix" {} ''
+            ${pkgs.deadnix}/bin/deadnix --fail ${self}
+            touch $out
+          '';
+        }
+    );
   };
 }
