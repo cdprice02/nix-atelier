@@ -33,18 +33,34 @@
     else pkgs.qmk;
 in {
   home.packages = with pkgs; [
-    # Rust — stable + nightly both preinstalled via rust-overlay so switching is instant.
-    # Switch with: rustup default nightly / rustup default stable / cargo +nightly
-    # rust-analyzer lives only in nightly to avoid the proc-macro-srv path conflict.
-    (rust-bin.stable.latest.default.override {
-      extensions = ["rust-src" "rustfmt" "clippy"];
+    # Rust — stable toolchain is the daily-driver default. rust-analyzer and
+    # rustfmt are pinned to nightly (better proc-macro/type inference;
+    # unstable formatting options). rust-src travels with rust-analyzer (not
+    # the stable toolchain) since stable/nightly rust-src have different
+    # internal layouts and a mismatch breaks std-type resolution; rustfmt
+    # has no rust-src dependency. clippy stays on stable — it lints
+    # whatever's actually compiled and shipped.
+    #
+    # rust-analyzer/rustfmt/rust-src are pulled from .availableComponents,
+    # NOT via toolchain.minimal.override: every rust-overlay "toolchain"
+    # composite (even `minimal`) unconditionally ships share/doc/rust/
+    # COPYRIGHT.html, so combining a stable and a nightly toolchain in one
+    # profile always collides on that path. The individual components have
+    # no such shared doc path and combine cleanly.
+    (rust-bin.stable.latest.minimal.override {
+      extensions = ["clippy"];
       targets =
         if pkgs.stdenv.isDarwin
         then ["x86_64-apple-darwin" "aarch64-apple-darwin"]
         else ["x86_64-unknown-linux-gnu" "aarch64-unknown-linux-gnu"];
     })
-    # nixpkgs standalone rust-analyzer — avoids wasm-component-ld collision with stable rust-std
-    rust-analyzer
+    (let
+      nightly = rust-bin.selectLatestNightlyWith (t: t.minimal);
+    in
+      pkgs.symlinkJoin {
+        name = "rust-analyzer-nightly-bundle";
+        paths = with nightly.availableComponents; [rust-analyzer rustfmt rust-src];
+      })
 
     # Cargo tools
     cargo-edit
