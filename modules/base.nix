@@ -253,8 +253,22 @@ in {
       # nothing; caret's renderers are shell-native builtins only, per shell.
       # See caret's own README for the zero-fork test methodology and
       # starship/oh-my-posh benchmark comparison.
+      #
+      # Deliberately dropped, not carried over from starship's config: dirty-
+      # worktree marker (git status requires a fork), hostname/username,
+      # language-version segments, AWS-region, command duration. caret's scope
+      # boundary is directory + git branch + exit status only — an explicit
+      # choice made earlier in this audit, not an oversight of this swap (see
+      # HANDOFF.md's decision log). If hostname/AWS-region are missed in
+      # practice (e.g. bouncing between SSH sessions or multiple AWS_PROFILEs),
+      # revisit — caret has no equivalent segment, so restoring either means
+      # either extending caret itself or layering something starship-like
+      # back on top for just that segment.
       caret = {
         enable = true;
+        # Explicit, not just caret's default (which also happens to be 3) —
+        # this matches the truncation-length decision already made for
+        # starship's config before the swap (see HANDOFF.md decision log).
         truncationLength = 3;
       };
 
