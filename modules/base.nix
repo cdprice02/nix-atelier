@@ -28,6 +28,34 @@
       source "$HOME/.config/secrets/env"
     fi
   '';
+
+  # Capture a tool's shell init once at build time so the shell sources a
+  # static file instead of spawning the tool on every startup. Store-path
+  # interpolation (not builtins.readFile) means no import-from-derivation, so
+  # cross-platform eval keeps working; the capture only builds when the config
+  # is realized, on its own system. Deterministic inits only (zoxide/fzf/direnv
+  # emit the same script every run). fnm is excluded — its `env` output embeds
+  # a per-session multishell dir, so it must run per shell (see dev.nix).
+  mkInit = name: cmd: pkgs.runCommand "hm-shell-init-${name}" {} "${cmd} > $out";
+  toolInit = shell: fzfFlag: let
+    src = tool: cmd: "source ${mkInit "${tool}-${shell}" cmd}";
+    fzfSrc = src "fzf" "${pkgs.fzf}/bin/fzf ${fzfFlag}";
+    # fzf's zsh init toggles the `zle` option; only source it when zle is
+    # available, matching home-manager's own guard — otherwise zsh warns
+    # "can't change option: zle" in interactive-but-non-zle contexts.
+    fzf =
+      if shell == "zsh"
+      then ''
+        if [[ $options[zle] = on ]]; then
+          ${fzfSrc}
+        fi
+      ''
+      else fzfSrc;
+  in ''
+    ${src "zoxide" "${pkgs.zoxide}/bin/zoxide init ${shell}"}
+    ${src "direnv" "${pkgs.direnv}/bin/direnv hook ${shell}"}
+    ${fzf}
+  '';
 in {
   home = {
     inherit (user) username;
@@ -165,6 +193,17 @@ in {
       zsh = {
         enable = true;
         enableCompletion = true;
+        # Rebuild the completion dump (which audits every fpath dir — the
+        # dominant zsh-startup cost) at most once a day; otherwise reuse the
+        # cached dump and skip the audit with -C. This is the big startup win.
+        completionInit = ''
+          autoload -Uz compinit
+          if [[ -n ''${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
+            compinit
+          else
+            compinit -C
+          fi
+        '';
         # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
         # before tool integrations (fnm, zoxide) evaluate their init hooks.
         envExtra = nixProfileInit;
@@ -178,14 +217,18 @@ in {
             # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
             bindkey '^[[H' beginning-of-line
             bindkey '^[[F' end-of-line
-          '';
+          ''
+          # Static tool init (see mkInit) — replaces per-startup
+          # `eval "$(zoxide/fzf/direnv init)"` subprocesses.
+          + toolInit "zsh" "--zsh";
       };
 
       bash = {
         enable = true;
         enableCompletion = true;
         profileExtra = nixProfileInit;
-        initExtra = envLocalInit;
+        # Static tool init (see mkInit) replaces per-startup eval subprocesses.
+        initExtra = envLocalInit + toolInit "bash" "--bash";
       };
 
       # fish is available alongside zsh/bash with tool integrations wired
@@ -352,15 +395,21 @@ in {
 
       # ── Shell tools ───────────────────────────────────────────────────────────
 
+      # zsh/bash integration is done via static build-time captures (see
+      # toolInit / mkInit) instead of these modules' per-startup `eval`, so the
+      # zsh/bash integrations are disabled here. fish still uses HM's runtime
+      # integration (revisited with the fish shell-init work in Task 12).
       direnv = {
         enable = true;
         nix-direnv.enable = true;
+        enableZshIntegration = false;
+        enableBashIntegration = false;
       };
 
       zoxide = {
         enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
+        enableZshIntegration = false;
+        enableBashIntegration = false;
         enableFishIntegration = true;
       };
 
@@ -371,8 +420,8 @@ in {
       # subprocess + precmd SQLite write for a richer/synced DB we don't need.)
       fzf = {
         enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
+        enableZshIntegration = false;
+        enableBashIntegration = false;
         enableFishIntegration = true;
       };
 
