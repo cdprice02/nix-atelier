@@ -1,7 +1,6 @@
-# Shared base tmux config, used by both features/dev-tools.nix and
-# features/ops.nix (was previously duplicated verbatim — this is the single
-# source now).
-# Each caller merges in its own historyLimit and extends extraConfig.
+# Shared base tmux config — the single source for both features/dev-tools.nix
+# and features/ops.nix. Each caller merges in its own historyLimit and
+# extends extraConfig.
 {
   enable = true;
   keyMode = "vi";
