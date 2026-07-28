@@ -54,21 +54,10 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # caret's own package derivation is a trivial stdenvNoCC file copy with no
-    # real dependency on nixpkgs recency, so it follows the x86_64-darwin-safe
-    # pinned nixpkgs-darwin (still a full release with Linux/aarch64-darwin
-    # legacyPackages too) rather than rolling nixpkgs-unstable — which has
-    # dropped x86_64-darwin support (see nixpkgs-darwin's own input comment
-    # above) and would otherwise make caret's package unbuildable on this
-    # machine's architecture specifically.
-    #
-    # This is a second, narrower pinning exception on top of the x86_64-darwin
-    # one documented above: `follows` has no per-system form, so pointing
-    # caret at nixpkgs-darwin pins its build-time nixpkgs for EVERY profile
-    # (Linux/aarch64-darwin included), not just x86_64-darwin. Safe today only
-    # because caret's derivation is version-independent; if caret ever grows
-    # a real dependency, revisit (e.g. drop the follows entirely and let
-    # caret's own flake.lock pin float independently).
+    # follows nixpkgs-darwin (not nixpkgs) so caret's trivial file-copy
+    # derivation still builds on x86_64-darwin, which rolling nixpkgs-unstable
+    # has dropped; this pins caret's nixpkgs for every system, but caret has
+    # no real version dependency so that's harmless.
     caret = {
       url = "github:cdprice02/caret";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
