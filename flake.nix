@@ -3,23 +3,43 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    # nixpkgs-unstable dropped x86_64-darwin support (see release notes:
-    # nixos.org/manual/nixpkgs/unstable/release-notes#x86_64-darwin-26.11).
-    # darwinConfigurations use this pinned release branch instead — it still
-    # gets security fixes through end of 2026 — while every Linux/WSL2
-    # profile stays on rolling nixpkgs-unstable above. aarch64-darwin also
-    # uses this pin rather than nixpkgs-unstable, so both darwin
-    # architectures build against the same nixpkgs revision.
-    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
-    # Tracks the nix-darwin-26.05 release branch to match nixpkgs-darwin
+    # darwinConfigurations pin a nixpkgs release branch instead of tracking
+    # nixpkgs-unstable, for two independent reasons:
+    #   1. nixpkgs-unstable dropped x86_64-darwin support (release notes:
+    #      nixos.org/manual/nixpkgs/unstable/release-notes#x86_64-darwin-26.11).
+    #   2. This is an Intel 2018 MacBook Pro capped at macOS 13 (Ventura,
+    #      Darwin 22). nixpkgs 25.11-darwin and later bumped darwinMinVersion
+    #      to 14.0 — their binaries link against macOS 14's libc++ (e.g.
+    #      std::pmr symbols) and abort under dyld on macOS 13. 25.05-darwin is
+    #      the newest release still targeting macOS <=13 (darwinMinVersion
+    #      11.3) AND still supporting x86_64-darwin, so it is the ceiling for
+    #      this machine.
+    # Tradeoff: 25.05 is past its upstream security-support window. The
+    # binding constraint here is the OS (can't upgrade a 2018 Intel Mac past
+    # Ventura), not security recency — revisit this pin only if the machine is
+    # replaced with newer hardware/OS. Every Linux/WSL2 profile stays on
+    # rolling nixpkgs-unstable above; both darwin architectures share this pin.
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
+    # Tracks the nix-darwin-25.05 release branch to match nixpkgs-darwin
     # above — nix-darwin enforces that its release branch and its
     # nixpkgs input's release branch correspond (master pairs with
     # nixpkgs-unstable; nix-darwin-YY.MM pairs with nixpkgs-YY.MM-darwin).
-    nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
+    nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs-darwin";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Darwin builds against pinned nixpkgs-25.05-darwin, so they need the
+    # matching home-manager release branch. Home Manager's module code is
+    # coupled to its nixpkgs release: the master branch's
+    # `home-manager-applications` passes a bare "/Applications" string to
+    # buildEnv, which the pinned nixpkgs release's stricter builder rejects
+    # (it expects a list). Mirrors the nix-darwin release-correspondence
+    # pairing above. Also lines up with home.stateVersion = "25.05".
+    home-manager-darwin = {
+      url = "github:nix-community/home-manager/release-25.05";
+      inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
@@ -33,6 +53,7 @@
     nixpkgs-darwin,
     nix-darwin,
     home-manager,
+    home-manager-darwin,
     rust-overlay,
     ...
   }: let
@@ -47,11 +68,24 @@
     # repo somewhere else, set NIX_CONFIG_USER_FILE to the full path of your
     # user.nix instead of relying on the default.
     homeDir = builtins.getEnv "HOME";
+    # SUDO_USER is set by sudo to the invoking (real) user. `sudo
+    # darwin-rebuild switch` / `sudo nixos-rebuild switch` reset $HOME to
+    # root's home (/var/root), so getEnv "HOME" alone would miss the real
+    # user.nix and silently fall back to user.nix.example (username
+    # "yourusername") — which then fails activation on `system.primaryUser`.
+    # Fall back to the invoking user's home in that case, trying both the
+    # darwin (/Users) and Linux (/home) prefixes rather than probing the
+    # eval system. First existing candidate wins.
+    sudoUser = builtins.getEnv "SUDO_USER";
     userNixPathOverride = builtins.getEnv "NIX_CONFIG_USER_FILE";
-    userNixPath =
-      if userNixPathOverride != ""
-      then userNixPathOverride
-      else homeDir + "/.nix-config/user.nix";
+    userNixCandidates =
+      nixpkgs.lib.optional (userNixPathOverride != "") userNixPathOverride
+      ++ nixpkgs.lib.optional (homeDir != "") (homeDir + "/.nix-config/user.nix")
+      ++ nixpkgs.lib.optionals (sudoUser != "") [
+        "/Users/${sudoUser}/.nix-config/user.nix"
+        "/home/${sudoUser}/.nix-config/user.nix"
+      ];
+    existingUserNix = builtins.filter builtins.pathExists userNixCandidates;
     userBase =
       if userNixPathOverride != ""
       then
@@ -59,12 +93,12 @@
         # checkout that hasn't created user.nix yet — fail loudly instead of
         # silently building with the placeholder identity.
         (
-          if builtins.pathExists userNixPath
-          then import userNixPath
+          if builtins.pathExists userNixPathOverride
+          then import userNixPathOverride
           else throw "NIX_CONFIG_USER_FILE=${userNixPathOverride} does not exist"
         )
-      else if homeDir != "" && builtins.pathExists userNixPath
-      then import userNixPath
+      else if existingUserNix != []
+      then import (builtins.head existingUserNix)
       else import (self + /user.nix.example);
     user =
       userBase
@@ -168,7 +202,9 @@
         specialArgs = mkSpecialArgs system context;
         modules = [
           ./system/darwin.nix
-          home-manager.darwinModules.home-manager
+          # Darwin uses the release-25.05 home-manager input so its module
+          # code matches the pinned nixpkgs-25.05-darwin packages below.
+          home-manager-darwin.darwinModules.home-manager
           {
             nixpkgs.pkgs = mkPkgsDarwin system;
             home-manager = {
@@ -182,17 +218,6 @@
                   tier = "dev";
                   withGui = true;
                 };
-                # This flake's `home-manager` input follows the rolling
-                # `nixpkgs` (unstable), but darwin builds use `nixpkgs.pkgs
-                # = mkPkgsDarwin system` above to get the pinned
-                # nixpkgs-26.05-darwin packages instead — home-manager's own
-                # evaluation-time module code still comes from its
-                # unstable-following input. Home Manager's version-mismatch
-                # check flags this pairing even though it works fine in
-                # practice for the module code involved here; silenced
-                # deliberately rather than adding a second home-manager
-                # input just to clear a warning.
-                home.enableNixpkgsReleaseCheck = false;
               };
             };
           }
