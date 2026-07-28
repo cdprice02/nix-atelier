@@ -51,6 +51,37 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
 
 Declares `nixpkgs`, `nix-darwin`, `home-manager`, `rust-overlay` inputs.
 
+#### Input pairing invariant
+
+Home Manager's modules are coupled to their nixpkgs release, so every
+home-manager input must be release-matched to its nixpkgs input. There are two
+independent pairs:
+
+| Target | nixpkgs input | home-manager input | Tracks |
+|--------|---------------|--------------------|--------|
+| Linux/WSL2 | `nixpkgs` | `home-manager` | rolling (`nixpkgs-unstable` + HM master) |
+| macOS | `nixpkgs-darwin` | `home-manager-darwin` | pinned (`nixpkgs-25.05-darwin` + `release-25.05`) |
+
+`checkReleasePair` in `flake.nix` compares each pair's release strings and
+**fails evaluation** on a mismatch — HM's own `enableNixpkgsReleaseCheck` only
+warns, which is easy to scroll past. Always update both inputs of a pair
+together via `just update` (which takes no input argument by design); never
+`nix flake update <single-input>`.
+
+`just update` is safe to run from either machine and does **not** advance the
+darwin pin. The pin is the input *ref* in `flake.nix`, not the revision in
+`flake.lock`: re-resolving `nixpkgs-25.05-darwin` can only ever land on another
+25.05 commit, and those branches are frozen upstream, so in practice the darwin
+revisions don't move at all. Only the rolling Linux inputs advance. Retargeting
+macOS to a newer release means editing both darwin refs in `flake.nix` by hand
+— and `checkReleasePair` catches it if only one is changed.
+
+Because Linux tracks rolling releases, some options must be spelled the way
+both HM versions accept. Where the newer HM has renamed or added an option,
+`base.nix` guards on `options.<path> ? <name>` (see `programs.ssh.enableDefaultConfig`
+and `programs.delta.enableGitIntegration`) rather than picking one version's
+spelling and breaking the other.
+
 Outputs:
 
 - `homeConfigurations` — standalone home-manager for Linux/WSL2 (16 keys: personal/work × minimal/dev/server × gui × aarch64)

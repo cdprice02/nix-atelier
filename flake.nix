@@ -109,6 +109,37 @@
 
     pkgsConfig = {allowUnfree = true;};
 
+    # ── Release pairing guard ────────────────────────────────────────────────
+    # Home Manager's module code is coupled to its nixpkgs release: a mismatched
+    # pair evaluates but emits deprecation warnings and can silently generate
+    # wrong config (HM itself only warns, via home.enableNixpkgsReleaseCheck).
+    # This repo maintains two independent pairs — rolling (Linux/WSL2) and
+    # pinned (darwin) — so a `nix flake update <one-input>` can desync either
+    # one. That is exactly what happened: nixpkgs was bumped to 26.11 while
+    # home-manager stayed on a 25.11-era master revision for ~10 months.
+    #
+    # Fail evaluation instead of warning, so drift can't be ignored. To fix a
+    # failure here, update BOTH inputs of the offending pair together (`just
+    # update`, which never updates a single input).
+    hmRelease = hm: (builtins.fromJSON (builtins.readFile (hm + "/release.json"))).release;
+    checkReleasePair = label: hm: npkgs: let
+      hmVer = hmRelease hm;
+      npkgsVer = npkgs.lib.trivial.release;
+    in
+      nixpkgs.lib.throwIf (hmVer != npkgsVer) ''
+        ${label}: home-manager (${hmVer}) and nixpkgs (${npkgsVer}) releases disagree.
+
+        Home Manager modules are coupled to their nixpkgs release; a mismatched
+        pair produces deprecation warnings and can generate incorrect config.
+
+        Fix: update both inputs of this pair together — `just update`.
+      ''
+      true;
+
+    # Evaluated by every config output below (see mkHomeConfig / mkDarwinConfig).
+    linuxPairOk = checkReleasePair "Linux/WSL2 (rolling)" home-manager nixpkgs;
+    darwinPairOk = checkReleasePair "darwin (pinned)" home-manager-darwin nixpkgs-darwin;
+
     # ── Helpers ──────────────────────────────────────────────────────────────
     isLinux = s: builtins.elem s ["x86_64-linux" "aarch64-linux"];
 
@@ -176,13 +207,15 @@
       system,
       ...
     }:
-      home-manager.lib.homeManagerConfiguration {
-        pkgs = mkPkgs system;
-        extraSpecialArgs = mkSpecialArgs system context;
-        modules =
-          (mkProfile {inherit context tier withGui system;})
-          ++ [{nixpkgs.config = pkgsConfig;}];
-      };
+    # assert forces the release-pair check before any config is built.
+      assert linuxPairOk;
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = mkPkgs system;
+          extraSpecialArgs = mkSpecialArgs system context;
+          modules =
+            (mkProfile {inherit context tier withGui system;})
+            ++ [{nixpkgs.config = pkgsConfig;}];
+        };
 
     # Both x86_64 and aarch64 variants for a Linux profile
     mkLinuxPair = args: {
@@ -197,32 +230,34 @@
       context,
       system,
     }:
-      nix-darwin.lib.darwinSystem {
-        inherit system;
-        specialArgs = mkSpecialArgs system context;
-        modules = [
-          ./system/darwin.nix
-          # Darwin uses the release-25.05 home-manager input so its module
-          # code matches the pinned nixpkgs-25.05-darwin packages below.
-          home-manager-darwin.darwinModules.home-manager
-          {
-            nixpkgs.pkgs = mkPkgsDarwin system;
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = false;
-              backupFileExtension = "bk";
-              extraSpecialArgs = mkSpecialArgs system context;
-              users.${user.username} = {
-                imports = mkProfile {
-                  inherit context system;
-                  tier = "dev";
-                  withGui = true;
+    # assert forces the release-pair check before any config is built.
+      assert darwinPairOk;
+        nix-darwin.lib.darwinSystem {
+          inherit system;
+          specialArgs = mkSpecialArgs system context;
+          modules = [
+            ./system/darwin.nix
+            # Darwin uses the release-25.05 home-manager input so its module
+            # code matches the pinned nixpkgs-25.05-darwin packages below.
+            home-manager-darwin.darwinModules.home-manager
+            {
+              nixpkgs.pkgs = mkPkgsDarwin system;
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = false;
+                backupFileExtension = "bk";
+                extraSpecialArgs = mkSpecialArgs system context;
+                users.${user.username} = {
+                  imports = mkProfile {
+                    inherit context system;
+                    tier = "dev";
+                    withGui = true;
+                  };
                 };
               };
-            };
-          }
-        ];
-      };
+            }
+          ];
+        };
   in {
     # ── homeConfigurations ──────────────────────────────────────────────────
     # Bootstrap: nix run home-manager -- switch --flake ~/.nix-config#<name>
