@@ -219,7 +219,7 @@
         then [./modules/gui-linux.nix]
         else [./modules/gui-darwin.nix];
     in
-      [./modules/base.nix] ++ tierMods ++ contextMods ++ guiMods;
+      [./modules/base.nix ./modules/env.nix] ++ tierMods ++ contextMods ++ guiMods;
 
     # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
     mkHomeConfig = {

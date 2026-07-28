@@ -45,8 +45,8 @@ in {
       CLAUDE_PROFILE = context;
     };
 
-    # Binaries installed via `cargo install` outside Nix land here
-    sessionPath = ["$HOME/.cargo/bin" "$HOME/.npm-global/bin"];
+    # Runtime-tool PATH and writable install prefixes (cargo/npm/uv/bun/pixi)
+    # live in modules/env.nix, imported alongside this module for every profile.
 
     packages = with pkgs; [
       # Fonts — used everywhere for terminal rendering and prompt icons
