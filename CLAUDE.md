@@ -16,7 +16,7 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
   user.nix.example             # Identity template (tracked) — copy to user.nix
   user.nix                     # Local identity (gitignored) — never committed
   modules/
-    base.nix                   # Universal: CLI tools, fonts, zsh, bash, git, starship, ssh
+    base.nix                   # Universal: CLI tools, fonts, zsh, bash, git, caret prompt, ssh
     dev.nix                    # Dev toolchain: rust-overlay, node, python, cargo tools, tmux, claude-code
     work.nix                   # Work identity, corporate PEM cert env vars, SSH stubs
     server.nix                 # Server tools: rsync, tree, ncdu, htop, tmux
