@@ -1,5 +1,6 @@
 {
   config,
+  options,
   pkgs,
   lib,
   user,
@@ -389,24 +390,42 @@ in {
     # ── SSH ───────────────────────────────────────────────────────────────────
     # credential.helper is NOT set here — gui-darwin/gui-linux own that
 
-    ssh = {
-      enable = true;
-      enableDefaultConfig = false;
-      includes = ["~/.ssh/config.d/*"]; # work.nix writes stubs here
-      matchBlocks = {
-        "*" = {
-          identityFile = "~/.ssh/${user.sshKey}";
-          addKeysToAgent = "yes";
-          extraOptions = lib.optionalAttrs pkgs.stdenv.isDarwin {
-            UseKeychain = "yes";
+    ssh =
+      {
+        enable = true;
+        includes = ["~/.ssh/config.d/*"]; # work.nix writes stubs here
+        matchBlocks = {
+          "*" = {
+            identityFile = "~/.ssh/${user.sshKey}";
+            # AddKeysToAgent via extraOptions (a raw ssh directive) rather than
+            # the typed `addKeysToAgent` option: newer home-manager exposes it
+            # as a per-host match-block option, but HM 25.05 (the darwin pin)
+            # only has it as a global `programs.ssh.addKeysToAgent`.
+            # extraOptions is freeform and accepted by both, keeping this match
+            # block valid across HM versions.
+            extraOptions =
+              {
+                AddKeysToAgent = "yes";
+              }
+              // lib.optionalAttrs pkgs.stdenv.isDarwin {
+                UseKeychain = "yes";
+              };
+          };
+          "github.com" = {
+            user = "git";
+            identitiesOnly = true;
           };
         };
-        "github.com" = {
-          user = "git";
-          identitiesOnly = true;
-        };
+      }
+      # enableDefaultConfig only exists in newer home-manager (Linux profiles
+      # track HM master); darwin is pinned to HM release-25.05, which predates
+      # it. On newer HM, disable the injected default `*` match block so the
+      # explicit one above is authoritative; on 25.05 there is no injected
+      # default, so the option is simply absent. Guard on the option's
+      # existence to keep base.nix valid against both HM versions.
+      // lib.optionalAttrs (options.programs.ssh ? enableDefaultConfig) {
+        enableDefaultConfig = false;
       };
-    };
 
     # ── Git ───────────────────────────────────────────────────────────────────
 
