@@ -10,13 +10,26 @@ default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "pe
 default:
     @just --list
 
-# Apply home-manager profile (Linux/WSL2): `just switch work`, or `just switch` for the default
+# Apply this machine's configuration. Dispatches by OS: nix-darwin on macOS,
+# standalone home-manager on Linux/WSL2. `just switch work`, or `just switch`
+# for the default. On macOS a `-darwin` suffix is appended automatically when
+# absent, so the same `personal`/`work` profile names work on both platforms.
 switch PROFILE=default_profile:
-    home-manager switch --flake {{justfile_directory()}}#{{PROFILE}} --impure -b bk
+    #!/usr/bin/env bash
+    set -euo pipefail
+    profile="{{PROFILE}}"
+    if [ "$(uname)" = "Darwin" ]; then
+        case "$profile" in
+            *-darwin) ;;
+            *) profile="${profile}-darwin" ;;
+        esac
+        sudo darwin-rebuild switch --flake {{justfile_directory()}}#"$profile" --impure
+    else
+        home-manager switch --flake {{justfile_directory()}}#"$profile" --impure -b bk
+    fi
 
-# Apply nix-darwin config (macOS): `just rebuild work-darwin`, or `just rebuild` for the default
-rebuild PROFILE="personal-darwin":
-    sudo darwin-rebuild switch --flake {{justfile_directory()}}#{{PROFILE}} --impure
+# Backwards-compatible alias — `just rebuild` still applies the darwin config.
+alias rebuild := switch
 
 # Update all flake inputs
 update:
