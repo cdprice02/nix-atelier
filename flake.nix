@@ -15,28 +15,37 @@
     #      11.3) AND still supporting x86_64-darwin, so it is the ceiling for
     #      this machine.
     # Tradeoff: 25.05 is past its upstream security-support window. The
-    # binding constraint here is the OS (can't upgrade a 2018 Intel Mac past
-    # Ventura), not security recency — revisit this pin only if the machine is
-    # replaced with newer hardware/OS. Every Linux/WSL2 profile stays on
-    # rolling nixpkgs-unstable above; both darwin architectures share this pin.
+    # binding constraint is the OS (can't upgrade a 2018 Intel Mac past
+    # Ventura), not security recency — revisit only if the machine is replaced
+    # or moved to NixOS. Crucially, BOTH reasons above are specific to
+    # x86_64-darwin: aarch64-darwin (Apple Silicon) is a first-class platform
+    # on nixpkgs-unstable AND runs current macOS, so it has neither problem.
+    # This pin therefore applies to x86_64-darwin ONLY; aarch64-darwin tracks
+    # the rolling nixpkgs/home-manager/nix-darwin inputs, same as Linux (the
+    # arch split lives in mkDarwinConfig below). Every Linux/WSL2 profile also
+    # stays on rolling nixpkgs-unstable above.
     nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
-    # Tracks the nix-darwin-25.05 release branch to match nixpkgs-darwin
-    # above — nix-darwin enforces that its release branch and its
-    # nixpkgs input's release branch correspond (master pairs with
-    # nixpkgs-unstable; nix-darwin-YY.MM pairs with nixpkgs-YY.MM-darwin).
-    nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs-darwin";
+    # nix-darwin enforces that its release branch and its nixpkgs input's
+    # release branch correspond (master pairs with nixpkgs-unstable;
+    # nix-darwin-YY.MM pairs with nixpkgs-YY.MM-darwin). We carry two, one per
+    # darwin pair: nix-darwin (master) for aarch64-darwin, nix-darwin-x86
+    # (25.05) for x86_64-darwin.
+    nix-darwin.url = "github:nix-darwin/nix-darwin";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    nix-darwin-x86.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
+    nix-darwin-x86.inputs.nixpkgs.follows = "nixpkgs-darwin";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Darwin builds against pinned nixpkgs-25.05-darwin, so they need the
+    # x86_64-darwin builds against pinned nixpkgs-25.05-darwin, so it needs the
     # matching home-manager release branch. Home Manager's module code is
     # coupled to its nixpkgs release: the master branch's
     # `home-manager-applications` passes a bare "/Applications" string to
     # buildEnv, which the pinned nixpkgs release's stricter builder rejects
     # (it expects a list). Mirrors the nix-darwin release-correspondence
     # pairing above. Also lines up with home.stateVersion = "25.05".
+    # (aarch64-darwin uses the rolling `home-manager` input above.)
     home-manager-darwin = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
@@ -52,6 +61,7 @@
     nixpkgs,
     nixpkgs-darwin,
     nix-darwin,
+    nix-darwin-x86,
     home-manager,
     home-manager-darwin,
     rust-overlay,
@@ -137,11 +147,16 @@
       true;
 
     # Evaluated by every config output below (see mkHomeConfig / mkDarwinConfig).
-    linuxPairOk = checkReleasePair "Linux/WSL2 (rolling)" home-manager nixpkgs;
-    darwinPairOk = checkReleasePair "darwin (pinned)" home-manager-darwin nixpkgs-darwin;
+    # The rolling pair (nixpkgs + home-manager master) backs Linux/WSL2 AND
+    # aarch64-darwin; the pinned pair backs x86_64-darwin only.
+    linuxPairOk = checkReleasePair "rolling (Linux/WSL2 + aarch64-darwin)" home-manager nixpkgs;
+    darwinPairOk = checkReleasePair "x86_64-darwin (pinned)" home-manager-darwin nixpkgs-darwin;
 
     # ── Helpers ──────────────────────────────────────────────────────────────
     isLinux = s: builtins.elem s ["x86_64-linux" "aarch64-linux"];
+    # Only x86_64-darwin uses the pinned 25.05 darwin inputs (see input
+    # comment). aarch64-darwin rides the rolling inputs, same as Linux.
+    isX86Darwin = s: s == "x86_64-darwin";
 
     # nixpkgs with rust-overlay applied
     mkPkgs = system:
@@ -151,15 +166,22 @@
         overlays = [rust-overlay.overlays.default];
       };
 
-    # Darwin uses the pinned nixpkgs-darwin input (see the flake input
-    # comment above for why), not the rolling nixpkgs-unstable used
-    # everywhere else.
+    # x86_64-darwin uses the pinned nixpkgs-darwin input (see the flake input
+    # comment above for why), not the rolling nixpkgs-unstable used everywhere
+    # else — including aarch64-darwin.
     mkPkgsDarwin = system:
       import nixpkgs-darwin {
         inherit system;
         config = pkgsConfig;
         overlays = [rust-overlay.overlays.default];
       };
+
+    # Right package set for any system: pinned nixpkgs-darwin for x86_64-darwin,
+    # rolling nixpkgs for everything else (Linux + aarch64-darwin).
+    pkgsFor = system:
+      if isX86Darwin system
+      then mkPkgsDarwin system
+      else mkPkgs system;
 
     # context and user are threaded into all modules via specialArgs so modules
     # can gate features (work.nix inclusion, copilot symlink, CLAUDE_PROFILE) on them.
@@ -229,19 +251,36 @@
     mkDarwinConfig = {
       context,
       system,
-    }:
-    # assert forces the release-pair check before any config is built.
-      assert darwinPairOk;
-        nix-darwin.lib.darwinSystem {
+    }: let
+      # x86_64-darwin rides the pinned 25.05 trio (nixpkgs-darwin +
+      # nix-darwin-x86 + home-manager-darwin); aarch64-darwin rides the rolling
+      # trio (nixpkgs + nix-darwin + home-manager), same inputs as Linux. Each
+      # nix-darwin/home-manager must match its nixpkgs release, so all three
+      # move together per arch.
+      x86 = isX86Darwin system;
+      darwinLib =
+        if x86
+        then nix-darwin-x86
+        else nix-darwin;
+      hmModule =
+        if x86
+        then home-manager-darwin.darwinModules.home-manager
+        else home-manager.darwinModules.home-manager;
+      # assert forces the matching release-pair check before any config builds.
+      pairOk =
+        if x86
+        then darwinPairOk
+        else linuxPairOk;
+    in
+      assert pairOk;
+        darwinLib.lib.darwinSystem {
           inherit system;
           specialArgs = mkSpecialArgs system context;
           modules = [
             ./system/darwin.nix
-            # Darwin uses the release-25.05 home-manager input so its module
-            # code matches the pinned nixpkgs-25.05-darwin packages below.
-            home-manager-darwin.darwinModules.home-manager
+            hmModule
             {
-              nixpkgs.pkgs = mkPkgsDarwin system;
+              nixpkgs.pkgs = pkgsFor system;
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = false;
@@ -349,10 +388,7 @@
       nixpkgs.lib.genAttrs
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
       (system: let
-        pkgs =
-          if isLinux system
-          then mkPkgs system
-          else mkPkgsDarwin system;
+        pkgs = pkgsFor system;
       in {
         default = pkgs.mkShell {
           packages = with pkgs; [
@@ -378,12 +414,7 @@
     formatter =
       nixpkgs.lib.genAttrs
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
-      (system:
-        (
-          if isLinux system
-          then mkPkgs system
-          else mkPkgsDarwin system
-        ).alejandra);
+      (system: (pkgsFor system).alejandra);
 
     # ── checks ───────────────────────────────────────────────────────────────
     # `nix flake check` — previously eval-only (see docs/troubleshooting.md

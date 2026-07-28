@@ -44,6 +44,26 @@
     "nix-darwin": {
       "inputs": {
         "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784500460,
+        "narHash": "sha256-UvORnAxTRHax7RG74W8Z2t4GvIkX6AjJ5kk0QlwZomo=",
+        "owner": "nix-darwin",
+        "repo": "nix-darwin",
+        "rev": "57a3171f94705599a2499248ca5758d5eb47c0e0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-darwin",
+        "repo": "nix-darwin",
+        "type": "github"
+      }
+    },
+    "nix-darwin-x86": {
+      "inputs": {
+        "nixpkgs": [
           "nixpkgs-darwin"
         ]
       },
@@ -99,6 +119,7 @@
         "home-manager": "home-manager",
         "home-manager-darwin": "home-manager-darwin",
         "nix-darwin": "nix-darwin",
+        "nix-darwin-x86": "nix-darwin-x86",
         "nixpkgs": "nixpkgs",
         "nixpkgs-darwin": "nixpkgs-darwin",
         "rust-overlay": "rust-overlay"

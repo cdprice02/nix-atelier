@@ -53,28 +53,39 @@ Declares `nixpkgs`, `nix-darwin`, `home-manager`, `rust-overlay` inputs.
 
 #### Input pairing invariant
 
-Home Manager's modules are coupled to their nixpkgs release, so every
-home-manager input must be release-matched to its nixpkgs input. There are two
-independent pairs:
+Home Manager's modules (and nix-darwin) are coupled to their nixpkgs release,
+so every home-manager / nix-darwin input must be release-matched to its nixpkgs
+input. There are two independent pairs, and the darwin pin is split by
+architecture — only x86_64-darwin is pinned:
 
-| Target | nixpkgs input | home-manager input | Tracks |
-|--------|---------------|--------------------|--------|
-| Linux/WSL2 | `nixpkgs` | `home-manager` | rolling (`nixpkgs-unstable` + HM master) |
-| macOS | `nixpkgs-darwin` | `home-manager-darwin` | pinned (`nixpkgs-25.05-darwin` + `release-25.05`) |
+| Target | nixpkgs | home-manager | nix-darwin | Tracks |
+|--------|---------|--------------|------------|--------|
+| Linux/WSL2 | `nixpkgs` | `home-manager` | — | rolling (`nixpkgs-unstable` + HM master) |
+| aarch64-darwin | `nixpkgs` | `home-manager` | `nix-darwin` | rolling (same as Linux, + nix-darwin master) |
+| x86_64-darwin | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` | pinned (`25.05` across all three) |
+
+Only **x86_64-darwin** is pinned: it's an Intel 2018 MacBook Pro capped at
+macOS 13, and nixpkgs 25.05 is the last release both supporting x86_64-darwin
+and targeting macOS ≤13 (see the `nixpkgs-darwin` input comment). aarch64-darwin
+(Apple Silicon) rides the rolling inputs exactly like Linux — it has no such
+constraint — so it stays current and never inherits the pinned release's
+platform bugs (e.g. 25.05's unbuildable aarch64-darwin dotnet).
 
 `checkReleasePair` in `flake.nix` compares each pair's release strings and
 **fails evaluation** on a mismatch — HM's own `enableNixpkgsReleaseCheck` only
-warns, which is easy to scroll past. Always update both inputs of a pair
-together via `just update` (which takes no input argument by design); never
-`nix flake update <single-input>`.
+warns, which is easy to scroll past. `mkDarwinConfig` asserts the pinned pair
+for x86_64-darwin and the rolling pair for aarch64-darwin. Always update both
+inputs of a pair together via `just update` (which takes no input argument by
+design); never `nix flake update <single-input>`.
 
 `just update` is safe to run from either machine and does **not** advance the
-darwin pin. The pin is the input *ref* in `flake.nix`, not the revision in
-`flake.lock`: re-resolving `nixpkgs-25.05-darwin` can only ever land on another
-25.05 commit, and those branches are frozen upstream, so in practice the darwin
-revisions don't move at all. Only the rolling Linux inputs advance. Retargeting
-macOS to a newer release means editing both darwin refs in `flake.nix` by hand
-— and `checkReleasePair` catches it if only one is changed.
+x86_64-darwin pin. The pin is the input *ref* in `flake.nix`, not the revision
+in `flake.lock`: re-resolving `nixpkgs-25.05-darwin` / `nix-darwin-25.05` can
+only ever land on another 25.05 commit, and those branches are frozen upstream,
+so in practice the pinned revisions don't move at all. Only the rolling inputs
+(Linux + aarch64-darwin) advance. Retargeting x86_64-darwin to a newer release
+means editing the `nixpkgs-darwin`, `nix-darwin-x86`, and `home-manager-darwin`
+refs in `flake.nix` by hand — and `checkReleasePair` catches it if they desync.
 
 Because Linux tracks rolling releases, some options must be spelled the way
 both HM versions accept. Where the newer HM has renamed or added an option,
