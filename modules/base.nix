@@ -69,7 +69,9 @@ in {
       git-lfs
       wget
       btop
-      neofetch
+      # neofetch is archived/unmaintained upstream (removed from nixpkgs);
+      # fastfetch is its actively maintained, faster replacement.
+      fastfetch
 
       # Secrets — SOPS-encrypted secrets in git (age recipients), master key
       # retrieved from Bitwarden at deploy time. See homelab deploy/secrets/.
@@ -145,7 +147,14 @@ in {
       };
     };
 
-    stateVersion = "23.11";
+    # stateVersion gates Home Manager's migration behavior (default file
+    # locations/formats), not a version pin — bumping it can require manual
+    # data migration on a machine that has already applied an older value.
+    # 23.11 was stale against nixpkgs-unstable; bumped to the current release
+    # nearest this repo's last update. Before switching on an existing
+    # machine, diff `home-manager news` output and check for anything
+    # relevant to programs enabled here (git, zsh, tmux, vim, ssh).
+    stateVersion = "25.05";
   };
 
   programs = {

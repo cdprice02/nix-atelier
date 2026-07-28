@@ -3,8 +3,20 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nix-darwin.url = "github:LnL7/nix-darwin";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    # nixpkgs-unstable dropped x86_64-darwin support (see release notes:
+    # nixos.org/manual/nixpkgs/unstable/release-notes#x86_64-darwin-26.11).
+    # darwinConfigurations use this pinned release branch instead — it still
+    # gets security fixes through end of 2026 — while every Linux/WSL2
+    # profile stays on rolling nixpkgs-unstable above. aarch64-darwin also
+    # uses this pin rather than nixpkgs-unstable, so both darwin
+    # architectures build against the same nixpkgs revision.
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+    # Tracks the nix-darwin-26.05 release branch to match nixpkgs-darwin
+    # above — nix-darwin enforces that its release branch and its
+    # nixpkgs input's release branch correspond (master pairs with
+    # nixpkgs-unstable; nix-darwin-YY.MM pairs with nixpkgs-YY.MM-darwin).
+    nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs-darwin";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -18,6 +30,7 @@
   outputs = {
     self,
     nixpkgs,
+    nixpkgs-darwin,
     nix-darwin,
     home-manager,
     rust-overlay,
@@ -68,6 +81,16 @@
     # nixpkgs with rust-overlay applied
     mkPkgs = system:
       import nixpkgs {
+        inherit system;
+        config = pkgsConfig;
+        overlays = [rust-overlay.overlays.default];
+      };
+
+    # Darwin uses the pinned nixpkgs-darwin input (see the flake input
+    # comment above for why), not the rolling nixpkgs-unstable used
+    # everywhere else.
+    mkPkgsDarwin = system:
+      import nixpkgs-darwin {
         inherit system;
         config = pkgsConfig;
         overlays = [rust-overlay.overlays.default];
@@ -147,10 +170,7 @@
           ./system/darwin.nix
           home-manager.darwinModules.home-manager
           {
-            nixpkgs = {
-              config = pkgsConfig;
-              overlays = [rust-overlay.overlays.default];
-            };
+            nixpkgs.pkgs = mkPkgsDarwin system;
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = false;
@@ -162,6 +182,17 @@
                   tier = "dev";
                   withGui = true;
                 };
+                # This flake's `home-manager` input follows the rolling
+                # `nixpkgs` (unstable), but darwin builds use `nixpkgs.pkgs
+                # = mkPkgsDarwin system` above to get the pinned
+                # nixpkgs-26.05-darwin packages instead — home-manager's own
+                # evaluation-time module code still comes from its
+                # unstable-following input. Home Manager's version-mismatch
+                # check flags this pairing even though it works fine in
+                # practice for the module code involved here; silenced
+                # deliberately rather than adding a second home-manager
+                # input just to clear a warning.
+                home.enableNixpkgsReleaseCheck = false;
               };
             };
           }
@@ -258,7 +289,10 @@
       nixpkgs.lib.genAttrs
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
       (system: let
-        pkgs = mkPkgs system;
+        pkgs =
+          if isLinux system
+          then mkPkgs system
+          else mkPkgsDarwin system;
       in {
         default = pkgs.mkShell {
           packages = with pkgs; [
@@ -284,7 +318,12 @@
     formatter =
       nixpkgs.lib.genAttrs
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
-      (system: (mkPkgs system).alejandra);
+      (system:
+        (
+          if isLinux system
+          then mkPkgs system
+          else mkPkgsDarwin system
+        ).alejandra);
 
     # ── checks ───────────────────────────────────────────────────────────────
     # `nix flake check` — previously eval-only (see docs/troubleshooting.md
