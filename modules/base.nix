@@ -166,7 +166,7 @@ in {
         enable = true;
         enableCompletion = true;
         # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
-        # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
+        # before tool integrations (fnm, zoxide) evaluate their init hooks.
         envExtra = nixProfileInit;
         initContent =
           envLocalInit
@@ -187,6 +187,13 @@ in {
         profileExtra = nixProfileInit;
         initExtra = envLocalInit;
       };
+
+      # fish is available alongside zsh/bash with tool integrations wired
+      # (fzf/zoxide below). Full fish shell-init — nix-profile PATH, secrets
+      # sourcing, the caret prompt, and making it a login shell — lands with
+      # Task 12 (caret). For now an interactive fish inherits PATH from the
+      # launching shell, so tools resolve.
+      fish.enable = true;
 
       # ── Prompt ────────────────────────────────────────────────────────────────
 
@@ -354,18 +361,19 @@ in {
         enable = true;
         enableZshIntegration = true;
         enableBashIntegration = true;
+        enableFishIntegration = true;
       };
 
-      atuin = {
-        enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
-      };
-
+      # History search is fzf's native Ctrl-R widget (over the shell history
+      # file), not atuin: no per-command recording hook, no daemon, and fzf
+      # only spawns when a binding is pressed. Ctrl-R = history, Ctrl-T =
+      # files, Alt-C = cd. (atuin was dropped here — it added a startup
+      # subprocess + precmd SQLite write for a richer/synced DB we don't need.)
       fzf = {
         enable = true;
         enableZshIntegration = true;
         enableBashIntegration = true;
+        enableFishIntegration = true;
       };
 
       # ── Editor ────────────────────────────────────────────────────────────────
