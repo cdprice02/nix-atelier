@@ -16,7 +16,6 @@
 in {
   home.sessionVariables = {
     # npm: `npm install -g` writes here instead of the read-only Nix prefix.
-    # Matches the value dev.nix's claude-code activation hook already uses.
     NPM_CONFIG_PREFIX = "${homeDir}/.npm-global";
     # uv: destination for `uv tool install` executables.
     UV_TOOL_BIN_DIR = "${homeDir}/.local/bin";

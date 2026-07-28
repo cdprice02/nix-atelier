@@ -4,15 +4,13 @@
   user,
   ...
 }: {
-  # AWS tools — present on all work tiers (minimal, dev, server).
-  # Also declared in dev.nix for personal-dev profiles; Nix deduplicates.
-  # Kept here so work-minimal and work-server get AWS without the full dev tier.
-  home = {
-    packages = with pkgs; [
-      awscli2
-      aws-vault
-    ];
+  # cloud (AWS tooling) — present on all work tiers (minimal, dev, server).
+  # dev tier also pulls it independently via profiles.nix; the module system
+  # dedupes identical module paths across the import graph, so work+dev
+  # profiles get it once, not twice.
+  imports = [./features/cloud.nix];
 
+  home = {
     # Corporate root CA — Linux only; macOS uses the system keychain
     # The PEM file is never committed. Place it manually at ~/.certs/corporate.pem.
     # See docs/bootstrap.md for how to obtain it.
