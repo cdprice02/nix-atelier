@@ -1,17 +1,5 @@
 {pkgs, ...}: let
-  tmuxBase = {
-    enable = true;
-    keyMode = "vi";
-    mouse = true;
-    terminal = "screen-256color";
-    extraConfig = ''
-      set -g status-style bg=black,fg=white
-      set -g status-left  "#[fg=green]#S "
-      set -g status-right "#[fg=yellow]%H:%M"
-      bind | split-window -h
-      bind - split-window -v
-    '';
-  };
+  tmuxBase = import ./lib/tmux-base.nix;
 in {
   home.packages = with pkgs; [
     rsync
@@ -25,6 +13,9 @@ in {
     tmuxBase
     // {
       historyLimit = 50000; # larger than dev — server sessions are long-lived
+      # tmux-continuum wraps tmux-resurrect for automatic save/restore — both
+      # are required; continuum alone does not save/restore sessions itself.
+      plugins = [pkgs.tmuxPlugins.resurrect pkgs.tmuxPlugins.continuum];
       extraConfig =
         tmuxBase.extraConfig
         + ''
