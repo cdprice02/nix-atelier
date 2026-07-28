@@ -12,16 +12,23 @@ default:
 
 # Apply this machine's configuration. Dispatches by OS: nix-darwin on macOS,
 # standalone home-manager on Linux/WSL2. `just switch work`, or `just switch`
-# for the default. On macOS a `-darwin` suffix is appended automatically when
-# absent, so the same `personal`/`work` profile names work on both platforms.
+# for the default. On macOS the arch-specific darwin suffix is appended when
+# absent — `-darwin-aarch64` on Apple Silicon, `-darwin` on Intel — so the same
+# `personal`/`work` names select the right config on either Mac.
 switch PROFILE=default_profile:
     #!/usr/bin/env bash
     set -euo pipefail
     profile="{{PROFILE}}"
     if [ "$(uname)" = "Darwin" ]; then
         case "$profile" in
-            *-darwin) ;;
-            *) profile="${profile}-darwin" ;;
+            *-darwin | *-darwin-aarch64) ;; # already an explicit darwin config
+            *)
+                if [ "$(uname -m)" = "arm64" ]; then
+                    profile="${profile}-darwin-aarch64"
+                else
+                    profile="${profile}-darwin"
+                fi
+                ;;
         esac
         sudo darwin-rebuild switch --flake {{justfile_directory()}}#"$profile" --impure
     else
@@ -47,9 +54,12 @@ update:
     nix flake update --flake {{justfile_directory()}}
     @echo "Inputs updated — run 'just check' before 'just switch'."
 
-# Validate flake without applying
+# Validate flake without applying. Checks THIS system only: the `checks`
+# output builds Linux activation packages, so `--all-systems` on a Mac would
+# try to build `checks.x86_64-linux.*` and fail for lack of a Linux builder.
+# CI runs the full cross-system matrix (see .github/workflows/check.yml).
 check:
-    nix flake check --impure --all-systems
+    nix flake check --impure
 
 # Update submodules to latest commit on their tracked branch
 sync:

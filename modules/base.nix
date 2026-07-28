@@ -198,11 +198,18 @@ in {
         # cached dump and skip the audit with -C. This is the big startup win.
         completionInit = ''
           autoload -Uz compinit
-          if [[ -n ''${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
+          # Full compinit (rebuild the dump + audit every fpath dir) only when
+          # the cached dump is missing or older than a day; otherwise load it
+          # and skip the audit (-C). Uses array-glob filename generation — a
+          # bare `[[ -n glob ]]` performs none, so the age test would always be
+          # true — with a plain (N…) qualifier that needs no EXTENDED_GLOB.
+          _zdump=(''${ZDOTDIR:-$HOME}/.zcompdump(N.mh+24))
+          if (( $#_zdump )); then
             compinit
           else
             compinit -C
           fi
+          unset _zdump
         '';
         # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
         # before tool integrations (fnm, zoxide) evaluate their init hooks.
