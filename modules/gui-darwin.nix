@@ -44,6 +44,13 @@
   programs = {
     alacritty = {
       enable = true;
+      # Home Manager fetches this from pkgs.alacritty-theme (the module's
+      # default themePackage) and imports it automatically — previously
+      # this pointed at "rose-pine/dist/rose-pine.toml" via
+      # settings.general.import, a relative path nothing in this repo ever
+      # fetched or placed, so Alacritty's config silently failed to load
+      # the theme.
+      theme = "rose_pine";
       settings = {
         window = {
           opacity = 0.9;
@@ -54,14 +61,7 @@
           size = 14;
           normal.family = "Fira Code";
         };
-        colors = {
-          primary = {
-            background = "#1e1e1e";
-            foreground = "#d4d4d4";
-          };
-        };
         general.import = [
-          "rose-pine/dist/rose-pine.toml"
           "~/.config/alacritty/keybindings.toml"
         ];
       };
