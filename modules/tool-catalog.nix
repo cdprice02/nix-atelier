@@ -332,6 +332,20 @@
       description = "Secure AWS credential storage and session management; wraps the CLI to avoid plaintext credentials.";
       link = "[github.com/99designs/aws-vault](https://github.com/99designs/aws-vault)";
     }
+    {
+      key = "s5cmd";
+      matches = ["s5cmd"];
+      category = "AWS";
+      description = "High-performance S3 and local filesystem execution tool; parallel transfers far faster than the AWS CLI for bulk operations.";
+      link = "[github.com/peak/s5cmd](https://github.com/peak/s5cmd)";
+    }
+    {
+      key = "session-manager-plugin";
+      matches = ["ssm-session-manager-plugin"];
+      category = "AWS";
+      description = "AWS CLI plugin enabling `aws ssm start-session` — shell access to EC2 instances and port forwarding without SSH/bastion hosts.";
+      link = "[docs.aws.amazon.com/systems-manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)";
+    }
 
     # ── Kubernetes ─────────────────────────────────────────────────────────
     {
