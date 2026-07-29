@@ -41,10 +41,10 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
 
 | Task | Command |
 |------|---------|
-| Apply config (Mac) | `sudo darwin-rebuild switch --flake ~/.nix-config` (`nix-rb`) |
+| Apply config (Mac) | `sudo darwin-rebuild switch --flake ~/.nix-config` |
 | Apply config (NixOS) | `sudo nixos-rebuild switch --flake ~/.nix-config` |
-| Apply config (Linux/WSL) | `home-manager switch --flake ~/.nix-config#<profile> --impure` (`nix-sw`) |
-| Update flake inputs | `nix flake update --flake ~/.nix-config` (`nix-up`) |
+| Apply config (Linux/WSL) | `home-manager switch --flake ~/.nix-config#<profile> --impure` |
+| Update flake inputs | `nix flake update --flake ~/.nix-config` |
 
 ## Architecture
 
