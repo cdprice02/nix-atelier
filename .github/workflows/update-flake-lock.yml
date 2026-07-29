@@ -1,0 +1,47 @@
+name: Update flake.lock
+
+# Separate workflow, not a job in check.yml: check.yml's `on:` block is
+# shared by every job in that file, so adding `schedule:` there would make
+# the whole build/lint matrix schedule-eligible, not just this one job (same
+# reasoning as bootstrap-smoke-test.yml).
+on:
+  schedule:
+    - cron: "23 6 * * 1" # weekly
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-flake-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: cachix/install-nix-action@v31
+      - run: mkdir -p "$HOME/.nix-config" && cp user.nix.example "$HOME/.nix-config/user.nix"
+      # `just update` (nix flake update, no args) — atomically re-resolves
+      # every input together, the same command a human would run. Never a
+      # single input: see justfile's own comment on why, and CLAUDE.md's
+      # "Input pairing invariant" for what breaks if inputs desync.
+      - run: nix shell nixpkgs#just -c just update
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update flake.lock"
+          title: "chore: update flake.lock"
+          body: |
+            Automated weekly `nix flake update` — re-resolves all inputs together.
+
+            Full CI (including `flake-check`'s release-pairing assert) runs on this
+            PR before merge, same gate as any other change. A failure here means a
+            real pairing mismatch, not a bug in this workflow — see CLAUDE.md's
+            "Input pairing invariant".
+          branch: update-flake-lock
+          delete-branch: true
+          add-paths: flake.lock

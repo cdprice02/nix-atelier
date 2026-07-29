@@ -6,19 +6,25 @@
 # empty. grep exits non-zero on no input, triggering the fallback.
 default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "personal"' 2>/dev/null | tr -d '"' | grep . || echo personal`
 
-# List available commands
+# Recipes prefixed with `_` are CI-internal plumbing, hidden from `just
+# --list` by design (just's own private-recipe convention) but still
+# runnable (`just _build-linux personal`) and inspectable (`just --show
+# _build-linux`) — not a black box, just not cluttering the everyday list.
+#
+# Relative paths below are bare (`.`, `docs/...`) rather than
+# `{{ justfile_directory() }}`-prefixed: just runs every recipe with cwd set
+# to the justfile's own directory by default, regardless of where `just` was
+# invoked from (verified directly, not assumed).
+
 default:
     @just --list
 
-# Apply this machine's configuration. Dispatches by OS: nix-darwin on macOS,
-# standalone home-manager on Linux/WSL2. `just switch work`, or `just switch`
-# for the default. On macOS the arch-specific darwin suffix is appended when
-# absent — `-darwin-aarch64` on Apple Silicon, `-darwin` on Intel — so the same
-# `personal`/`work` names select the right config on either Mac.
+[group('machine')]
+[doc('Apply configuration for this machine (dispatches by OS)')]
 switch PROFILE=default_profile:
     #!/usr/bin/env bash
     set -euo pipefail
-    profile="{{PROFILE}}"
+    profile="{{ PROFILE }}"
     if [ "$(uname)" = "Darwin" ]; then
         case "$profile" in
             *-darwin | *-darwin-aarch64) ;; # already an explicit darwin config
@@ -30,9 +36,9 @@ switch PROFILE=default_profile:
                 fi
                 ;;
         esac
-        sudo darwin-rebuild switch --flake {{justfile_directory()}}#"$profile" --impure
+        sudo darwin-rebuild switch --flake .#"$profile" --impure
     else
-        home-manager switch --flake {{justfile_directory()}}#"$profile" --impure -b bk
+        home-manager switch --flake .#"$profile" --impure -b bk
     fi
 
 # Backwards-compatible alias — `just rebuild` still applies the darwin config.
@@ -43,47 +49,93 @@ alias rebuild := switch
 # not in flake.lock, so re-resolving can only ever land on another 25.05 commit
 # — moving that pin means editing flake.nix by hand. Only the rolling
 # Linux/WSL2 inputs (nixpkgs-unstable / home-manager master) actually advance.
-#
-# Takes no input argument by design: nixpkgs and home-manager are a
-# release-matched pair (as are their darwin counterparts), and updating one
-# alone desyncs it from its partner, which flake.nix then hard-fails on.
-# Re-resolving everything at once keeps both pairs consistent by construction.
-#
-# Re-resolve all flake inputs against the refs declared in flake.nix
+[group('machine')]
+[doc('Re-resolve all flake inputs together — never a single input')]
 update:
-    nix flake update --flake {{justfile_directory()}}
+    nix flake update
     @echo "Inputs updated — run 'just check' before 'just switch'."
+
+[group('machine')]
+[doc('Update submodules to latest commit on their tracked branch')]
+sync:
+    git submodule update --remote --merge
 
 # Validate flake without applying. Checks THIS system only: the `checks`
 # output builds Linux activation packages, so `--all-systems` on a Mac would
 # try to build `checks.x86_64-linux.*` and fail for lack of a Linux builder.
 # CI runs the full cross-system matrix (see .github/workflows/check.yml).
+[group('check')]
+[doc('Full local validation (builds profiles for this system + lints)')]
 check:
     nix flake check --impure
 
-# Update submodules to latest commit on their tracked branch
-sync:
-    git -C {{justfile_directory()}} submodule update --remote --merge
+[group('check')]
+[doc('Fast: eval every profile without building')]
+eval-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mapfile -t linux < <({{ just_executable() }} _list-linux-profiles | jq -r '.[]')
+    for p in "${linux[@]}"; do
+        echo "eval homeConfigurations.$p"
+        nix eval --impure --raw .#homeConfigurations."$p".activationPackage.drvPath >/dev/null
+    done
+    mapfile -t darwin < <({{ just_executable() }} _list-darwin-profiles | jq -r '.[]')
+    for p in "${darwin[@]}"; do
+        echo "eval darwinConfigurations.$p"
+        nix eval --impure --raw .#darwinConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
+    done
+    echo "All 20 profiles evaluated cleanly."
 
-# Enter a nightly Rust shell for feature-gated code (stable stays the profile default)
-rust-nightly:
-    nix develop {{justfile_directory()}}#rust-nightly
+[group('check')]
+[doc('Run all lints (alejandra, statix, deadnix, markdownlint)')]
+lint-all: _lint-alejandra _lint-statix _lint-deadnix _lint-markdownlint
 
-# Format all Nix files with alejandra
+[group('generate')]
+[doc('Format all Nix files with alejandra')]
 fmt:
-    nix fmt {{justfile_directory()}}
+    nix fmt
 
-# Regenerate docs/profiles.md and docs/tools.md from Nix (modules/docs-gen.nix)
-# and overwrite the committed files. Run after changing modules/profile-list.nix,
-# modules/tool-catalog.nix, modules/features.nix, or modules/profiles.nix —
-# CI's docs-drift check fails if the committed files disagree with this output.
+# Regenerated content only — see modules/docs-gen.nix for what's generated
+# vs. hand-maintained within the two files.
+[group('generate')]
+[doc('Regenerate docs/profiles.md + docs/tools.md from Nix')]
 docs:
     #!/usr/bin/env bash
     set -euo pipefail
-    dir="{{justfile_directory()}}"
     system="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
-    cp "$(nix build "$dir"#packages."$system".docs-profiles-md --impure --no-link --print-out-paths)" "$dir/docs/profiles.md"
-    cp "$(nix build "$dir"#packages."$system".docs-tools-md --impure --no-link --print-out-paths)" "$dir/docs/tools.md"
-    chmod +w "$dir/docs/profiles.md" "$dir/docs/tools.md"
+    cp "$(nix build .#packages."$system".docs-profiles-md --impure --no-link --print-out-paths)" docs/profiles.md
+    cp "$(nix build .#packages."$system".docs-tools-md --impure --no-link --print-out-paths)" docs/tools.md
+    chmod +w docs/profiles.md docs/tools.md
     echo "docs/profiles.md and docs/tools.md regenerated."
 
+[private]
+_list-linux-profiles:
+    @nix eval --impure --json .#homeConfigurations --apply builtins.attrNames
+
+[private]
+_list-darwin-profiles:
+    @nix eval --impure --json .#darwinConfigurations --apply builtins.attrNames
+
+[private]
+_build-linux PROFILE:
+    nix build .#homeConfigurations.{{ PROFILE }}.activationPackage --impure
+
+[private]
+_build-darwin PROFILE:
+    nix build .#darwinConfigurations.{{ PROFILE }}.system --impure
+
+[private]
+_lint-alejandra:
+    nix shell nixpkgs#alejandra -c alejandra --check .
+
+[private]
+_lint-statix:
+    nix shell nixpkgs#statix -c statix check
+
+[private]
+_lint-deadnix:
+    nix shell nixpkgs#deadnix -c deadnix --fail .
+
+[private]
+_lint-markdownlint:
+    nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CLAUDE.md
