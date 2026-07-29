@@ -326,8 +326,14 @@
             ${pkgs.deadnix}/bin/deadnix --fail ${self}
             touch $out
           '';
+          # A relative glob after cd, not an absolute-path glob string: this
+          # markdownlint-cli version resolves those two differently (same
+          # class of discrepancy already seen with deadnix elsewhere in this
+          # repo's history) and only the relative form reliably matches the
+          # files CI's own lint-markdownlint job lints.
           markdownlint = pkgs.runCommand "check-markdownlint" {} ''
-            ${pkgs.markdownlint-cli}/bin/markdownlint '${self}/docs/**/*.md'
+            cd ${self}
+            ${pkgs.markdownlint-cli}/bin/markdownlint 'docs/**/*.md'
             touch $out
           '';
         }
