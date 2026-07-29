@@ -199,8 +199,12 @@
     # features.nix: name -> module path registry. profiles.nix: tier -> list of
     # feature names. core/env aren't in the registry — they're an always-on
     # prefix mkProfile adds unconditionally, not a selectable feature.
+    # profileList.nix: Linux profile name -> {context,tier,withGui,useFor} —
+    # single-sourced by homeConfigurations below and the generated docs.
     features = import ./modules/features.nix;
     profiles = import ./modules/profiles.nix;
+    profileList = import ./modules/profile-list.nix;
+    toolCatalog = import ./modules/tool-catalog.nix;
     resolveFeature = name:
       features.${
         name
@@ -217,6 +221,57 @@
       builtins.deepSeq
       (nixpkgs.lib.mapAttrs (_: map resolveFeature) profiles)
       true;
+
+    # Same idiom for profileList: every entry's tier must be a real
+    # profiles.nix key, checked eagerly so a typo fails immediately instead
+    # of surfacing as a missing homeConfigurations attribute at build time.
+    profileListValidated =
+      builtins.deepSeq
+      (nixpkgs.lib.mapAttrs (
+          name: axes:
+            if profiles ? ${axes.tier}
+            then axes
+            else throw "profile-list.nix: \"${name}\" has unknown tier \"${axes.tier}\""
+        )
+        profileList)
+      true;
+
+    # ── Docs generation (Task 15) ───────────────────────────────────────────
+    # Realized package identities (p.pname or p.name) across every already-
+    # built home/darwin config — reuses the actual mkProfile composition
+    # rather than statically re-scanning modules/features/*.nix, so it also
+    # catches packages home-manager's own program modules inject implicitly
+    # (e.g. programs.git.delta.enable -> the delta package, with no
+    # home.packages entry anywhere in this repo).
+    installedPackageNames = let
+      pkgIdent = p: p.pname or p.name;
+      homePkgLists = map (cfg: cfg.config.home.packages) (builtins.attrValues self.homeConfigurations);
+      darwinPkgLists = map (cfg: cfg.config.home-manager.users.${user.username}.home.packages) (builtins.attrValues self.darwinConfigurations);
+    in
+      nixpkgs.lib.unique (map pkgIdent (nixpkgs.lib.flatten (homePkgLists ++ darwinPkgLists)));
+
+    # Bidirectional: every installed package needs a tool-catalog.nix entry
+    # (or an explicit exclusion), and every catalog entry needs to actually
+    # correspond to something installed — same "fail eval, don't drift
+    # silently" idiom as profilesValidated/profileListValidated above.
+    catalogedNames = nixpkgs.lib.concatMap (e: e.matches) toolCatalog.entries;
+    uncatalogedInstalled = nixpkgs.lib.subtractLists (catalogedNames ++ toolCatalog.infraExclude) installedPackageNames;
+    staleCatalogEntries = nixpkgs.lib.subtractLists installedPackageNames catalogedNames;
+    docsCatalogValid =
+      nixpkgs.lib.throwIf (uncatalogedInstalled != [])
+      "modules/tool-catalog.nix is missing entries for installed packages: ${toString uncatalogedInstalled}"
+      (
+        nixpkgs.lib.throwIf (staleCatalogEntries != [])
+        "modules/tool-catalog.nix has entries for packages that aren't installed anywhere: ${toString staleCatalogEntries}"
+        true
+      );
+
+    docsGenerated =
+      (import ./modules/docs-gen.nix {inherit (nixpkgs) lib;})
+      {
+        inherit profiles profileList toolCatalog;
+        darwinConfigNames = builtins.attrNames self.darwinConfigurations;
+      };
 
     # ── Profile compositor ────────────────────────────────────────────────────
     # Produces the ordered module list for a profile.
@@ -268,6 +323,7 @@
     # config is built.
       assert linuxPairOk;
       assert profilesValidated;
+      assert profileListValidated;
         home-manager.lib.homeManagerConfiguration {
           pkgs = mkPkgs system;
           extraSpecialArgs = mkSpecialArgs system context;
@@ -340,57 +396,11 @@
     # Bootstrap: nix run home-manager -- switch --flake ~/.nix-config#<name>
     # After first apply: home-manager switch --flake ~/.nix-config#<name>
     #
-    # To add a profile: add a mkLinuxPair call below and pick context/tier/withGui.
-    # See modules/ for what each tier/context/gui module provides.
+    # To add a profile: add an entry to modules/profile-list.nix.
     homeConfigurations =
-      (mkLinuxPair {
-        name = "personal";
-        context = "personal";
-        tier = "dev";
-        withGui = false;
-      })
-      // (mkLinuxPair {
-        name = "personal-gui";
-        context = "personal";
-        tier = "dev";
-        withGui = true;
-      })
-      // (mkLinuxPair {
-        name = "personal-minimal";
-        context = "personal";
-        tier = "minimal";
-        withGui = false;
-      })
-      // (mkLinuxPair {
-        name = "personal-server";
-        context = "personal";
-        tier = "server";
-        withGui = false;
-      })
-      // (mkLinuxPair {
-        name = "work";
-        context = "work";
-        tier = "dev";
-        withGui = false;
-      })
-      // (mkLinuxPair {
-        name = "work-gui";
-        context = "work";
-        tier = "dev";
-        withGui = true;
-      })
-      // (mkLinuxPair {
-        name = "work-minimal";
-        context = "work";
-        tier = "minimal";
-        withGui = false;
-      })
-      // (mkLinuxPair {
-        name = "work-server";
-        context = "work";
-        tier = "server";
-        withGui = false;
-      });
+      nixpkgs.lib.concatMapAttrs
+      (name: axes: mkLinuxPair (axes // {inherit name;}))
+      profileList;
 
     # ── darwinConfigurations ────────────────────────────────────────────────
     # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-config#<name>
@@ -454,6 +464,25 @@
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
       (system: (pkgsFor system).alejandra);
 
+    # ── packages ─────────────────────────────────────────────────────────────
+    # Buildable outputs of docsGenerated, for `just docs` to copy over the
+    # committed docs/*.md. docsGenerated's content is pure Nix data (no
+    # platform-dependent logic), but `pkgs.writeText` still needs a matching-
+    # platform builder to realize it — unlike the eval-only `checks` output,
+    # this needs the full system list (same as devShells/formatter) so
+    # `just docs` builds natively wherever it's run, darwin included.
+    packages =
+      nixpkgs.lib.genAttrs
+      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      (
+        system: let
+          pkgs = pkgsFor system;
+        in {
+          docs-profiles-md = pkgs.writeText "profiles.md" docsGenerated.profilesMd;
+          docs-tools-md = pkgs.writeText "tools.md" docsGenerated.toolsMd;
+        }
+      );
+
     # ── checks ───────────────────────────────────────────────────────────────
     # Builds every Linux activation package and runs the same lints CI runs,
     # so a green `just check` actually means something locally, not just
@@ -503,6 +532,21 @@
             ${pkgs.markdownlint-cli}/bin/markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CLAUDE.md
             touch $out
           '';
+          # assert docsCatalogValid forces the bidirectional catalog check
+          # (see above) before this even attempts the diff, so a catalog
+          # drift and a docs-content drift fail with distinct messages.
+          docs-drift = assert docsCatalogValid;
+            pkgs.runCommand "check-docs-drift" {} ''
+              if ! diff -u ${./docs/profiles.md} ${pkgs.writeText "profiles.md" docsGenerated.profilesMd}; then
+                echo "docs/profiles.md is out of date — run 'just docs' and commit the result"
+                exit 1
+              fi
+              if ! diff -u ${./docs/tools.md} ${pkgs.writeText "tools.md" docsGenerated.toolsMd}; then
+                echo "docs/tools.md is out of date — run 'just docs' and commit the result"
+                exit 1
+              fi
+              touch $out
+            '';
         }
     );
   };
