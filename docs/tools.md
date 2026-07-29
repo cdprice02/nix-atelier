@@ -75,8 +75,8 @@ Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as 
 
 ## Rust
 
-### rust-overlay (stable toolchain) + rust-analyzer
-Stable Rust toolchain (`rustc`, `cargo`, `rust-src`, `rustfmt`, `clippy`) via [oxalica/rust-overlay](https://github.com/oxalica/rust-overlay). `rust-analyzer` comes from plain nixpkgs, installed as a separate package rather than a rust-overlay component. Updated on `nix flake update`.
+### rust-overlay (stable toolchain + nightly rust-analyzer/rustfmt)
+Stable Rust toolchain (`rustc`, `cargo`, `clippy`) via [oxalica/rust-overlay](https://github.com/oxalica/rust-overlay) is the daily-driver default. `rust-analyzer` and `rustfmt` are pinned to nightly instead, pulled as individual components so nightly never puts a second `rustc`/`cargo` on `PATH`. `rust-src` travels with `rust-analyzer`, not the stable toolchain, since stable and nightly `rust-src` have different internal layouts and a mismatch breaks std-type resolution in the editor. `clippy` stays on stable since it lints whatever's actually compiled and shipped.
 
 ### cargo-edit
 Adds `cargo add`, `cargo rm`, `cargo upgrade` for managing dependencies. [github.com/killercup/cargo-edit](https://github.com/killercup/cargo-edit)
