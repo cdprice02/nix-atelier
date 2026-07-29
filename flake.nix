@@ -40,13 +40,18 @@
       then userNixPathOverride
       else homeDir + "/.nix-config/user.nix";
     userBase =
-      if userNixPathOverride != "" || homeDir != ""
+      if userNixPathOverride != ""
       then
+        # Explicitly set: a typo'd path is a real mistake, not a fresh
+        # checkout that hasn't created user.nix yet — fail loudly instead of
+        # silently building with the placeholder identity.
         (
           if builtins.pathExists userNixPath
           then import userNixPath
-          else import (self + /user.nix.example)
+          else throw "NIX_CONFIG_USER_FILE=${userNixPathOverride} does not exist"
         )
+      else if homeDir != "" && builtins.pathExists userNixPath
+      then import userNixPath
       else import (self + /user.nix.example);
     user =
       userBase
@@ -248,7 +253,7 @@
     # `nix develop` — lint tools for contributors (matches .pre-commit-config.yaml
     # and CI's lint-* jobs) plus a nightly Rust toolchain, so `rustup` is never
     # needed alongside rust-overlay's stable default (avoids two cargo/rustc on
-    # PATH). Also invoked by `just rust-nightly`.
+    # PATH).
     devShells =
       nixpkgs.lib.genAttrs
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
@@ -285,7 +290,12 @@
     # `nix flake check` — previously eval-only (see docs/troubleshooting.md
     # history); this makes it build every Linux activation package and run the
     # same lints CI runs, so a green `just check` actually means something
-    # locally, not just "the flake evaluates."
+    # locally, not just "the flake evaluates." Scoped to Linux only: on
+    # x86_64-darwin/aarch64-darwin, `nix flake check --impure` silently skips
+    # `checks` entirely rather than building anything (no local Linux builder
+    # to build these against) — a green check on a Mac isn't this check
+    # running, it's this check not running at all. Real Darwin verification
+    # happens in CI or on an actual Mac.
     checks = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
       system: let
         pkgs = mkPkgs system;
@@ -314,6 +324,10 @@
           '';
           deadnix = pkgs.runCommand "check-deadnix" {} ''
             ${pkgs.deadnix}/bin/deadnix --fail ${self}
+            touch $out
+          '';
+          markdownlint = pkgs.runCommand "check-markdownlint" {} ''
+            ${pkgs.markdownlint-cli}/bin/markdownlint '${self}/docs/**/*.md'
             touch $out
           '';
         }
