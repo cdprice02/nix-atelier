@@ -444,8 +444,9 @@ in {
         # credential.helper intentionally absent — set by gui-darwin or gui-linux
       };
 
-      # Delta package is already in home.packages above; this wires it in as
-      # git's actual diff pager (previously just installed, never configured).
+      # enable pulls in the delta package itself (see the home.packages comment
+      # above) and wires it in as git's actual diff pager, previously just
+      # installed with nothing pointing at it.
       delta = {
         enable = true;
         options = {

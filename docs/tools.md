@@ -75,10 +75,8 @@ Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as 
 
 ## Rust
 
-### rust-overlay (stable toolchain + nightly rust-analyzer/rustfmt)
-Stable Rust toolchain (`rustc`, `cargo`, `clippy`) via [oxalica/rust-overlay](https://github.com/oxalica/rust-overlay) is the daily-driver default. `rust-analyzer` and `rustfmt` are pinned to nightly instead, pulled as individual components (`.availableComponents.rust-analyzer` / `.rustfmt`, not a full nightly toolchain composite) so nightly never puts a second `rustc`/`cargo` on `PATH` and doesn't collide with the stable toolchain's bundled docs. `rust-src` travels with `rust-analyzer`, not the stable toolchain — stable and nightly `rust-src` have different internal layouts, and a mismatch breaks std-type resolution in the editor. `clippy` stays on stable since it lints whatever's actually compiled and shipped. Updated on `nix flake update`.
-
-**Tradeoff to know about:** because `rust-analyzer` runs as a nightly binary, its diagnostics reflect nightly's view of `std`/`core`, not the stable toolchain your code actually compiles against. Two visible effects: you may occasionally see a completion or hover doc for something not yet stabilized, and deprecation warnings can show up in the editor before that deprecation actually lands on stable (rust-analyzer's squiggle is real, just early). This is a known, accepted tradeoff for nightly rust-analyzer's better proc-macro expansion and type inference — if it becomes a problem on a given project, point rust-analyzer's diagnostics back at the real toolchain with `rust-analyzer.check.overrideCommand` in editor settings (`["cargo", "check", "--message-format=json"]` runs stable `cargo check` for the actual error/warning list, while rust-analyzer's own nightly engine still powers completion/inference). This is a per-editor setting, not something this Nix module controls — see the nvim config repo for how it's wired there.
+### rust-overlay (stable toolchain) + rust-analyzer
+Stable Rust toolchain (`rustc`, `cargo`, `rust-src`, `rustfmt`, `clippy`) via [oxalica/rust-overlay](https://github.com/oxalica/rust-overlay). `rust-analyzer` comes from plain nixpkgs, installed as a separate package rather than a rust-overlay component. Updated on `nix flake update`.
 
 ### cargo-edit
 Adds `cargo add`, `cargo rm`, `cargo upgrade` for managing dependencies. [github.com/killercup/cargo-edit](https://github.com/killercup/cargo-edit)
