@@ -39,7 +39,8 @@ in {
     );
 
     sessionVariables = {
-      EDITOR = "vim";
+      # EDITOR is set by programs.vim.defaultEditor below, not here — avoid
+      # declaring it twice.
       CLAUDE_PROFILE = context;
     };
 
@@ -63,7 +64,7 @@ in {
       fd
       bat
       eza
-      delta
+      # delta provided by programs.git.delta.enable below, not listed here
       lazygit
       git-lfs
       wget
@@ -441,6 +442,17 @@ in {
         core.autocrlf = "input";
         # diff.tool and merge.tool are set by gui-darwin/gui-linux (where `code` is available)
         # credential.helper intentionally absent — set by gui-darwin or gui-linux
+      };
+
+      # enable pulls in the delta package itself (see the home.packages comment
+      # above) and wires it in as git's actual diff pager, previously just
+      # installed with nothing pointing at it.
+      delta = {
+        enable = true;
+        options = {
+          navigate = true;
+          line-numbers = true;
+        };
       };
     };
   };
