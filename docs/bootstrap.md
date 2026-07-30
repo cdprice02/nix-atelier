@@ -120,13 +120,21 @@ After the next login the default shell will be zsh.
 Pick **one** profile that matches your machine — `work` for a work machine, `personal` for a personal machine.
 
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#work --impure      # work machine
-nix run home-manager -- switch --flake ~/.nix-config#personal --impure  # personal machine
+nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk      # work machine
+nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # personal machine
 ```
 
 > **`--impure` is always required** — every `home-manager switch` needs it, not just
 > bootstrap. `user.nix` is gitignored and read from the filesystem via
 > `builtins.getEnv "HOME"`, which is an impure operation in Nix.
+
+> **`-b bk` is required on the first switch** of any machine that already has
+> shell dotfiles. Home Manager refuses to overwrite an existing `~/.bashrc`,
+> `~/.profile`, `~/.zshrc` etc. and aborts with `Existing file '...' would be
+> clobbered`. Nearly every distro (and WSL2) ships those from `/etc/skel`, so
+> this is the normal case, not the exception. `-b bk` renames each conflicting
+> file to `<name>.bk` instead of failing. `just switch` passes it for you on
+> every subsequent apply.
 
 After first apply, `home-manager` and `just` are on PATH:
 

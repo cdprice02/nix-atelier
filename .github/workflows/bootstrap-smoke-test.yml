@@ -98,7 +98,12 @@ jobs:
           grep -q "username = \"$(id -un)\";" user.nix \
             || { echo "user.nix username substitution failed:"; cat user.nix; exit 1; }
           export NIX_CONFIG_USER_FILE="$PWD/user.nix"
-          nix run home-manager -- switch --flake .#personal-minimal --impure
+          # -b bk mirrors the documented command. useradd -m seeds
+          # /home/ciuser with /etc/skel's .bashrc and .profile, exactly like a
+          # real distro or WSL2 install, and Home Manager aborts rather than
+          # clobber them. This is the single most likely first-run failure for
+          # a new user, so the sequence under test has to cover it.
+          nix run home-manager -- switch --flake .#personal-minimal --impure -b bk
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh
