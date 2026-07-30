@@ -155,6 +155,12 @@ Official AWS CLI v2 — interact with all AWS services from the terminal. [docs.
 ### aws-vault
 Secure AWS credential storage and session management; wraps the CLI to avoid plaintext credentials. [github.com/99designs/aws-vault](https://github.com/99designs/aws-vault)
 
+### s5cmd
+High-performance S3 and local filesystem execution tool; parallel transfers far faster than the AWS CLI for bulk operations. [github.com/peak/s5cmd](https://github.com/peak/s5cmd)
+
+### session-manager-plugin
+AWS CLI plugin enabling `aws ssm start-session` — shell access to EC2 instances and port forwarding without SSH/bastion hosts. [docs.aws.amazon.com/systems-manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
+
 ---
 
 ## Kubernetes
