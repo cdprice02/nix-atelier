@@ -93,5 +93,5 @@ my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..
 
 Then apply with:
 ```sh
-home-manager switch --flake ~/.nix-config#my-profile --impure
+home-manager switch --flake ~/.nix-config#my-profile --impure -b bk
 ```
