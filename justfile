@@ -41,7 +41,12 @@ switch PROFILE=default_profile:
         home-manager switch --flake .#"$profile" --impure -b bk
     fi
 
-# Backwards-compatible alias — `just rebuild` still applies the darwin config.
+# `just rebuild` is a pure alias for `switch`, kept only so muscle memory from
+# the pre-`just` `darwin-rebuild` era still works. It is NOT the macOS
+# counterpart to a Linux-only `switch` — `switch` dispatches by OS on its own
+# (see the uname branch above), so the two are the same recipe on every
+# platform. docs/troubleshooting.md used to present them as an OS split, which
+# was misleading; it now documents `switch` alone.
 alias rebuild := switch
 
 # Safe to run on any machine: this does NOT advance any release pin. The darwin
@@ -95,6 +100,21 @@ eval-all:
 [doc('Run all lints (alejandra, statix, deadnix, markdownlint)')]
 lint-all: _lint-alejandra _lint-statix _lint-deadnix _lint-markdownlint
 
+# Wraps the run in `nix develop` because .pre-commit-config.yaml's alejandra
+# and markdownlint hooks use `language: system` — they resolve to whatever is
+# on PATH, which is only correct inside the devShell. Running `pre-commit run`
+# bare either picks up a different version of those tools or fails to find
+# them, and the docs told users to do exactly that (CONTRIBUTING.md,
+# docs/bootstrap.md steps 9 and 8) without mentioning the devShell.
+[group('check')]
+[doc('Run every pre-commit hook over all files, inside the devShell')]
+precommit:
+    nix develop -c pre-commit run --all-files
+
+# Thin wrapper over `nix fmt` on purpose: it exists so formatting is
+# discoverable from `just --list` alongside every other everyday command,
+# rather than being the one task you have to already know a different entry
+# point for. `nix fmt` resolves to the `formatter` output (alejandra).
 [group('generate')]
 [doc('Format all Nix files with alejandra')]
 fmt:
