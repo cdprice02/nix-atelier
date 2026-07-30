@@ -5,8 +5,8 @@ in {
     # Dev tools
     gh
     pre-commit
-    tmux
     qmk
+    # tmux package provided by programs.tmux below
   ];
 
   programs.tmux = tmuxBase // {historyLimit = 10000;};

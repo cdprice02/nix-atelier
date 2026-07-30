@@ -19,7 +19,7 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
     env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
     features.nix               # Feature name -> module path registry
-    profiles.nix                # Tier -> feature-name list (minimal/dev/server)
+    profiles.nix               # Tier -> feature-name list (minimal/dev/server)
     features/
       shell-tools.nix          # tier=dev|server: fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.
       lang-rust.nix            # tier=dev: rust-overlay toolchain + cargo tools
