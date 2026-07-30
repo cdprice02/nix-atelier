@@ -170,8 +170,12 @@ pre-commit install
 This runs automatically on every `git commit` from that point on. To run all checks manually:
 
 ```sh
-pre-commit run --all-files
+just precommit
 ```
+
+(`just precommit` wraps `pre-commit run --all-files` in `nix develop` — the
+alejandra and markdownlint hooks resolve against the devShell's PATH, so a bare
+`pre-commit run` outside it uses the wrong tool versions or fails to find them.)
 
 ---
 
@@ -239,8 +243,12 @@ pre-commit install
 This runs automatically on every `git commit` from that point on. To run all checks manually:
 
 ```sh
-pre-commit run --all-files
+just precommit
 ```
+
+(`just precommit` wraps `pre-commit run --all-files` in `nix develop` — the
+alejandra and markdownlint hooks resolve against the devShell's PATH, so a bare
+`pre-commit run` outside it uses the wrong tool versions or fails to find them.)
 
 ---
 

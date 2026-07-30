@@ -177,9 +177,14 @@ nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
 ```
 
-After the first apply, `just` and `home-manager` are on PATH and you can use the short forms:
+After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS — `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:
 
 ```sh
-just switch <profile>   # Linux — e.g. just switch work
-just rebuild <profile>  # macOS — e.g. just rebuild work-darwin
+just switch <profile>   # e.g. just switch work
+just switch             # uses user.nix's `profile` field, else "personal"
 ```
+
+On macOS you can pass the bare profile name (`just switch work`) and the
+`-darwin` / `-darwin-aarch64` suffix is appended for you based on the machine's
+architecture. `just rebuild` is an alias for the same recipe, not a macOS-only
+variant.
