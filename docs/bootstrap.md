@@ -127,7 +127,7 @@ nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # 
 > **`--impure` is always required** — every `home-manager switch` needs it, not just
 > bootstrap. `user.nix` is gitignored and read from the filesystem via
 > `builtins.getEnv "HOME"`, which is an impure operation in Nix.
-
+>
 > **`-b bk` is required on the first switch** of any machine that already has
 > shell dotfiles. Home Manager refuses to overwrite an existing `~/.bashrc`,
 > `~/.profile`, `~/.zshrc` etc. and aborts with `Existing file '...' would be
