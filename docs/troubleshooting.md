@@ -98,7 +98,7 @@ git -C ~/.nix-config submodule update --init --recursive
 Or clone correctly from the start:
 
 ```sh
-git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
 ```
 
 ---
