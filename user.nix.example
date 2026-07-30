@@ -35,6 +35,14 @@
   # content) — kept here so the URL never touches this public repo.
   # kiroRepo = "git@github.com:youruser/your-private-kiro-config.git";
 
+  # Optional: use sops-nix (secrets/secrets.yaml) instead of manually
+  # copying secrets.env.example to ~/.config/secrets/env. Off by default —
+  # requires your own age keypair (see .sops.yaml for the recipient this
+  # repo's secrets/secrets.yaml is currently encrypted for) with the private
+  # half placed manually at ~/.config/sops/age/keys.txt (see
+  # modules/secrets-sops.nix and docs/bootstrap.md for the exact steps).
+  # useSops = true;
+
   # Optional: private remote overrides for config/ submodules.
   # For each key matching a submodule name, home-manager activation will add a
   # "private" remote and check out a tracking branch automatically.

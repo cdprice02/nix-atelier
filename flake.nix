@@ -62,6 +62,14 @@
       url = "github:cdprice02/caret";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
+    # Only ever imported when a machine's user.nix opts in (useSops = true) —
+    # see mkProfile's sopsMods below. Follows nixpkgs (not nixpkgs-darwin):
+    # unlike caret, sops-nix has no x86_64-darwin-specific build concern, so
+    # it doesn't need the same override.
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -74,6 +82,7 @@
     home-manager-darwin,
     rust-overlay,
     caret,
+    sops-nix,
     ...
   }: let
     # ── Identity ────────────────────────────────────────────────────────────
@@ -304,12 +313,27 @@
         else if isLinux system
         then [./modules/gui-linux.nix]
         else [./modules/gui-darwin.nix];
+
+      # Opt-in only (user.nix: useSops = true;), never on by default. This
+      # repo is public and forked by others (see CONTRIBUTING.md) — sops-nix
+      # decrypts at *activation* time using whichever age key is on disk, so
+      # if this were wired in unconditionally, `home-manager switch` would
+      # hard-fail on any machine that isn't this repo owner's (no matching
+      # age key). Importing the module itself is otherwise inert (declares
+      # options, no activation-time effect) with no secrets configured, but
+      # keeping the import itself gated too means it's genuinely absent from
+      # the module tree, not just unconfigured, for anyone who hasn't opted in.
+      sopsMods =
+        if (user.useSops or false)
+        then [sops-nix.homeManagerModules.sops ./modules/secrets-sops.nix]
+        else [];
     in
       [./modules/base.nix ./modules/env.nix caret.homeManagerModules.default]
       ++ tierMods
       ++ extraMods
       ++ contextMods
-      ++ guiMods;
+      ++ guiMods
+      ++ sopsMods;
 
     # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
     mkHomeConfig = {
