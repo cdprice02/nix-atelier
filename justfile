@@ -64,9 +64,14 @@ sync:
 # output builds Linux activation packages, so `--all-systems` on a Mac would
 # try to build `checks.x86_64-linux.*` and fail for lack of a Linux builder.
 # CI runs the full cross-system matrix (see .github/workflows/check.yml).
+#
+# Runs lint-all explicitly because the lints deliberately live outside the
+# flake's `checks` output (see flake.nix's comment there — they were being run
+# twice per PR). Keeping them here means a green `just check` still covers
+# formatting and lint, and covers the working tree rather than the last commit.
 [group('check')]
 [doc('Full local validation (builds profiles for this system + lints)')]
-check:
+check: lint-all
     nix flake check --impure
 
 [group('check')]
@@ -136,6 +141,13 @@ _lint-statix:
 _lint-deadnix:
     nix shell nixpkgs#deadnix -c deadnix --fail .
 
+# Lints exactly the Markdown this repo tracks, derived from git rather than a
+# hand-listed set of paths (which previously lived here, in flake.nix and in
+# .pre-commit-config.yaml in three different syntaxes, and had already drifted
+# — CODE_OF_CONDUCT.md and .github/pull_request_template.md were in none of
+# them). `git ls-files` also naturally excludes untracked local scratch files,
+# which a bare '**/*.md' glob would pick up. Submodule content under config/ is
+# excluded via .markdownlintignore.
 [private]
 _lint-markdownlint:
-    nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CLAUDE.md
+    git ls-files -z '*.md' | xargs -0 nix shell nixpkgs#markdownlint-cli -c markdownlint
