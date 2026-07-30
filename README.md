@@ -24,7 +24,7 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 # 3. Clone and configure identity
-git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
 cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix  # fill in username, name, email
 
@@ -40,7 +40,7 @@ nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # 
 sh <(curl -L https://nixos.org/nix/install)
 
 # 2. Clone and configure identity
-git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
 cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix
 

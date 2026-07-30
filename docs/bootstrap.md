@@ -18,8 +18,19 @@ echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ### 2. Clone the repo
 
 ```sh
-git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
 ```
+
+**HTTPS, not SSH, deliberately.** A `git@github.com:` remote needs an SSH key
+already registered with GitHub — and on a new machine you don't have one yet.
+This config *generates* that key for you, at step 8 below, during the first
+activation. Cloning over SSH here would be a chicken-and-egg: the key you'd need
+is produced by the thing you're trying to clone. HTTPS needs no credentials for
+a public repo. Switch the remote to SSH afterwards if you prefer, once step 8
+has run and you've added the key to GitHub.
+
+If you've forked this repo, clone **your fork's** URL instead — everything below
+works the same, and `user.nix` keeps your identity out of the repo either way.
 
 This also clones `config/claude` (Claude Code config), `config/copilot` (Copilot config, personal only), and `config/git/gitalias`. Home Manager symlinks these into `~` on first activation.
 
@@ -190,7 +201,7 @@ sh <(curl -L https://nixos.org/nix/install)
 ### 2. Clone the repo
 
 ```sh
-git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
 ```
 
 ### 3. Set up local identity
