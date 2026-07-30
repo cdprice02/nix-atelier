@@ -80,8 +80,8 @@
     # Identity is loaded from user.nix (gitignored, never committed).
     # Copy user.nix.example to user.nix and fill in your values.
     # builtins.getEnv is impure (value varies per eval), so all home-manager
-    # switch calls require --impure. Alternatives (absolute path, sops-nix)
-    # trade portability or simplicity — see docs for tradeoff discussion.
+    # switch calls require --impure. Alternatives (a hardcoded absolute path,
+    # sops-nix) trade portability or simplicity for that impurity.
     #
     # Default location is $HOME/.nix-config/user.nix. If you've cloned this
     # repo somewhere else, set NIX_CONFIG_USER_FILE to the full path of your
@@ -134,8 +134,7 @@
     # wrong config (HM itself only warns, via home.enableNixpkgsReleaseCheck).
     # This repo maintains two independent pairs — rolling (Linux/WSL2) and
     # pinned (darwin) — so a `nix flake update <one-input>` can desync either
-    # one. That is exactly what happened: nixpkgs was bumped to 26.11 while
-    # home-manager stayed on a 25.11-era master revision for ~10 months.
+    # one.
     #
     # Fail evaluation instead of warning, so drift can't be ignored. To fix a
     # failure here, update BOTH inputs of the offending pair together (`just
@@ -456,15 +455,14 @@
       (system: (pkgsFor system).alejandra);
 
     # ── checks ───────────────────────────────────────────────────────────────
-    # `nix flake check` — previously eval-only (see docs/troubleshooting.md
-    # history); this makes it build every Linux activation package and run the
-    # same lints CI runs, so a green `just check` actually means something
-    # locally, not just "the flake evaluates." Scoped to Linux only: on
-    # x86_64-darwin/aarch64-darwin, `nix flake check --impure` silently skips
-    # `checks` entirely rather than building anything (no local Linux builder
-    # to build these against) — a green check on a Mac isn't this check
-    # running, it's this check not running at all. Real Darwin verification
-    # happens in CI or on an actual Mac.
+    # Builds every Linux activation package and runs the same lints CI runs,
+    # so a green `just check` actually means something locally, not just
+    # "the flake evaluates." Scoped to Linux only: on x86_64-darwin/
+    # aarch64-darwin, `nix flake check --impure` silently skips `checks`
+    # entirely rather than building anything (no local Linux builder to build
+    # these against) — a green check on a Mac isn't this check running, it's
+    # this check not running at all. Real Darwin verification happens in CI
+    # or on an actual Mac.
     checks = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
       system: let
         pkgs = mkPkgs system;

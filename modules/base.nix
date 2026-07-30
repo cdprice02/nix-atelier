@@ -65,7 +65,7 @@ in {
       wget
 
       # Secrets — SOPS-encrypted secrets in git (age recipients), master key
-      # retrieved from Bitwarden at deploy time. See homelab deploy/secrets/.
+      # retrieved from Bitwarden at deploy time.
       # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
       # broken in the current nixpkgs pin); its agent caches unlock for scripting.
       # pinentry-tty lets rbw prompt for the master password from the terminal
@@ -141,10 +141,9 @@ in {
     # stateVersion gates Home Manager's migration behavior (default file
     # locations/formats), not a version pin — bumping it can require manual
     # data migration on a machine that has already applied an older value.
-    # 23.11 was stale against nixpkgs-unstable; bumped to the current release
-    # nearest this repo's last update. Before switching on an existing
-    # machine, diff `home-manager news` output and check for anything
-    # relevant to programs enabled here (git, zsh, tmux, vim, ssh).
+    # Before switching on an existing machine, diff `home-manager news`
+    # output and check for anything relevant to programs enabled here (git,
+    # zsh, tmux, vim, ssh).
     stateVersion = "25.05";
   };
 
@@ -175,8 +174,8 @@ in {
           fi
           unset _zdumpfile _zdump
         '';
-        # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
-        # before tool integrations (fnm, zoxide) evaluate their init hooks.
+        # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on
+        # PATH before any other module's tool-integration init hooks run.
         envExtra = nixProfileInit;
         initContent =
           envLocalInit
@@ -324,8 +323,7 @@ in {
         };
 
         # enable pulls in the delta package itself (see the home.packages comment
-        # above) and wires it in as git's actual diff pager, previously just
-        # installed with nothing pointing at it.
+        # above) and wires it in as git's actual diff pager.
         delta = {
           enable = true;
           options = {
