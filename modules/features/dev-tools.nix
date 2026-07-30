@@ -1,5 +1,11 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  options,
+  ...
+}: let
   tmuxBase = import ../lib/tmux-base.nix;
+  compat = import ../lib/hm-compat.nix {inherit lib options;};
 in {
   home.packages = with pkgs; [
     # Dev tools
@@ -22,6 +28,8 @@ in {
     # headless dev profiles have no GUI difftool to fall back to at all. This
     # adds an explicit option that works either way without touching either
     # default.
-    git.extraConfig.difftool."difftastic".cmd = "difft $LOCAL $REMOTE";
+    git = compat.gitConfig {
+      difftool."difftastic".cmd = "difft $LOCAL $REMOTE";
+    };
   };
 }

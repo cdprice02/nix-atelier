@@ -1,9 +1,12 @@
 {
   pkgs,
   lib,
+  options,
   user,
   ...
-}: {
+}: let
+  compat = import ./lib/hm-compat.nix {inherit lib options;};
+in {
   # cloud (AWS tooling) — present on all work tiers (minimal, dev, server).
   # dev tier also pulls it independently via profiles.nix; the module system
   # dedupes identical module paths across the import graph, so work+dev
@@ -51,8 +54,8 @@
   };
 
   # Git identity for work — overrides the personal identity set in base.nix
-  programs.git = {
-    userName = lib.mkForce user.work.name;
-    userEmail = lib.mkForce user.work.email;
+  programs.git = compat.gitIdentity {
+    inherit (user.work) name email;
+    force = true;
   };
 }
