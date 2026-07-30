@@ -1,8 +1,11 @@
 {
   pkgs,
   lib,
+  options,
   ...
-}: {
+}: let
+  compat = import ./lib/hm-compat.nix {inherit lib options;};
+in {
   home.packages = with pkgs; [
     obsidian
   ];
@@ -63,7 +66,7 @@
       };
     };
     vscode.enable = true;
-    git.extraConfig = {
+    git = compat.gitConfig {
       credential.helper = lib.mkForce "osxkeychain";
       diff.tool = "vscode";
       merge.tool = "vscode";
