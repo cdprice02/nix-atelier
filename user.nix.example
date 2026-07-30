@@ -12,6 +12,11 @@
   # still defaults to "personal" if this key isn't set.
   # profile = "personal";
 
+  # Optional: extra named features (see modules/features.nix) to layer onto
+  # this machine's profile beyond its tier's defaults — e.g. a personal-gui
+  # machine that also wants Kubernetes tooling without switching tiers.
+  # extraFeatures = ["k8s"];
+
   # Work git identity — used by modules/work.nix to override base git config.
   # Only used by work profiles; safe to leave placeholder values if you don't use work contexts.
   work = {

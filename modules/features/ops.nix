@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  tmuxBase = import ./lib/tmux-base.nix;
+  tmuxBase = import ../lib/tmux-base.nix;
 in {
   home.packages = with pkgs; [
     rsync

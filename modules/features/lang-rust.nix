@@ -1,11 +1,4 @@
-{
-  pkgs,
-  lib,
-  user,
-  ...
-}: let
-  tmuxBase = import ./lib/tmux-base.nix;
-in {
+{pkgs, ...}: {
   home.packages = with pkgs; [
     # Rust — stable toolchain is the daily-driver default. rust-analyzer and
     # rustfmt are pinned to nightly (better proc-macro/type inference;
@@ -76,65 +69,5 @@ in {
     cargo-expand
     cargo-audit
     samply
-
-    # Node ecosystem
-    nodejs
-    fnm
-
-    # Python ecosystem
-    python3
-    uv
-    bun
-    python3Packages.jupyterlab
-    python3Packages.ipython
-
-    # AWS — also declared in work.nix for work-minimal/server tiers that don't include dev.
-    # Nix deduplicates; both declarations are intentional.
-    awscli2
-    aws-vault
-
-    # Kubernetes — homelab cluster ops (queen.local k3s); kubeconfig lives at
-    # ~/.kube/config (contains client certs — never committed, not Nix-managed)
-    kubectl
-    kubernetes-helm
-    helmfile
-
-    # Dev tools
-    gh
-    pre-commit
-    tmux
-    qmk
   ];
-
-  # Claude Code — not yet in nixpkgs; installed globally via npm
-  # Requires npm on PATH — run manually if activation skips it:
-  #   npm install -g @anthropic-ai/claude-code
-  home.activation.claudeCode = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    if [ -z "$DRY_RUN_CMD" ] && ! command -v claude &>/dev/null && command -v npm &>/dev/null; then
-      export PATH="$HOME/.nix-profile/bin:$HOME/.npm-global/bin:$PATH"
-      if [ "$(id -u)" -eq 0 ]; then
-        # darwin-rebuild switch runs as root; delegate to the target user so npm
-        # never creates root-owned files in $HOME (fixes issue #8)
-        /usr/bin/sudo -u ${user.username} \
-          env HOME="$HOME" PATH="$PATH" NPM_CONFIG_PREFIX="$HOME/.npm-global" \
-          sh -c 'mkdir -p "$NPM_CONFIG_PREFIX/bin" && npm install -g @anthropic-ai/claude-code'
-      else
-        mkdir -p "$HOME/.npm-global/bin"
-        NPM_CONFIG_PREFIX="$HOME/.npm-global" npm install -g @anthropic-ai/claude-code
-      fi
-    fi
-  '';
-
-  # fnm shell init — appended after base shell config
-  programs = {
-    zsh.initContent = lib.mkAfter ''
-      eval "$(fnm env --use-on-cd)"
-    '';
-
-    bash.initExtra = lib.mkAfter ''
-      eval "$(fnm env --use-on-cd)"
-    '';
-
-    tmux = tmuxBase // {historyLimit = 10000;};
-  };
 }

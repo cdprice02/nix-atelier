@@ -1,5 +1,6 @@
-# Shared base tmux config, used by both dev.nix and server.nix (was
-# previously duplicated verbatim in both — this is the single source now).
+# Shared base tmux config, used by both features/dev-tools.nix and
+# features/ops.nix (was previously duplicated verbatim — this is the single
+# source now).
 # Each caller merges in its own historyLimit and extends extraConfig.
 {
   enable = true;
