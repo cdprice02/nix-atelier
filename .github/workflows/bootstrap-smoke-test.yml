@@ -1,0 +1,91 @@
+name: Bootstrap smoke test
+
+# Separate workflow, not a job in check.yml: check.yml's `on:` block is
+# shared by every job in that file, so adding `schedule:` there would make
+# the whole build/lint matrix schedule-eligible, not just this one job.
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly, not on every PR: a from-scratch container install doesn't
+    # benefit from check.yml's nix store caching and would slow every PR for
+    # a check whose value ("did the documented bootstrap sequence rot")
+    # changes slowly.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Proves the literal command sequence docs/bootstrap.md's WSL2/Linux
+  # section tells a new user to type still works, starting from nothing —
+  # different from check.yml's build-linux, which already proves every
+  # profile builds, but does so via cachix/install-nix-action (not the
+  # curl-piped installer the docs use) on a fully-provisioned ubuntu-latest
+  # runner (not a bare container) and jumps straight to `nix build
+  # .#homeConfigurations.X.activationPackage` (not the docs' own `nix run
+  # home-manager -- switch`). Scoped to personal-minimal only (the docs'
+  # own recommended starting point, fastest to build) — this job is about
+  # the install sequence, not re-running the full profile matrix.
+  #
+  # No macOS equivalent: GitHub Actions has no bare/ephemeral macOS
+  # container the way ubuntu:24.04 is for Linux (macos-14 is a persistent
+  # pre-provisioned VM) — check.yml's build-darwin already covers macOS
+  # build correctness, which is the part that *is* testable that way.
+  bootstrap-smoke-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      # actions/checkout needs real git for submodule support (its
+      # tarball-download fallback doesn't fetch submodules) — bare
+      # ubuntu:24.04 has neither git nor curl, so this has to run first.
+      - name: Install prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git curl ca-certificates sudo
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      # Nix's single-user installer (the one docs/bootstrap.md's WSL2
+      # section uses, `--no-daemon`) refuses to run as root; GH Actions
+      # containers run as root by default.
+      - name: Create a non-root user
+        run: |
+          useradd -m -s /bin/bash ciuser
+          echo 'ciuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+          chown -R ciuser:ciuser "$GITHUB_WORKSPACE"
+
+      # Mirrors docs/bootstrap.md's WSL2 steps 1, 3 (via
+      # NIX_CONFIG_USER_FILE instead of a literal ~/.nix-config clone path,
+      # since the repo's already checked out at $GITHUB_WORKSPACE — see
+      # flake.nix's NIX_CONFIG_USER_FILE override), and 7. Steps 2
+      # (clone — actions/checkout stands in, the documented git@github.com
+      # SSH remote can't authenticate in CI without a deploy key), 4-6,
+      # 8-9 aren't exercised: they're either not relevant to a
+      # personal-minimal bootstrap (secrets, corporate CA, default shell)
+      # or don't affect whether the bootstrap sequence itself still works
+      # (SSH key, pre-commit).
+      - name: Run the documented bootstrap sequence
+        run: |
+          cat > /tmp/bootstrap-test.sh <<'SCRIPT'
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          sh <(curl -L https://nixos.org/nix/install) --no-daemon
+          . ~/.nix-profile/etc/profile.d/nix.sh
+          mkdir -p ~/.config/nix
+          echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+          cp user.nix.example user.nix
+          export NIX_CONFIG_USER_FILE="$PWD/user.nix"
+          nix run home-manager -- switch --flake .#personal-minimal --impure
+          SCRIPT
+          chmod +x /tmp/bootstrap-test.sh
+          chown ciuser:ciuser /tmp/bootstrap-test.sh
+          su - ciuser -c "GITHUB_WORKSPACE='$GITHUB_WORKSPACE' /tmp/bootstrap-test.sh"

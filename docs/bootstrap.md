@@ -168,10 +168,42 @@ cp ~/.nix-config/secrets.env.example ~/.config/secrets/env
 $EDITOR ~/.config/secrets/env
 ```
 
-### 5. Apply
+### 5. Corporate CA certificate (work profile only)
+
+**Not needed on macOS** — `work.nix`'s CA-bundle env vars (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, `REQUESTS_CA_BUNDLE`) are Linux-only (`lib.mkIf (!pkgs.stdenv.isDarwin)`); macOS trusts corporate certs via the system keychain instead. Skip straight to Apply below.
+
+### 6. Apply
 
 ```sh
 sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
+```
+
+There's no separate "set default shell" step here the way WSL2 has one: nix-darwin's `system/darwin.nix` sets `programs.zsh.enable = true` at the system level, which (unlike standalone home-manager) registers zsh as an available login shell automatically.
+
+### 7. SSH key
+
+The activation script generates `~/.ssh/<sshKey>` (ed25519, passphraseless) if it does not
+exist. After first apply, add the public key to GitHub:
+
+```sh
+cat ~/.ssh/<sshKey>.pub
+# Paste at: https://github.com/settings/keys
+```
+
+`<sshKey>` is the prefix of your personal email (derived automatically from `user.nix`).
+
+### 8. Activate pre-commit hooks (dev profile only)
+
+`pre-commit` is installed by the `dev` tier — no separate install needed (`personal-darwin`/`work-darwin` are always dev-tier). After first `darwin-rebuild switch`, wire up the hooks for this repo clone:
+
+```sh
+pre-commit install
+```
+
+This runs automatically on every `git commit` from that point on. To run all checks manually:
+
+```sh
+pre-commit run --all-files
 ```
 
 ---
