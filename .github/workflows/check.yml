@@ -24,7 +24,7 @@ jobs:
       linux:  ${{ steps.list.outputs.linux }}
       darwin: ${{ steps.list.outputs.darwin }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31
@@ -45,7 +45,7 @@ jobs:
   flake-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31
@@ -67,7 +67,7 @@ jobs:
   eval-all:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31
@@ -98,7 +98,7 @@ jobs:
       matrix:
         profile: ${{ fromJSON(needs.get-profiles.outputs.linux) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: docker/setup-qemu-action@v4
@@ -130,7 +130,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.get-profiles.outputs.darwin) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31
@@ -151,7 +151,7 @@ jobs:
   lint-alejandra:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
       - uses: nix-community/cache-nix-action@v7
         with:
@@ -163,7 +163,7 @@ jobs:
   lint-statix:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
       - uses: nix-community/cache-nix-action@v7
         with:
@@ -175,7 +175,7 @@ jobs:
   lint-deadnix:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
       - uses: nix-community/cache-nix-action@v7
         with:
@@ -187,7 +187,7 @@ jobs:
   lint-markdownlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
       - uses: nix-community/cache-nix-action@v7
         with:
