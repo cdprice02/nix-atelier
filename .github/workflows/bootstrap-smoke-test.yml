@@ -45,10 +45,15 @@ jobs:
       # actions/checkout needs real git for submodule support (its
       # tarball-download fallback doesn't fetch submodules) — bare
       # ubuntu:24.04 has neither git nor curl, so this has to run first.
+      # xz-utils is for the Nix installer, not checkout: it ships its binary
+      # tarball as .xz and aborts with "you do not have 'xz' installed" before
+      # doing any work. ubuntu:24.04 omits it; ubuntu-latest runners have it
+      # preinstalled, which is why this only bites in the container.
       - name: Install prerequisites
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends git curl ca-certificates sudo
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates sudo xz-utils
 
       - uses: actions/checkout@v6
         with:
