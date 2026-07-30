@@ -145,10 +145,24 @@
     | Profile | Use for |
     |---------|---------|
     ${darwinProfileRows}
-    Bootstrap:
+    **Pick by CPU, not preference** — `uname -m` prints `arm64` for Apple
+    Silicon, `x86_64` for Intel. The two are not interchangeable: the Intel
+    configs build against a pinned nixpkgs 25.05 (nixpkgs-unstable has dropped
+    x86_64-darwin), while the Apple Silicon configs ride the same rolling inputs
+    as Linux.
+
+    Bootstrap — `darwin-rebuild` does not exist until after the first apply, so
+    the first one runs nix-darwin straight from the flake:
     ```sh
-    sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
+    # Apple Silicon
+    sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+
+    # Intel — pinned nix-darwin release, matching this repo's 25.05 pin
+    sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
     ```
+
+    Every later apply can just use `just switch`, which appends the right
+    suffix for the machine's architecture automatically.
 
     ## Adding a new profile
 
@@ -156,6 +170,12 @@
 
     ```nix
     my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..."; };
+    ```
+
+    Regenerate this file and commit the result — the `docs-drift` check fails
+    otherwise, since the table above is generated from that same list:
+    ```sh
+    just docs
     ```
 
     Then apply with:
