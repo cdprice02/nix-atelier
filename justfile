@@ -10,17 +10,42 @@ default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "pe
 default:
     @just --list
 
-# Apply home-manager profile (Linux/WSL2): `just switch work`, or `just switch` for the default
+# Apply this machine's configuration. Dispatches by OS: nix-darwin on macOS,
+# standalone home-manager on Linux/WSL2. `just switch work`, or `just switch`
+# for the default. On macOS a `-darwin` suffix is appended automatically when
+# absent, so the same `personal`/`work` profile names work on both platforms.
 switch PROFILE=default_profile:
-    home-manager switch --flake {{justfile_directory()}}#{{PROFILE}} --impure -b bk
+    #!/usr/bin/env bash
+    set -euo pipefail
+    profile="{{PROFILE}}"
+    if [ "$(uname)" = "Darwin" ]; then
+        case "$profile" in
+            *-darwin) ;;
+            *) profile="${profile}-darwin" ;;
+        esac
+        sudo darwin-rebuild switch --flake {{justfile_directory()}}#"$profile" --impure
+    else
+        home-manager switch --flake {{justfile_directory()}}#"$profile" --impure -b bk
+    fi
 
-# Apply nix-darwin config (macOS): `just rebuild work-darwin`, or `just rebuild` for the default
-rebuild PROFILE="personal-darwin":
-    sudo darwin-rebuild switch --flake {{justfile_directory()}}#{{PROFILE}} --impure
+# Backwards-compatible alias — `just rebuild` still applies the darwin config.
+alias rebuild := switch
 
-# Update all flake inputs
+# Safe to run on any machine: this does NOT advance any release pin. The darwin
+# pin lives in flake.nix's input refs (nixpkgs-25.05-darwin / release-25.05),
+# not in flake.lock, so re-resolving can only ever land on another 25.05 commit
+# — moving that pin means editing flake.nix by hand. Only the rolling
+# Linux/WSL2 inputs (nixpkgs-unstable / home-manager master) actually advance.
+#
+# Takes no input argument by design: nixpkgs and home-manager are a
+# release-matched pair (as are their darwin counterparts), and updating one
+# alone desyncs it from its partner, which flake.nix then hard-fails on.
+# Re-resolving everything at once keeps both pairs consistent by construction.
+#
+# Re-resolve all flake inputs against the refs declared in flake.nix
 update:
     nix flake update --flake {{justfile_directory()}}
+    @echo "Inputs updated — run 'just check' before 'just switch'."
 
 # Validate flake without applying
 check:

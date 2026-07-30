@@ -1,5 +1,6 @@
 {
   config,
+  options,
   pkgs,
   lib,
   user,
@@ -69,7 +70,9 @@ in {
       git-lfs
       wget
       btop
-      neofetch
+      # neofetch is archived/unmaintained upstream (removed from nixpkgs);
+      # fastfetch is its actively maintained, faster replacement.
+      fastfetch
 
       # Secrets — SOPS-encrypted secrets in git (age recipients), master key
       # retrieved from Bitwarden at deploy time. See homelab deploy/secrets/.
@@ -145,315 +148,349 @@ in {
       };
     };
 
-    stateVersion = "23.11";
+    # stateVersion gates Home Manager's migration behavior (default file
+    # locations/formats), not a version pin — bumping it can require manual
+    # data migration on a machine that has already applied an older value.
+    # 23.11 was stale against nixpkgs-unstable; bumped to the current release
+    # nearest this repo's last update. Before switching on an existing
+    # machine, diff `home-manager news` output and check for anything
+    # relevant to programs enabled here (git, zsh, tmux, vim, ssh).
+    stateVersion = "25.05";
   };
 
-  programs = {
-    # ── Shells ────────────────────────────────────────────────────────────────
+  programs =
+    {
+      # ── Shells ────────────────────────────────────────────────────────────────
 
-    zsh = {
-      enable = true;
-      enableCompletion = true;
-      # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
-      # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
-      envExtra = nixProfileInit;
-      initContent =
-        envLocalInit
-        + ''
-          # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
-          # xterm-style sequences on macOS; Linux terminals send the same sequences.
-          bindkey '^[[1;3D' backward-word
-          bindkey '^[[1;3C' forward-word
-          # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
-          bindkey '^[[H' beginning-of-line
-          bindkey '^[[F' end-of-line
-        '';
-    };
-
-    bash = {
-      enable = true;
-      enableCompletion = true;
-      profileExtra = nixProfileInit;
-      initExtra = envLocalInit;
-    };
-
-    # ── Prompt ────────────────────────────────────────────────────────────────
-
-    starship = {
-      enable = true;
-      enableZshIntegration = true;
-      enableBashIntegration = true;
-      settings = {
-        format = "$os$username$hostname$directory$git_branch$git_status$aws$rust$python$golang$nodejs$package$cmd_duration\n$character";
-
-        aws = {
-          format = "[$symbol$region]($style) ";
-          force_display = false;
-          region_aliases = {
-            "us-east-1" = "va";
-            "us-east-2" = "oh";
-            "us-west-1" = "ca";
-            "us-west-2" = "or";
-            "af-south-1" = "cape";
-            "ap-east-1" = "hk";
-            "ap-south-1" = "mum";
-            "ap-south-2" = "hyd";
-            "ap-southeast-1" = "sg";
-            "ap-southeast-2" = "syd";
-            "ap-southeast-3" = "jkt";
-            "ap-southeast-4" = "mel";
-            "ap-southeast-5" = "my";
-            "ap-southeast-6" = "nz";
-            "ap-southeast-7" = "th";
-            "ap-northeast-1" = "tok";
-            "ap-northeast-2" = "kr";
-            "ap-northeast-3" = "osk";
-            "ap-east-2" = "tw";
-            "ca-central-1" = "ca";
-            "ca-west-1" = "cal";
-            "cn-north-1" = "bj";
-            "cn-northwest-1" = "nx";
-            "eu-central-1" = "de";
-            "eu-central-2" = "ch";
-            "eu-north-1" = "se";
-            "eu-south-1" = "it";
-            "eu-south-2" = "es";
-            "eu-west-1" = "ie";
-            "eu-west-2" = "ldn";
-            "eu-west-3" = "fr";
-            "me-central-1" = "ae";
-            "me-south-1" = "bh";
-            "mx-central-1" = "mx";
-            "sa-east-1" = "br";
-            "us-gov-east-1" = "gov-e";
-            "us-gov-west-1" = "gov-w";
-          };
-        };
-
-        character = {
-          success_symbol = "[❯](bold green)";
-          error_symbol = "[❯](bold red)";
-        };
-
-        cmd_duration = {
-          min_time = 2000;
-          format = "took [$duration]($style) ";
-          style = "bold yellow";
-        };
-
-        directory.truncation_length = 3;
-
-        git_branch.symbol = "🌱 ";
-
-        git_status = {
-          ahead = "⇡\${count}";
-          diverged = "⇕⇡\${ahead_count}⇣\${behind_count}";
-          behind = "⇣\${count}";
-        };
-
-        hostname = {
-          ssh_only = false;
-          format = "[@](black)([$ssh_symbol]($style))[$hostname](bold blue) ";
-        };
-
-        os.disabled = false;
-
-        package.format = "[$symbol$version]($style) ";
-
-        username = {
-          format = "[$user]($style)";
-          show_always = true;
-        };
-
-        rust = {
-          format = "via [$symbol($version)]($style) ";
-          style = "bold red";
-        };
-        python = {
-          format = "via [$symbol($version)]($style) ";
-          style = "bold yellow";
-        };
-        golang = {
-          format = "via [$symbol($version)]($style) ";
-          style = "bold cyan";
-        };
-        nodejs = {
-          format = "via [$symbol($version)]($style) ";
-          style = "bold green";
-        };
-
-        # Disabled language modules
-        buf.disabled = true;
-        bun.disabled = true;
-        c.disabled = true;
-        cmake.disabled = true;
-        cobol.disabled = true;
-        crystal.disabled = true;
-        daml.disabled = true;
-        dart.disabled = true;
-        deno.disabled = true;
-        dotnet.disabled = true;
-        elixir.disabled = true;
-        elm.disabled = true;
-        erlang.disabled = true;
-        fennel.disabled = true;
-        gleam.disabled = true;
-        gradle.disabled = true;
-        haskell.disabled = true;
-        haxe.disabled = true;
-        helm.disabled = true;
-        java.disabled = true;
-        julia.disabled = true;
-        kotlin.disabled = true;
-        lua.disabled = true;
-        meson.disabled = true;
-        nim.disabled = true;
-        nix_shell.disabled = true;
-        ocaml.disabled = true;
-        odin.disabled = true;
-        opa.disabled = true;
-        perl.disabled = true;
-        php.disabled = true;
-        pulumi.disabled = true;
-        purescript.disabled = true;
-        quarto.disabled = true;
-        raku.disabled = true;
-        red.disabled = true;
-        rlang.disabled = true;
-        ruby.disabled = true;
-        scala.disabled = true;
-        solidity.disabled = true;
-        swift.disabled = true;
-        terraform.disabled = true;
-        typst.disabled = true;
-        vagrant.disabled = true;
-        vlang.disabled = true;
-        zig.disabled = true;
-      };
-    };
-
-    # ── Shell tools ───────────────────────────────────────────────────────────
-
-    direnv = {
-      enable = true;
-      nix-direnv.enable = true;
-    };
-
-    zoxide = {
-      enable = true;
-      enableZshIntegration = true;
-      enableBashIntegration = true;
-    };
-
-    atuin = {
-      enable = true;
-      enableZshIntegration = true;
-      enableBashIntegration = true;
-    };
-
-    fzf = {
-      enable = true;
-      enableZshIntegration = true;
-      enableBashIntegration = true;
-    };
-
-    # ── Editor ────────────────────────────────────────────────────────────────
-
-    vim = {
-      enable = true;
-      defaultEditor = true;
-      settings = {
-        number = true;
-        relativenumber = true;
-        tabstop = 2;
-        shiftwidth = 2;
-        expandtab = true;
-      };
-      extraConfig = ''
-        syntax on
-        set clipboard=unnamed
-        set ignorecase
-        set smartcase
-      '';
-    };
-
-    # ── SSH ───────────────────────────────────────────────────────────────────
-    # credential.helper is NOT set here — gui-darwin/gui-linux own that
-
-    ssh = {
-      enable = true;
-      enableDefaultConfig = false;
-      includes = ["~/.ssh/config.d/*"]; # work.nix writes stubs here
-      matchBlocks = {
-        "*" = {
-          identityFile = "~/.ssh/${user.sshKey}";
-          addKeysToAgent = "yes";
-          extraOptions = lib.optionalAttrs pkgs.stdenv.isDarwin {
-            UseKeychain = "yes";
-          };
-        };
-        "github.com" = {
-          user = "git";
-          identitiesOnly = true;
-        };
-      };
-    };
-
-    # ── Git ───────────────────────────────────────────────────────────────────
-
-    git = {
-      enable = true;
-      userName = user.name;
-      userEmail = user.email;
-
-      includes = [
-        # self doesn't include submodule contents in the Nix store; use live path instead.
-        # Safe because --impure is already required for user.nix.
-        {path = "${homeDir}/.nix-config/config/git/gitalias/gitalias.txt";}
-      ];
-
-      ignores = [
-        ".DS_Store"
-        ".AppleDouble"
-        ".LSOverride"
-        ".env"
-        ".env.local"
-        "*.env"
-        ".env.*"
-        ".config/secrets/"
-        "*.pyc"
-        "__pycache__/"
-        ".venv/"
-        ".ipynb_checkpoints/"
-        ".direnv/"
-        "node_modules/"
-        ".idea/"
-        ".vscode/"
-        "*.swp"
-        "*.swo"
-        "target/"
-      ];
-
-      extraConfig = {
-        init.defaultBranch = "main";
-        pull.rebase = false;
-        push.default = "simple";
-        push.autoSetupRemote = true;
-        core.autocrlf = "input";
-        # diff.tool and merge.tool are set by gui-darwin/gui-linux (where `code` is available)
-        # credential.helper intentionally absent — set by gui-darwin or gui-linux
-      };
-
-      # enable pulls in the delta package itself (see the home.packages comment
-      # above) and wires it in as git's actual diff pager, previously just
-      # installed with nothing pointing at it.
-      delta = {
+      zsh = {
         enable = true;
-        options = {
-          navigate = true;
-          line-numbers = true;
+        enableCompletion = true;
+        # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
+        # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
+        envExtra = nixProfileInit;
+        initContent =
+          envLocalInit
+          + ''
+            # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
+            # xterm-style sequences on macOS; Linux terminals send the same sequences.
+            bindkey '^[[1;3D' backward-word
+            bindkey '^[[1;3C' forward-word
+            # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
+            bindkey '^[[H' beginning-of-line
+            bindkey '^[[F' end-of-line
+          '';
+      };
+
+      bash = {
+        enable = true;
+        enableCompletion = true;
+        profileExtra = nixProfileInit;
+        initExtra = envLocalInit;
+      };
+
+      # ── Prompt ────────────────────────────────────────────────────────────────
+
+      starship = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+        settings = {
+          format = "$os$username$hostname$directory$git_branch$git_status$aws$rust$python$golang$nodejs$package$cmd_duration\n$character";
+
+          aws = {
+            format = "[$symbol$region]($style) ";
+            force_display = false;
+            region_aliases = {
+              "us-east-1" = "va";
+              "us-east-2" = "oh";
+              "us-west-1" = "ca";
+              "us-west-2" = "or";
+              "af-south-1" = "cape";
+              "ap-east-1" = "hk";
+              "ap-south-1" = "mum";
+              "ap-south-2" = "hyd";
+              "ap-southeast-1" = "sg";
+              "ap-southeast-2" = "syd";
+              "ap-southeast-3" = "jkt";
+              "ap-southeast-4" = "mel";
+              "ap-southeast-5" = "my";
+              "ap-southeast-6" = "nz";
+              "ap-southeast-7" = "th";
+              "ap-northeast-1" = "tok";
+              "ap-northeast-2" = "kr";
+              "ap-northeast-3" = "osk";
+              "ap-east-2" = "tw";
+              "ca-central-1" = "ca";
+              "ca-west-1" = "cal";
+              "cn-north-1" = "bj";
+              "cn-northwest-1" = "nx";
+              "eu-central-1" = "de";
+              "eu-central-2" = "ch";
+              "eu-north-1" = "se";
+              "eu-south-1" = "it";
+              "eu-south-2" = "es";
+              "eu-west-1" = "ie";
+              "eu-west-2" = "ldn";
+              "eu-west-3" = "fr";
+              "me-central-1" = "ae";
+              "me-south-1" = "bh";
+              "mx-central-1" = "mx";
+              "sa-east-1" = "br";
+              "us-gov-east-1" = "gov-e";
+              "us-gov-west-1" = "gov-w";
+            };
+          };
+
+          character = {
+            success_symbol = "[❯](bold green)";
+            error_symbol = "[❯](bold red)";
+          };
+
+          cmd_duration = {
+            min_time = 2000;
+            format = "took [$duration]($style) ";
+            style = "bold yellow";
+          };
+
+          directory.truncation_length = 3;
+
+          git_branch.symbol = "🌱 ";
+
+          git_status = {
+            ahead = "⇡\${count}";
+            diverged = "⇕⇡\${ahead_count}⇣\${behind_count}";
+            behind = "⇣\${count}";
+          };
+
+          hostname = {
+            ssh_only = false;
+            format = "[@](black)([$ssh_symbol]($style))[$hostname](bold blue) ";
+          };
+
+          os.disabled = false;
+
+          package.format = "[$symbol$version]($style) ";
+
+          username = {
+            format = "[$user]($style)";
+            show_always = true;
+          };
+
+          rust = {
+            format = "via [$symbol($version)]($style) ";
+            style = "bold red";
+          };
+          python = {
+            format = "via [$symbol($version)]($style) ";
+            style = "bold yellow";
+          };
+          golang = {
+            format = "via [$symbol($version)]($style) ";
+            style = "bold cyan";
+          };
+          nodejs = {
+            format = "via [$symbol($version)]($style) ";
+            style = "bold green";
+          };
+
+          # Disabled language modules
+          buf.disabled = true;
+          bun.disabled = true;
+          c.disabled = true;
+          cmake.disabled = true;
+          cobol.disabled = true;
+          crystal.disabled = true;
+          daml.disabled = true;
+          dart.disabled = true;
+          deno.disabled = true;
+          dotnet.disabled = true;
+          elixir.disabled = true;
+          elm.disabled = true;
+          erlang.disabled = true;
+          fennel.disabled = true;
+          gleam.disabled = true;
+          gradle.disabled = true;
+          haskell.disabled = true;
+          haxe.disabled = true;
+          helm.disabled = true;
+          java.disabled = true;
+          julia.disabled = true;
+          kotlin.disabled = true;
+          lua.disabled = true;
+          meson.disabled = true;
+          nim.disabled = true;
+          nix_shell.disabled = true;
+          ocaml.disabled = true;
+          odin.disabled = true;
+          opa.disabled = true;
+          perl.disabled = true;
+          php.disabled = true;
+          pulumi.disabled = true;
+          purescript.disabled = true;
+          quarto.disabled = true;
+          raku.disabled = true;
+          red.disabled = true;
+          rlang.disabled = true;
+          ruby.disabled = true;
+          scala.disabled = true;
+          solidity.disabled = true;
+          swift.disabled = true;
+          terraform.disabled = true;
+          typst.disabled = true;
+          vagrant.disabled = true;
+          vlang.disabled = true;
+          zig.disabled = true;
         };
       };
+
+      # ── Shell tools ───────────────────────────────────────────────────────────
+
+      direnv = {
+        enable = true;
+        nix-direnv.enable = true;
+      };
+
+      zoxide = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
+
+      atuin = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
+
+      fzf = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
+
+      # ── Editor ────────────────────────────────────────────────────────────────
+
+      vim = {
+        enable = true;
+        defaultEditor = true;
+        settings = {
+          number = true;
+          relativenumber = true;
+          tabstop = 2;
+          shiftwidth = 2;
+          expandtab = true;
+        };
+        extraConfig = ''
+          syntax on
+          set clipboard=unnamed
+          set ignorecase
+          set smartcase
+        '';
+      };
+
+      # ── SSH ───────────────────────────────────────────────────────────────────
+      # credential.helper is NOT set here — gui-darwin/gui-linux own that
+
+      ssh =
+        {
+          enable = true;
+          includes = ["~/.ssh/config.d/*"]; # work.nix writes stubs here
+          matchBlocks = {
+            "*" = {
+              identityFile = "~/.ssh/${user.sshKey}";
+              # AddKeysToAgent via extraOptions (a raw ssh directive) rather than
+              # the typed `addKeysToAgent` option: newer home-manager exposes it
+              # as a per-host match-block option, but HM 25.05 (the darwin pin)
+              # only has it as a global `programs.ssh.addKeysToAgent`.
+              # extraOptions is freeform and accepted by both, keeping this match
+              # block valid across HM versions.
+              extraOptions =
+                {
+                  AddKeysToAgent = "yes";
+                }
+                // lib.optionalAttrs pkgs.stdenv.isDarwin {
+                  UseKeychain = "yes";
+                };
+            };
+            "github.com" = {
+              user = "git";
+              identitiesOnly = true;
+            };
+          };
+        }
+        # enableDefaultConfig only exists in newer home-manager (Linux profiles
+        # track HM master); darwin is pinned to HM release-25.05, which predates
+        # it. On newer HM, disable the injected default `*` match block so the
+        # explicit one above is authoritative; on 25.05 there is no injected
+        # default, so the option is simply absent. Guard on the option's
+        # existence to keep base.nix valid against both HM versions.
+        // lib.optionalAttrs (options.programs.ssh ? enableDefaultConfig) {
+          enableDefaultConfig = false;
+        };
+
+      # ── Git ───────────────────────────────────────────────────────────────────
+
+      git = {
+        enable = true;
+        userName = user.name;
+        userEmail = user.email;
+
+        includes = [
+          # self doesn't include submodule contents in the Nix store; use live path instead.
+          # Safe because --impure is already required for user.nix.
+          {path = "${homeDir}/.nix-config/config/git/gitalias/gitalias.txt";}
+        ];
+
+        ignores = [
+          ".DS_Store"
+          ".AppleDouble"
+          ".LSOverride"
+          ".env"
+          ".env.local"
+          "*.env"
+          ".env.*"
+          ".config/secrets/"
+          "*.pyc"
+          "__pycache__/"
+          ".venv/"
+          ".ipynb_checkpoints/"
+          ".direnv/"
+          "node_modules/"
+          ".idea/"
+          ".vscode/"
+          "*.swp"
+          "*.swo"
+          "target/"
+        ];
+
+        extraConfig = {
+          init.defaultBranch = "main";
+          pull.rebase = false;
+          push.default = "simple";
+          push.autoSetupRemote = true;
+          core.autocrlf = "input";
+          # diff.tool and merge.tool are set by gui-darwin/gui-linux (where `code` is available)
+          # credential.helper intentionally absent — set by gui-darwin or gui-linux
+        };
+
+        # enable pulls in the delta package itself (see the home.packages comment
+        # above) and wires it in as git's actual diff pager, previously just
+        # installed with nothing pointing at it.
+        delta = {
+          enable = true;
+          options = {
+            navigate = true;
+            line-numbers = true;
+          };
+        };
+      };
+    }
+    # Newer HM auto-enables delta's git integration at a low priority and warns
+    # that the implicit behavior is deprecated. Setting it explicitly silences
+    # the warning and pins the behavior this config wants. HM 25.05 has no
+    # programs.delta module at all, so guard on the option's existence — same
+    # pattern as programs.ssh.enableDefaultConfig above.
+    // lib.optionalAttrs (options.programs ? delta) {
+      delta.enableGitIntegration = true;
     };
-  };
 }

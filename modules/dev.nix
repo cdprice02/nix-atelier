@@ -1,36 +1,10 @@
 {
   pkgs,
   lib,
-  system,
   user,
   ...
 }: let
-  tmuxBase = {
-    enable = true;
-    keyMode = "vi";
-    mouse = true;
-    terminal = "screen-256color";
-    extraConfig = ''
-      set -g status-style bg=black,fg=white
-      set -g status-left  "#[fg=green]#S "
-      set -g status-right "#[fg=yellow]%H:%M"
-      bind | split-window -h
-      bind - split-window -v
-    '';
-  };
-
-  # QMK is pinned on x86_64 to a known-good nixpkgs commit (2026-06) due to build
-  # failures on nixpkgs-unstable. Unpin when qmk builds cleanly on unstable again.
-  qmkPackage =
-    if lib.strings.hasPrefix "x86_64" system
-    then let
-      pinnedPkgs = import (builtins.fetchTarball {
-        url = "https://github.com/NixOS/nixpkgs/archive/0c408a087b4751c887e463e3848512c12017be25.tar.gz";
-        sha256 = "049l2w7sngxb354kkrvaigzkkiz5073y7s176xdvqgm4gyzp05dw";
-      }) {inherit system;};
-    in
-      pinnedPkgs.qmk
-    else pkgs.qmk;
+  tmuxBase = import ./lib/tmux-base.nix;
 in {
   home.packages = with pkgs; [
     # Rust — stable toolchain is the daily-driver default. rust-analyzer and
@@ -129,7 +103,7 @@ in {
     gh
     pre-commit
     tmux
-    qmkPackage
+    qmk
   ];
 
   # Claude Code — not yet in nixpkgs; installed globally via npm
