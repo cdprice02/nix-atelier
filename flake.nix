@@ -428,10 +428,8 @@
     # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
 
     # ── devShells ────────────────────────────────────────────────────────────
-    # `nix develop` — lint tools for contributors (matches .pre-commit-config.yaml
-    # and CI's lint-* jobs) plus a nightly Rust toolchain, so `rustup` is never
-    # needed alongside rust-overlay's stable default (avoids two cargo/rustc on
-    # PATH).
+    # `nix develop` — lint tools for contributors, matching
+    # .pre-commit-config.yaml and CI's lint-* jobs.
     devShells =
       nixpkgs.lib.genAttrs
       ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
@@ -445,13 +443,6 @@
             deadnix
             markdownlint-cli
             pre-commit
-          ];
-        };
-        rust-nightly = pkgs.mkShell {
-          packages = [
-            (pkgs.rust-bin.nightly.latest.default.override {
-              extensions = ["rust-src" "rustfmt" "clippy"];
-            })
           ];
         };
       });

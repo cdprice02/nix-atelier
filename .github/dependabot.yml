@@ -1,0 +1,13 @@
+# github-actions only, not the nix ecosystem: Dependabot's nix support opens
+# one PR per outdated flake input, with no concept of this repo's
+# release-pairing invariant (nixpkgs and home-manager must move together —
+# see CLAUDE.md's "Input pairing invariant", enforced by checkReleasePair in
+# flake.nix). flake.lock updates go through the atomic
+# update-flake-lock.yml workflow instead (calls `just update`, same as a
+# human would run — re-resolves every input together in one pass).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

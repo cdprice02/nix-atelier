@@ -38,11 +38,19 @@ See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checkli
 Before opening a PR, run:
 
 ```sh
-just check                    # nix flake check --impure --all-systems
-pre-commit run --all-files    # alejandra, markdownlint, trailing whitespace, secrets scan
+just eval-all                 # fast: every profile's drvPath, no building
+just check                    # fuller: nix flake check --impure
+just lint-all                 # alejandra, statix, deadnix, markdownlint
+pre-commit run --all-files    # trailing whitespace, secrets scan (+ the two lints above)
 ```
 
-Both must pass. CI additionally runs `statix` and `deadnix` (Nix linters not in pre-commit) and builds all 16 Linux profiles and all Darwin profiles — so a green pre-commit run does not guarantee a green CI run.
+`just --list` only shows the everyday recipes — a few CI-internal ones (profile listing, per-profile build, individual lints) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux personal`, `just --show _build-linux`.
+
+CI runs these same recipes (see `.github/workflows/check.yml`) plus full builds for every profile — but full builds only run on push to `main` or manual dispatch, not on every PR (see `check.yml`'s comments for why). So a green `just eval-all` + `just lint-all` locally is close to, but not identical to, full CI coverage.
+
+## Verifying large refactors
+
+For a change that's supposed to be behavior-preserving (a mechanism reorganization, not a functional change), `nix eval`'s output is a stronger check than "does it still build": capture every profile's `drvPath` before the change (`just eval-all` prints them), make the change, capture again, and diff. Any profile whose `drvPath` changed needs an explanation — either it's a real, intended behavior change, or the refactor wasn't actually behavior-preserving. This isn't a blanket CI gate (ordinary commits are *supposed* to change `drvPath`s), just a manual technique worth reaching for on big refactors specifically. A disposable `git worktree add <tmp-dir> <pre-change-commit>` is safer than `git stash` for getting a clean baseline when there's a lot of already-pending uncommitted work.
 
 ---
 
