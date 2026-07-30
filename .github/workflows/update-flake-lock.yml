@@ -31,17 +31,36 @@ jobs:
       # single input: see justfile's own comment on why, and CLAUDE.md's
       # "Input pairing invariant" for what breaks if inputs desync.
       - run: nix shell nixpkgs#just -c just update
+      # A PAT, not the default GITHUB_TOKEN. GitHub deliberately does not raise
+      # workflow-triggering events for anything done with GITHUB_TOKEN ("events
+      # triggered by the GITHUB_TOKEN will not create a new workflow run"), so
+      # a PR opened with it gets *zero* checks — no CI, and in particular no
+      # flake-check, which is the one thing that would catch a broken input
+      # resolution. That silently made this workflow's whole "full CI gates
+      # this before merge" premise false.
+      #
+      # Falls back to GITHUB_TOKEN when the secret is absent, so the workflow
+      # still functions in a fork that hasn't set one up — it just produces a
+      # PR without checks, which the body below states outright rather than
+      # claiming coverage it doesn't have.
       - uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.FLAKE_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: "chore: update flake.lock"
           title: "chore: update flake.lock"
           body: |
             Automated weekly `nix flake update` — re-resolves all inputs together.
 
-            Full CI (including `flake-check`'s release-pairing assert) runs on this
-            PR before merge, same gate as any other change. A failure here means a
-            real pairing mismatch, not a bug in this workflow — see CLAUDE.md's
-            "Input pairing invariant".
+            If CI checks appear on this PR, they are the same gate as any other
+            change, including `flake-check`'s release-pairing assert; a failure
+            means a real pairing mismatch, not a bug in this workflow (see
+            CLAUDE.md's "Input pairing invariant").
+
+            **If no checks appear at all**, this repo has no `FLAKE_UPDATE_TOKEN`
+            secret and the PR was opened with the default `GITHUB_TOKEN`, which
+            cannot trigger workflows. Do not merge on the assumption it was
+            tested — push any commit to this branch, or close and reopen the PR,
+            to make CI run first.
           branch: update-flake-lock
           delete-branch: true
           add-paths: flake.lock

@@ -63,6 +63,24 @@ For a change that's supposed to be behavior-preserving (a mechanism reorganizati
 
 ---
 
+## Repository secrets
+
+Only one, and only for the weekly `flake.lock` automation:
+
+| Secret | Why |
+|--------|-----|
+| `FLAKE_UPDATE_TOKEN` | Fine-grained PAT, this repo only, **Contents: read/write** + **Pull requests: read/write**. Used by `.github/workflows/update-flake-lock.yml`. |
+
+GitHub does not raise workflow-triggering events for actions taken with the
+default `GITHUB_TOKEN`, so a PR opened with it receives **no CI at all**. Without
+this secret the weekly lock-update PR would look reviewable while having been
+tested by nothing. The workflow falls back to `GITHUB_TOKEN` when the secret is
+absent (so forks still work) and says so in the PR body — if you see a lock PR
+with no checks, that is why, and it needs a push or a close/reopen before it is
+safe to merge.
+
+Nothing else in CI needs a secret; `GITHUB_TOKEN` covers the rest.
+
 ## Reporting issues
 
 For framework bugs or feature ideas, open an issue using the appropriate template. Personal config questions are better suited for a fork or a Nix community forum like [discourse.nixos.org](https://discourse.nixos.org).
