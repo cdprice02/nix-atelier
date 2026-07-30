@@ -55,8 +55,8 @@ JSON processor and query language for the command line. [jqlang.org](https://jql
 ### wget
 Non-interactive network downloader. [gnu.org/software/wget](https://www.gnu.org/software/wget/)
 
-### neofetch
-System info display for terminal screenshots. [github.com/dylanaraps/neofetch](https://github.com/dylanaraps/neofetch)
+### fastfetch
+System info display for terminal screenshots. Actively maintained replacement for the archived neofetch. [github.com/fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch)
 
 ---
 
@@ -138,6 +138,15 @@ Secure AWS credential storage and session management; wraps the CLI to avoid pla
 
 ### tmux
 Terminal multiplexer — persistent sessions, split panes, detach/reattach. Vi key bindings configured. [github.com/tmux/tmux](https://github.com/tmux/tmux)
+
+On `*-server` profiles, [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) and [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) are also installed, so long-lived server sessions survive a reboot — continuum wraps resurrect for automatic save and restore; neither works without the other.
+
+---
+
+## Firmware
+
+### qmk
+QMK firmware CLI — compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only. [qmk.fm](https://qmk.fm)
 
 ---
 
