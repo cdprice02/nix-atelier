@@ -30,6 +30,11 @@
   # Only set this if one profile name is genuinely always correct here.
   # aws = { profile = "default"; };
 
+  # Optional: private Kiro CLI config repo, cloned to ~/.kiro on work
+  # profiles. Not a submodule of this repo (it's private, work-specific
+  # content) — kept here so the URL never touches this public repo.
+  # kiroRepo = "git@github.com:youruser/your-private-kiro-config.git";
+
   # Optional: private remote overrides for config/ submodules.
   # For each key matching a submodule name, home-manager activation will add a
   # "private" remote and check out a tracking branch automatically.

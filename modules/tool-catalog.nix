@@ -548,15 +548,19 @@
 
   # Documented but not visible via home.packages at all — no realized
   # package identity exists to match against, so the drift check can't
-  # verify these automatically. A small, named, extensible list, not a
-  # one-off: kiro-cli (Task 21-22, same native-installer pattern as
-  # claude-code) is a known near-future second entry here.
+  # verify these automatically.
   nonPackageTools = [
     {
       key = "gitalias";
       category = "Git";
       description = "Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes` — not a Nix package.";
       link = "[github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)";
+    }
+    {
+      key = "kiro-cli";
+      category = "AI";
+      description = "AWS's agentic CLI. Installed via its official native installer, same rationale as claude-code — not in nixpkgs. Work profiles only.";
+      link = "[kiro.dev/cli](https://kiro.dev/cli/)";
     }
   ];
 

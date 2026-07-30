@@ -274,6 +274,9 @@ Loads/unloads environment variables based on `.envrc` files when entering a dire
 ### claude-code
 Installed via its official native installer (curl-piped script), not npm or nixpkgs — ships multiple releases a week and self-updates in place, which nixpkgs packaging and Nix's rebuild cycle can't keep pace with. [claude.com/claude-code](https://claude.com/claude-code)
 
+### kiro-cli
+AWS's agentic CLI. Installed via its official native installer, same rationale as claude-code — not in nixpkgs. Work profiles only. [kiro.dev/cli](https://kiro.dev/cli/)
+
 ---
 
 ## GUI (gui-linux / gui-darwin profiles only)
