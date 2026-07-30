@@ -54,6 +54,14 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # follows nixpkgs-darwin (not nixpkgs) so caret's trivial file-copy
+    # derivation still builds on x86_64-darwin, which rolling nixpkgs-unstable
+    # has dropped; this pins caret's nixpkgs for every system, but caret has
+    # no real version dependency so that's harmless.
+    caret = {
+      url = "github:cdprice02/caret";
+      inputs.nixpkgs.follows = "nixpkgs-darwin";
+    };
   };
 
   outputs = {
@@ -65,6 +73,7 @@
     home-manager,
     home-manager-darwin,
     rust-overlay,
+    caret,
     ...
   }: let
     # ── Identity ────────────────────────────────────────────────────────────
@@ -219,7 +228,10 @@
         then [./modules/gui-linux.nix]
         else [./modules/gui-darwin.nix];
     in
-      [./modules/base.nix] ++ tierMods ++ contextMods ++ guiMods;
+      [./modules/base.nix ./modules/env.nix caret.homeManagerModules.default]
+      ++ tierMods
+      ++ contextMods
+      ++ guiMods;
 
     # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
     mkHomeConfig = {

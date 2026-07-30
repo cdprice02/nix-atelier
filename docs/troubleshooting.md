@@ -61,18 +61,23 @@ just check       # confirm all profiles still build
 just switch
 ```
 
-This does not disturb the macOS pin — `just update` re-resolves each input
-against the ref declared in `flake.nix`, and the darwin refs are release
-branches (`nixpkgs-25.05-darwin` / `release-25.05`), so they can only land on
-another 25.05 commit. Only the rolling Linux inputs advance.
+This does not disturb the x86_64-darwin pin — `just update` re-resolves each
+input against the ref declared in `flake.nix`, and the pinned darwin refs are
+release branches (`nixpkgs-25.05-darwin` / `release-25.05` / `nix-darwin-25.05`),
+so they can only land on another 25.05 commit. Only the rolling inputs
+(Linux/WSL2 + aarch64-darwin) advance.
 
 `just update` deliberately accepts no input name — see the pairing invariant in
-`CLAUDE.md`. If you must update one input by hand, update its partner in the
-same command:
+`CLAUDE.md`. If you must update by hand, move a whole release group together
+(each nix-darwin / home-manager is coupled to its nixpkgs release; nix-darwin
+hard-fails eval on a mismatch, and `checkReleasePair` guards the home-manager
+side):
 
 ```sh
-nix flake update nixpkgs home-manager                 # Linux pair
-nix flake update nixpkgs-darwin home-manager-darwin    # darwin pair
+# Rolling group — Linux/WSL2 + aarch64-darwin
+nix flake update nixpkgs home-manager nix-darwin
+# Pinned group — x86_64-darwin
+nix flake update nixpkgs-darwin home-manager-darwin nix-darwin-x86
 ```
 
 ---

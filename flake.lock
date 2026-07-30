@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "caret": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-darwin"
+        ]
+      },
+      "locked": {
+        "lastModified": 1785186358,
+        "narHash": "sha256-SUVfoEofK6wxw6Fg7J2acwvnNvdQ82CcrJELcIOQrrM=",
+        "owner": "cdprice02",
+        "repo": "caret",
+        "rev": "f28e557a8dabb1cc1dd50cf77a88d5f3d43cc974",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cdprice02",
+        "repo": "caret",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -116,6 +136,7 @@
     },
     "root": {
       "inputs": {
+        "caret": "caret",
         "home-manager": "home-manager",
         "home-manager-darwin": "home-manager-darwin",
         "nix-darwin": "nix-darwin",
