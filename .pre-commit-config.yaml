@@ -7,18 +7,29 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
 
-  - repo: https://github.com/kamadorueda/alejandra
-    rev: 4.0.0
-    hooks:
-      - id: alejandra-nix
-
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.1
     hooks:
       - id: gitleaks
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
+  # alejandra and markdownlint run via `language: system`, resolving to the
+  # binaries on PATH inside `nix develop` (devShells.default in flake.nix)
+  # rather than pre-commit fetching its own pinned rev of each tool. This
+  # keeps pre-commit, `nix fmt`, and CI's lint-alejandra/lint-markdownlint
+  # jobs on the exact same nixpkgs-pinned version instead of three
+  # independently-versioned sources of the same tool. Run `nix develop`
+  # (or have direnv load it) before `pre-commit run` for these to resolve.
+  - repo: local
     hooks:
+      - id: alejandra
+        name: alejandra
+        entry: alejandra
+        language: system
+        types: [file]
+        files: \.nix$
       - id: markdownlint
-        files: ^docs/
+        name: markdownlint
+        entry: markdownlint
+        language: system
+        types: [file]
+        files: ^(README|CONTRIBUTING|CLAUDE)\.md$|^docs/.*\.md$

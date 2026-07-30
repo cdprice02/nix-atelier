@@ -75,7 +75,7 @@ home-manager switch --flake ~/.nix-config#<profile> --impure
 
 **Symptom:** Home Manager warns about a backup file or fails to create `~/.claude`.
 
-**Cause:** `~/.claude` exists as a real directory (e.g. from a previous manual install) rather than a symlink. Home Manager uses `backupFileExtension = "bk"` to handle conflicts, so it will rename the existing path to `~/.claude.bk`.
+**Cause:** `~/.claude` exists as a real directory (e.g. from a previous manual install) rather than a symlink. `just switch`/`just rebuild` pass `backupFileExtension = "bk"` (Linux via `-b bk`, darwin via the persistent module option), so it will rename the existing path to `~/.claude.bk` instead of failing outright. A bare `home-manager switch` invocation without `-b bk` does not get this automatic backup and will fail on the conflict instead.
 
 **Fix:** After the switch, verify the symlink is in place:
 
@@ -125,6 +125,6 @@ sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
 After the first apply, `just` and `home-manager` are on PATH and you can use the short forms:
 
 ```sh
-just switch PROFILE=<profile>   # Linux
-just rebuild PROFILE=<profile>  # macOS
+just switch <profile>   # Linux — e.g. just switch work
+just rebuild <profile>  # macOS — e.g. just rebuild work-darwin
 ```

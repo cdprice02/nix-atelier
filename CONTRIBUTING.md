@@ -38,7 +38,7 @@ See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checkli
 Before opening a PR, run:
 
 ```sh
-just check                    # nix flake check --impure
+just check                    # nix flake check --impure --all-systems
 pre-commit run --all-files    # alejandra, markdownlint, trailing whitespace, secrets scan
 ```
 

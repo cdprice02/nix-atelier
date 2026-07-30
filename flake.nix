@@ -333,7 +333,7 @@
           # files CI's own lint-markdownlint job lints.
           markdownlint = pkgs.runCommand "check-markdownlint" {} ''
             cd ${self}
-            ${pkgs.markdownlint-cli}/bin/markdownlint 'docs/**/*.md'
+            ${pkgs.markdownlint-cli}/bin/markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CLAUDE.md
             touch $out
           '';
         }

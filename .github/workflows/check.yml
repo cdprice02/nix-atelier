@@ -161,4 +161,4 @@ jobs:
           primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-linux-lint-
           gc-max-store-size-linux: 1073741824
-      - run: nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md'
+      - run: nix shell nixpkgs#markdownlint-cli -c markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CLAUDE.md

@@ -10,8 +10,7 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
 
 ## Repo Layout
 
-```
-~/.nix-config/
+```text
   flake.nix                    # Entry point — inputs, all configuration outputs
   flake.lock
   user.nix.example             # Identity template (tracked) — copy to user.nix
@@ -53,6 +52,7 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
 Declares `nixpkgs`, `nix-darwin`, `home-manager`, `rust-overlay` inputs.
 
 Outputs:
+
 - `homeConfigurations` — standalone home-manager for Linux/WSL2 (16 keys: personal/work × minimal/dev/server × gui × aarch64)
 - `darwinConfigurations` — macOS via nix-darwin + home-manager
 - `nixosConfigurations` — NixOS (commented out until hardware-configuration.nix exists)
@@ -62,6 +62,7 @@ Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix
 ### Profile compositor
 
 `mkProfile { context, tier, withGui, system }` produces the module list for a profile:
+
 - `context`: `personal` | `work`
 - `tier`: `minimal` | `dev` | `server`
 - `withGui`: bool — auto-selects `gui-linux.nix` or `gui-darwin.nix`
@@ -73,7 +74,8 @@ Every profile starts with `base.nix`. Darwin configs always include GUI.
 ### Secrets
 
 Two tiers:
-- **Profile vars** (`CLAUDE_PROFILE`, `AWS_PROFILE`, etc.) — set via `home.sessionVariables` in Nix, known at build time.
+
+- **Profile vars** (`CLAUDE_PROFILE`, known at build time) — set via `home.sessionVariables` in Nix. (`AWS_PROFILE` is not currently set by this config — tracked separately.)
 - **API keys** — stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template.
 
 ### Submodule overrides

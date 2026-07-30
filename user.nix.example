@@ -6,6 +6,12 @@
   name     = "Your Name";
   email    = "you@example.com";
 
+  # Optional: this machine's default profile name (e.g. "personal", "work",
+  # "work-gui"). Lets `just switch` run with no argument on this machine.
+  # See docs/profiles.md for the full list. Safe to omit — `just switch`
+  # still defaults to "personal" if this key isn't set.
+  # profile = "personal";
+
   # Work git identity — used by modules/work.nix to override base git config.
   # Only used by work profiles; safe to leave placeholder values if you don't use work contexts.
   work = {

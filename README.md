@@ -61,7 +61,7 @@ See [docs/profiles.md](docs/profiles.md) for the full table. Common ones:
 
 ## Repo layout
 
-```
+```text
 flake.nix          # Entry point — profile compositor, all outputs
 user.nix.example   # Identity template — copy to user.nix and fill in
 modules/
@@ -81,4 +81,3 @@ docs/
   profiles.md      # Profile reference
   tools.md         # Tool reference
 ```
-
