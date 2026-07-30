@@ -15,11 +15,12 @@ error: … builtins.getEnv "HOME" evaluated to ""
 **Fix:** Every `home-manager switch` and `darwin-rebuild switch` requires `--impure`. At first bootstrap, `home-manager` may not be on PATH yet — use the `nix run` form:
 
 ```sh
-# First bootstrap (home-manager not yet on PATH)
+# First bootstrap (home-manager / darwin-rebuild not yet on PATH)
 nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
+sudo nix run nix-darwin -- switch --flake ~/.nix-config#<profile> --impure
 
 # Subsequent applies
-home-manager switch --flake ~/.nix-config#<profile> --impure
+home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
 sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
 ```
 
@@ -167,14 +168,20 @@ Then re-run `home-manager switch` to rebuild the combined bundle. See [bootstrap
 
 **Cause:** These are installed by Home Manager — they aren't on PATH until after the first successful `switch`.
 
-**Fix:** Use the full bootstrap command for the first apply:
+**Fix:** Use the full bootstrap command for the first apply. On macOS this
+applies to `darwin-rebuild` too — nix-darwin has no separate installer, so
+`darwin-rebuild` only exists *after* the first apply and the first one has to be
+run straight from the flake:
 
 ```sh
 # Linux / WSL2
 nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 
-# macOS
-sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
+# macOS, Apple Silicon
+sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+
+# macOS, Intel — pinned nix-darwin release, matching this repo's 25.05 pin
+sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS — `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:
