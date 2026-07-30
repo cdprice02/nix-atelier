@@ -24,6 +24,12 @@
     email = "you@work.example.com";
   };
 
+  # Optional: default AWS_PROFILE for this machine. Left unset by default —
+  # this repo's cloud feature loads on both personal and work profiles, so a
+  # hardcoded default risks a command silently hitting the wrong account.
+  # Only set this if one profile name is genuinely always correct here.
+  # aws = { profile = "default"; };
+
   # Optional: private remote overrides for config/ submodules.
   # For each key matching a submodule name, home-manager activation will add a
   # "private" remote and check out a tracking branch automatically.

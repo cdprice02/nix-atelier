@@ -133,7 +133,7 @@ references it). `user.nix` can layer extra features onto its profile via an
 
 Two tiers:
 
-- **Profile vars** (`CLAUDE_PROFILE`, known at build time) — set via `home.sessionVariables` in Nix. (`AWS_PROFILE` is not currently set by this config — tracked separately.)
+- **Profile vars** (`CLAUDE_PROFILE`, known at build time) — set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in the same way, via `user.nix`'s `aws.profile` field (unset by default, since `cloud.nix` loads on both personal and work profiles and a hardcoded default risks hitting the wrong account).
 - **API keys** — stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template.
 
 ### Submodule overrides
