@@ -16,7 +16,7 @@ error: … builtins.getEnv "HOME" evaluated to ""
 
 ```sh
 # First bootstrap (home-manager not yet on PATH)
-nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure
+nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 
 # Subsequent applies
 home-manager switch --flake ~/.nix-config#<profile> --impure
@@ -171,7 +171,7 @@ Then re-run `home-manager switch` to rebuild the combined bundle. See [bootstrap
 
 ```sh
 # Linux / WSL2
-nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure
+nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 
 # macOS
 sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure

@@ -62,9 +62,9 @@ Each profile is built for both `x86_64-linux` and `aarch64-linux`. The `aarch64`
 
 Bootstrap:
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#work --impure
+nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk
 # After first apply, home-manager is on PATH:
-home-manager switch --flake ~/.nix-config#work --impure
+home-manager switch --flake ~/.nix-config#work --impure -b bk
 ```
 
 ## darwinConfigurations (macOS)
@@ -93,5 +93,5 @@ my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..
 
 Then apply with:
 ```sh
-home-manager switch --flake ~/.nix-config#my-profile --impure
+home-manager switch --flake ~/.nix-config#my-profile --impure -b bk
 ```

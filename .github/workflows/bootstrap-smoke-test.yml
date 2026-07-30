@@ -6,11 +6,21 @@ name: Bootstrap smoke test
 on:
   push:
     branches: [main]
+  # Runs on every PR. This previously did not, on the stated grounds that a
+  # from-scratch container install can't reuse check.yml's nix store cache and
+  # "would slow every PR" -- but the job had never once completed, so that cost
+  # was never actually measured. Its first green run took 1.8 minutes, less
+  # than flake-check (3 min) or eval-all (3-4 min), both of which already gate
+  # every PR. There is no cost argument, and the three separate bugs found
+  # getting it green were all things a new user would have hit first.
+  #
+  # Contrast build-linux/build-darwin, which stay gated to push-to-main: those
+  # genuinely are slow (up to 15 min for the aarch64 GUI profiles).
+  pull_request:
   schedule:
-    # Weekly, not on every PR: a from-scratch container install doesn't
-    # benefit from check.yml's nix store caching and would slow every PR for
-    # a check whose value ("did the documented bootstrap sequence rot")
-    # changes slowly.
+    # Weekly as well, to catch rot in things outside this repo's control --
+    # the Nix installer, the ubuntu:24.04 base image, upstream flake inputs --
+    # which a PR-triggered run wouldn't notice on a quiet week.
     - cron: "17 6 * * 1"
   workflow_dispatch:
 
@@ -45,10 +55,15 @@ jobs:
       # actions/checkout needs real git for submodule support (its
       # tarball-download fallback doesn't fetch submodules) — bare
       # ubuntu:24.04 has neither git nor curl, so this has to run first.
+      # xz-utils is for the Nix installer, not checkout: it ships its binary
+      # tarball as .xz and aborts with "you do not have 'xz' installed" before
+      # doing any work. ubuntu:24.04 omits it; ubuntu-latest runners have it
+      # preinstalled, which is why this only bites in the container.
       - name: Install prerequisites
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends git curl ca-certificates sudo
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates sudo xz-utils
 
       - uses: actions/checkout@v6
         with:
@@ -83,8 +98,22 @@ jobs:
           mkdir -p ~/.config/nix
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           cp user.nix.example user.nix
+          # docs/bootstrap.md step 3 is "copy the example, then fill in
+          # username/name/email" — copying alone skips the second half, and
+          # home-manager refuses to activate when home.username doesn't match
+          # $USER ("USER is ciuser, expected yourusername"). Substituting the
+          # real account name performs the documented edit, so the sequence
+          # under test stays the one the docs actually describe.
+          sed -i "s/^  username = \"yourusername\";/  username = \"$(id -un)\";/" user.nix
+          grep -q "username = \"$(id -un)\";" user.nix \
+            || { echo "user.nix username substitution failed:"; cat user.nix; exit 1; }
           export NIX_CONFIG_USER_FILE="$PWD/user.nix"
-          nix run home-manager -- switch --flake .#personal-minimal --impure
+          # -b bk mirrors the documented command. useradd -m seeds
+          # /home/ciuser with /etc/skel's .bashrc and .profile, exactly like a
+          # real distro or WSL2 install, and Home Manager aborts rather than
+          # clobber them. This is the single most likely first-run failure for
+          # a new user, so the sequence under test has to cover it.
+          nix run home-manager -- switch --flake .#personal-minimal --impure -b bk
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh
