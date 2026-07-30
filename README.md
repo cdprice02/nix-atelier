@@ -65,10 +65,12 @@ See [docs/profiles.md](docs/profiles.md) for the full table. Common ones:
 flake.nix          # Entry point — profile compositor, all outputs
 user.nix.example   # Identity template — copy to user.nix and fill in
 modules/
-  base.nix         # Universal baseline (all profiles)
-  dev.nix          # Dev toolchain: Rust, Node, Python, cargo tools, tmux, Claude Code
-  work.nix         # Work: git identity, corporate PEM env vars, SSH stubs
-  server.nix       # Server tools: rsync, tree, ncdu, htop, tmux
+  base.nix         # "core" — universal baseline (all profiles)
+  env.nix          # Universal — PATH / writable-prefix policy
+  features.nix     # Feature name -> module path registry
+  profiles.nix     # Tier -> feature-name list
+  features/        # lang-rust, lang-node, lang-python, cloud, ai, k8s, dev-tools, ops, shell-tools
+  work.nix         # Work: git identity, corporate PEM env vars, SSH stubs, cloud
   gui-linux.nix    # Linux GUI: obsidian, alacritty, vscode
   gui-darwin.nix   # macOS GUI: obsidian, alacritty, vscode, osxkeychain
 system/

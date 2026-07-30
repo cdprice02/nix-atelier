@@ -28,34 +28,6 @@
       source "$HOME/.config/secrets/env"
     fi
   '';
-
-  # Capture a tool's shell init once at build time so the shell sources a
-  # static file instead of spawning the tool on every startup. Store-path
-  # interpolation (not builtins.readFile) means no import-from-derivation, so
-  # cross-platform eval keeps working; the capture only builds when the config
-  # is realized, on its own system. Deterministic inits only (zoxide/fzf/direnv
-  # emit the same script every run). fnm is excluded — its `env` output embeds
-  # a per-session multishell dir, so it must run per shell (see dev.nix).
-  mkInit = name: cmd: pkgs.runCommand "hm-shell-init-${name}" {} "${cmd} > $out";
-  toolInit = shell: fzfFlag: let
-    src = tool: cmd: "source ${mkInit "${tool}-${shell}" cmd}";
-    fzfSrc = src "fzf" "${pkgs.fzf}/bin/fzf ${fzfFlag}";
-    # fzf's zsh init toggles the `zle` option; only source it when zle is
-    # available, matching home-manager's own guard — otherwise zsh warns
-    # "can't change option: zle" in interactive-but-non-zle contexts.
-    fzf =
-      if shell == "zsh"
-      then ''
-        if [[ $options[zle] = on ]]; then
-          ${fzfSrc}
-        fi
-      ''
-      else fzfSrc;
-  in ''
-    ${src "zoxide" "${pkgs.zoxide}/bin/zoxide init ${shell}"}
-    ${src "direnv" "${pkgs.direnv}/bin/direnv hook ${shell}"}
-    ${fzf}
-  '';
 in {
   home = {
     inherit (user) username;
@@ -77,30 +49,20 @@ in {
     # live in modules/env.nix, imported alongside this module for every profile.
 
     packages = with pkgs; [
-      # Fonts — used everywhere for terminal rendering and prompt icons
-      fira-code
-      nerd-fonts.fira-code
-
       # Home Manager — needed for setup across all profiles and devices
       pkgs.home-manager
 
       # just — task runner / discoverability layer (`just --list` shows all commands)
       just
 
-      # CLI essentials
+      # CLI essentials with no comfort-tool equivalent (genuine bootstrap/
+      # scripting value, not "nicer than something already available") —
+      # everything else (fonts, ripgrep/fd/bat/eza/lazygit/btop/fastfetch,
+      # zoxide/fzf/direnv) lives in the shell-tools feature instead, which
+      # `minimal` doesn't pull in.
       jq
-      ripgrep
-      fd
-      bat
-      eza
-      # delta provided by programs.git.delta.enable below, not listed here
-      lazygit
       git-lfs
       wget
-      btop
-      # neofetch is archived/unmaintained upstream (removed from nixpkgs);
-      # fastfetch is its actively maintained, faster replacement.
-      fastfetch
 
       # Secrets — SOPS-encrypted secrets in git (age recipients), master key
       # retrieved from Bitwarden at deploy time. See homelab deploy/secrets/.
@@ -226,26 +188,23 @@ in {
             # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
             bindkey '^[[H' beginning-of-line
             bindkey '^[[F' end-of-line
-          ''
-          # Static tool init (see mkInit) — replaces per-startup
-          # `eval "$(zoxide/fzf/direnv init)"` subprocesses.
-          + toolInit "zsh" "--zsh";
+          '';
       };
 
       bash = {
         enable = true;
         enableCompletion = true;
         profileExtra = nixProfileInit;
-        # Static tool init (see mkInit) replaces per-startup eval subprocesses.
-        initExtra = envLocalInit + toolInit "bash" "--bash";
+        initExtra = envLocalInit;
       };
 
-      # fish is available alongside zsh/bash with tool integrations wired
-      # (fzf/zoxide below). An interactive fish inherits PATH and secrets from
-      # the launching shell, so tools resolve — this repo doesn't set fish as
-      # anyone's login shell, so nix-profile sourcing / secrets-env parsing in
-      # fish's own dialect isn't wired here (fish can't `source` the POSIX
-      # ~/.config/secrets/env directly; zsh/bash always initialize first).
+      # fish is available alongside zsh/bash; fzf/zoxide fish integration is
+      # wired in the shell-tools feature, not here. An interactive fish
+      # inherits PATH and secrets from the launching shell, so tools resolve
+      # — this repo doesn't set fish as anyone's login shell, so nix-profile
+      # sourcing / secrets-env parsing in fish's own dialect isn't wired here
+      # (fish can't `source` the POSIX ~/.config/secrets/env directly; zsh/
+      # bash always initialize first).
       fish.enable = true;
 
       # ── Prompt ────────────────────────────────────────────────────────────────
@@ -257,40 +216,6 @@ in {
       caret = {
         enable = true;
         truncationLength = 3;
-      };
-
-      # ── Shell tools ───────────────────────────────────────────────────────────
-
-      # zsh/bash integration is done via static build-time captures (see
-      # toolInit / mkInit) instead of these modules' per-startup `eval`, so the
-      # zsh/bash integrations are disabled here. fish keeps HM's runtime
-      # (`eval`-based) integration — fish is a secondary, not-login shell here
-      # (see the fish.enable comment above), so its startup cost isn't on the
-      # optimized path.
-      direnv = {
-        enable = true;
-        nix-direnv.enable = true;
-        enableZshIntegration = false;
-        enableBashIntegration = false;
-      };
-
-      zoxide = {
-        enable = true;
-        enableZshIntegration = false;
-        enableBashIntegration = false;
-        enableFishIntegration = true;
-      };
-
-      # History search is fzf's native Ctrl-R widget (over the shell history
-      # file), not atuin: no per-command recording hook, no daemon, and fzf
-      # only spawns when a binding is pressed. Ctrl-R = history, Ctrl-T =
-      # files, Alt-C = cd. (atuin was dropped here — it added a startup
-      # subprocess + precmd SQLite write for a richer/synced DB we don't need.)
-      fzf = {
-        enable = true;
-        enableZshIntegration = false;
-        enableBashIntegration = false;
-        enableFishIntegration = true;
       };
 
       # ── Editor ────────────────────────────────────────────────────────────────

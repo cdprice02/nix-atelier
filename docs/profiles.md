@@ -22,16 +22,26 @@ tier    : minimal | dev | server
 withGui : false | true  (auto-selects gui-linux or gui-darwin)
 ```
 
+`tier` expands into a set of named features via `modules/profiles.nix`, each resolved to a module path via `modules/features.nix`. `user.nix` can add extra features beyond a machine's tier via an `extraFeatures` list — see `user.nix.example`.
+
 ## Module composition
 
 | Module | Included when |
 |--------|--------------|
-| `base.nix` | always |
-| `dev.nix` | tier = dev |
-| `server.nix` | tier = server |
+| `base.nix` ("core") | always |
+| `env.nix` | always |
+| `features/shell-tools.nix` | tier = dev or server |
+| `features/lang-rust.nix`, `lang-node.nix`, `lang-python.nix` | tier = dev |
+| `features/cloud.nix` | tier = dev, or context = work (any tier) |
+| `features/ai.nix` | tier = dev |
+| `features/k8s.nix` | tier = dev |
+| `features/dev-tools.nix` | tier = dev |
+| `features/ops.nix` | tier = server |
 | `work.nix` | context = work |
 | `gui-linux.nix` | withGui = true, Linux |
 | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
+
+`minimal` gets only `core` + `env` — no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains. It keeps `jq`/`wget`/`git-lfs` in `core` itself — bootstrap/scripting utilities, not comfort tools, so "minimal" means lean rather than feature-free.
 
 ## homeConfigurations (Linux / WSL2)
 
@@ -39,14 +49,14 @@ Each profile is built for both `x86_64-linux` and `aarch64-linux`. The `aarch64`
 
 | Profile | Modules | Use for |
 |---------|---------|---------|
-| `personal` | base + dev | Personal Linux / WSL2 |
-| `personal-gui` | base + dev + gui-linux | Personal desktop Linux |
-| `personal-minimal` | base | Bootstrap or low-resource machine |
-| `personal-server` | base + server | Personal headless server |
-| `work` | base + dev + work | Work Linux / WSL2 |
-| `work-gui` | base + dev + work + gui-linux | Work desktop Linux |
-| `work-minimal` | base + work | Work bootstrap |
-| `work-server` | base + server + work | Work headless server |
+| `personal` | core + dev-tier features | Personal Linux / WSL2 |
+| `personal-gui` | core + dev-tier features + gui-linux | Personal desktop Linux |
+| `personal-minimal` | core only | Bootstrap or low-resource machine |
+| `personal-server` | core + server-tier features | Personal headless server |
+| `work` | core + dev-tier features + work | Work Linux / WSL2 |
+| `work-gui` | core + dev-tier features + work + gui-linux | Work desktop Linux |
+| `work-minimal` | core + work (cloud only, via work.nix) | Work bootstrap |
+| `work-server` | core + server-tier features + work | Work headless server |
 
 Bootstrap:
 ```sh

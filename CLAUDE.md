@@ -16,10 +16,21 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
   user.nix.example             # Identity template (tracked) — copy to user.nix
   user.nix                     # Local identity (gitignored) — never committed
   modules/
-    base.nix                   # Universal: CLI tools, fonts, zsh, bash, git, caret prompt, ssh
-    dev.nix                    # Dev toolchain: rust-overlay, node, python, cargo tools, tmux, claude-code
-    work.nix                   # Work identity, corporate PEM cert env vars, SSH stubs
-    server.nix                 # Server tools: rsync, tree, ncdu, htop, tmux
+    base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
+    env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
+    features.nix               # Feature name -> module path registry
+    profiles.nix               # Tier -> feature-name list (minimal/dev/server)
+    features/
+      shell-tools.nix          # tier=dev|server: fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.
+      lang-rust.nix            # tier=dev: rust-overlay toolchain + cargo tools
+      lang-node.nix            # tier=dev: node, fnm, bun
+      lang-python.nix          # tier=dev: python3, uv, jupyterlab
+      cloud.nix                # tier=dev, or context=work: AWS tooling
+      ai.nix                   # tier=dev: claude-code (native installer)
+      k8s.nix                  # tier=dev: kubectl, helm, helmfile
+      dev-tools.nix            # tier=dev: gh, pre-commit, tmux, qmk
+      ops.nix                  # tier=server: rsync, tree, ncdu, htop, tmux
+    work.nix                   # Work identity, corporate PEM cert env vars, SSH stubs, imports cloud.nix
     gui-linux.nix              # Linux GUI: obsidian, alacritty, vscode
     gui-darwin.nix             # macOS GUI: obsidian, alacritty, vscode, osxkeychain
   system/

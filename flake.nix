@@ -196,6 +196,29 @@
     # can gate features (work.nix inclusion, copilot symlink, CLAUDE_PROFILE) on them.
     mkSpecialArgs = system: context: {inherit system self user context;};
 
+    # ── Feature/tier data model ────────────────────────────────────────────────
+    # features.nix: name -> module path registry. profiles.nix: tier -> list of
+    # feature names. core/env aren't in the registry — they're an always-on
+    # prefix mkProfile adds unconditionally, not a selectable feature.
+    features = import ./modules/features.nix;
+    profiles = import ./modules/profiles.nix;
+    resolveFeature = name:
+      features.${
+        name
+      }
+      or (throw ''
+        unknown feature "${name}" — valid features: ${builtins.concatStringsSep ", " (builtins.attrNames features)}
+      '');
+
+    # Forces every tier's feature list through resolveFeature so a typo in
+    # profiles.nix fails any nix eval/build/flake check, not just a build of
+    # the one tier that happens to reference it (tier resolution only happens
+    # inside mkProfile, which nothing forces just by evaluating output *names*).
+    profilesValidated =
+      builtins.deepSeq
+      (nixpkgs.lib.mapAttrs (_: map resolveFeature) profiles)
+      true;
+
     # ── Profile compositor ────────────────────────────────────────────────────
     # Produces the ordered module list for a profile.
     # context : "personal" | "work"
@@ -207,14 +230,14 @@
       withGui,
       system,
     }: let
-      tierMods =
-        {
-          minimal = [];
-          dev = [./modules/dev.nix];
-          server = [./modules/server.nix];
-        }.${
-          tier
-        };
+      tierMods = map resolveFeature (profiles.${tier} or (throw "unknown tier \"${tier}\""));
+
+      # Escape hatch: user.nix may declare extraFeatures = [ "k8s" ... ] to
+      # layer extra named features onto whichever profile this machine
+      # builds, beyond its tier's defaults. Unused by every profile defined
+      # below; user is already in scope here the same way work.nix's
+      # user.work.name/email are, so no signature threading needed.
+      extraMods = map resolveFeature (user.extraFeatures or []);
 
       contextMods =
         if context == "work"
@@ -230,6 +253,7 @@
     in
       [./modules/base.nix ./modules/env.nix caret.homeManagerModules.default]
       ++ tierMods
+      ++ extraMods
       ++ contextMods
       ++ guiMods;
 
@@ -241,8 +265,10 @@
       system,
       ...
     }:
-    # assert forces the release-pair check before any config is built.
+    # asserts force the release-pair and feature/tier-name checks before any
+    # config is built.
       assert linuxPairOk;
+      assert profilesValidated;
         home-manager.lib.homeManagerConfiguration {
           pkgs = mkPkgs system;
           extraSpecialArgs = mkSpecialArgs system context;
@@ -285,6 +311,7 @@
         else linuxPairOk;
     in
       assert pairOk;
+      assert profilesValidated;
         darwinLib.lib.darwinSystem {
           inherit system;
           specialArgs = mkSpecialArgs system context;
