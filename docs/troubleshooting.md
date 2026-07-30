@@ -17,7 +17,8 @@ error: … builtins.getEnv "HOME" evaluated to ""
 ```sh
 # First bootstrap (home-manager / darwin-rebuild not yet on PATH)
 nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
-sudo nix run nix-darwin -- switch --flake ~/.nix-config#<profile> --impure
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin -- switch --flake ~/.nix-config#<profile> --impure
 
 # Subsequent applies
 home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
@@ -178,10 +179,12 @@ run straight from the flake:
 nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 
 # macOS, Apple Silicon
-sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 
 # macOS, Intel — pinned nix-darwin release, matching this repo's 25.05 pin
-sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS — `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:

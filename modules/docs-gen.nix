@@ -155,10 +155,12 @@
     the first one runs nix-darwin straight from the flake:
     ```sh
     # Apple Silicon
-    sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+    sudo nix --extra-experimental-features "nix-command flakes" \
+      run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 
     # Intel — pinned nix-darwin release, matching this repo's 25.05 pin
-    sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+    sudo nix --extra-experimental-features "nix-command flakes" \
+      run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
     ```
 
     Every later apply can just use `just switch`, which appends the right
