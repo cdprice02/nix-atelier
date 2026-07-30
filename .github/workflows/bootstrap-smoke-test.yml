@@ -65,7 +65,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             git curl ca-certificates sudo xz-utils
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
