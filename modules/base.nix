@@ -64,8 +64,11 @@ in {
       git-lfs
       wget
 
-      # Secrets — SOPS-encrypted secrets in git (age recipients), master key
-      # retrieved from Bitwarden at deploy time.
+      # Secrets — sops/age for the opt-in sops-nix secrets management
+      # (modules/secrets-sops.nix; the age private key itself is placed
+      # manually, not retrieved automatically — see that module's own
+      # comment for why). rbw is independent of sops: a general password-
+      # manager CLI, not part of the sops key-retrieval path.
       # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
       # broken in the current nixpkgs pin); its agent caches unlock for scripting.
       # pinentry-tty lets rbw prompt for the master password from the terminal
