@@ -31,10 +31,15 @@ in {
     PIP_REQUIRE_VIRTUALENV = "true";
   };
 
-  # Writable per-user bin dirs. HM appends these after the Nix profile in the
-  # assembled PATH (verified on the applied generation: ~/.nix-profile/bin
-  # precedes these), so Nix-provided tools still shadow a user-installed binary
-  # of the same name — reproducible tools win, user-installed extras still work.
+  # Writable per-user bin dirs. On standalone Linux/WSL2, these end up after
+  # the Nix profile in the assembled PATH (nix.sh re-prepends itself after
+  # hm-session-vars.sh runs), so Nix-provided tools shadow a same-named
+  # user-installed binary there. On darwin this is inverted: nix-darwin's
+  # /etc/zshenv sets PATH (including ~/.nix-profile/bin) before ~/.zshenv
+  # sources hm-session-vars.sh, which then prepends these dirs onto that
+  # already-populated PATH — so on darwin a user-installed binary here can
+  # shadow a same-named Nix-provided one instead. Verified against this
+  # machine's actual generated hm-session-vars.sh and /etc/zshenv.
   home.sessionPath = [
     "${homeDir}/.local/bin"
     "${homeDir}/.cargo/bin"
@@ -47,6 +52,13 @@ in {
   # the config file but not the environment (NPM_CONFIG_PREFIX wins when both
   # are present; this is the durable fallback). npmrc is not shell-expanded, so
   # the path must be absolute.
+  #
+  # This makes ~/.npmrc a read-only Nix store symlink, so anything that writes
+  # to it directly (`npm login`, `npm config set --global`) fails with a
+  # permission error rather than updating it. Not worked around here — doing
+  # so would mean pointing NPM_CONFIG_USERCONFIG at a separate writable file,
+  # which would stop npm from reading this declarative one at all. Known
+  # limitation, not a silent one.
   home.file.".npmrc".text = ''
     prefix=${homeDir}/.npm-global
   '';
