@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-Personal Nix config. Nix is the only path — no fallback scripts. Supports macOS (nix-darwin), NixOS, and any Linux/WSL2 via standalone Home Manager.
+Personal Nix config. Nix is the only path — no fallback scripts. Supports macOS (nix-darwin, both Intel and Apple Silicon) and any Linux/WSL2 via standalone Home Manager. NixOS is **not** supported yet — `system/nixos.nix` exists but no flake output references it (tracked in issue #5).
 
 Claude Code and Copilot configs are submodules under `config/` — provisioned automatically by Home Manager on first activation.
 
@@ -13,20 +13,33 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
 ```text
   flake.nix                    # Entry point — inputs, all configuration outputs
   flake.lock
+  justfile                     # Task runner — the sole interface (`just --list`)
   user.nix.example             # Identity template (tracked) — copy to user.nix
   user.nix                     # Local identity (gitignored) — never committed
+  .sops.yaml                   # sops age recipients (opt-in secrets, see below)
+  secrets/secrets.yaml         # sops-encrypted secrets (opt-in via user.nix)
+  secrets.env.example          # Template for the manual ~/.config/secrets/env
+  statix.toml                  # statix lint config (one rule disabled — see issue #46)
+  .markdownlintignore          # Single source for what markdownlint skips
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
     env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
     features.nix               # Feature name -> module path registry
     profiles.nix               # Tier -> feature-name list (minimal/dev/server)
+    profile-list.nix           # Linux profile name -> {context,tier,withGui,useFor}
+    tool-catalog.nix           # Package -> description, for the generated docs/tools.md
+    docs-gen.nix               # Generates docs/profiles.md + docs/tools.md
+    secrets-sops.nix           # Opt-in sops-nix wiring (user.nix: useSops = true)
+    lib/
+      tmux-base.nix            # Shared tmux config for dev-tools.nix and ops.nix
+      hm-compat.nix            # Option-name shims across the two home-manager pins
     features/
       shell-tools.nix          # tier=dev|server: fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.
       lang-rust.nix            # tier=dev: rust-overlay toolchain + cargo tools
       lang-node.nix            # tier=dev: node, fnm, bun
       lang-python.nix          # tier=dev: python3, uv, jupyterlab
       cloud.nix                # tier=dev, or context=work: AWS tooling
-      ai.nix                   # tier=dev: claude-code (native installer)
+      ai.nix                   # tier=dev: claude-code (native installer); kiro-cli on work
       k8s.nix                  # tier=dev: kubectl, helm, helmfile
       dev-tools.nix            # tier=dev: gh, pre-commit, tmux, qmk
       ops.nix                  # tier=server: rsync, tree, ncdu, htop, tmux
@@ -35,26 +48,43 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
     gui-darwin.nix             # macOS GUI: obsidian, alacritty, vscode, osxkeychain
   system/
     darwin.nix                 # macOS system settings + Homebrew
-    nixos.nix                  # NixOS system settings
+    nixos.nix                  # UNREFERENCED — no nixosConfigurations output (issue #5)
   config/
     git/
       gitalias/                # git submodule (fork of GitAlias/gitalias)
+      gitalias.txt             # ORPHANED stale duplicate — see issue #47
     claude/                    # git submodule — symlinked to ~/.claude by Home Manager
     copilot/                   # git submodule — symlinked to ~/.copilot (personal only)
-  docs/
+  docs/                        # profiles.md and tools.md are GENERATED — edit docs-gen.nix
     bootstrap.md               # First-time setup per target
-    profiles.md                # Profile reference
-    tools.md                   # Tool reference
+    profiles.md                # Profile reference (generated)
+    tools.md                   # Tool reference (generated)
+    troubleshooting.md         # Common first-boot failures
+  .github/workflows/
+    check.yml                  # eval-all, flake-check, 4 lints, build matrices
+    bootstrap-smoke-test.yml   # Documented bootstrap, from scratch, in a container
+    security.yml               # gitleaks
+    update-flake-lock.yml      # Weekly atomic `just update` PR
 ```
 
 ## Key Commands
 
+Prefer `just` — it is the sole interface and handles OS/arch dispatch.
+
 | Task | Command |
 |------|---------|
-| Apply config (Mac) | `sudo darwin-rebuild switch --flake ~/.nix-config` |
-| Apply config (NixOS) | `sudo nixos-rebuild switch --flake ~/.nix-config` |
-| Apply config (Linux/WSL) | `home-manager switch --flake ~/.nix-config#<profile> --impure` |
-| Update flake inputs | `nix flake update --flake ~/.nix-config` |
+| Apply config (any OS) | `just switch [profile]` |
+| Apply config (Mac, explicit) | `sudo darwin-rebuild switch --flake ~/.nix-config#<config> --impure` |
+| Apply config (Linux/WSL, explicit) | `home-manager switch --flake ~/.nix-config#<profile> --impure -b bk` |
+| First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-config#<config> --impure` |
+| Update flake inputs | `just update` |
+| Validate | `just check` (lints + `nix flake check`) |
+| Regenerate docs | `just docs` |
+
+`--impure` is required on every apply (`user.nix` is read via `builtins.getEnv`).
+`-b bk` is required on a Linux first apply, or Home Manager refuses to overwrite
+the distro's `~/.bashrc`/`~/.profile`. NixOS has no entry here because there is
+no `nixosConfigurations` output to apply.
 
 ## Architecture
 

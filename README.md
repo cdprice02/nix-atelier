@@ -3,7 +3,7 @@
 [![CI](https://github.com/cdprice02/nix-config/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-config/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS, NixOS, and any Linux/WSL2.
+Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS (Intel and Apple Silicon) and any Linux/WSL2. NixOS support is planned but not implemented — see [issue #5](https://github.com/cdprice02/nix-config/issues/5).
 
 Structured as a composable framework — fork it, fill in `user.nix`, and get a full dev environment on any machine with one command. See [docs/profiles.md](docs/profiles.md) for the profile system and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt it to your own setup.
 
@@ -44,9 +44,14 @@ git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-co
 cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix
 
-# 3. Apply
-sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
+# 3. Apply. darwin-rebuild does not exist until after the first apply, so run it
+#    from the flake. Pick the line matching your Mac (`uname -m`):
+#      arm64  -> Apple Silicon      x86_64 -> Intel
+sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
+
+Afterwards `just switch` handles both, appending the right suffix automatically.
 
 ## Profiles
 
@@ -57,29 +62,28 @@ See [docs/profiles.md](docs/profiles.md) for the full table. Common ones:
 | `work` | Work Linux/WSL2 — dev toolchain + work identity + corporate PEM |
 | `personal` | Personal Linux/WSL2 — dev toolchain |
 | `personal-minimal` | New machine bootstrap or low-resource machine |
-| `work-darwin` | Work macOS — dev + GUI |
+| `work-darwin-aarch64` | Work macOS, Apple Silicon — dev + GUI |
 
-## Repo layout
+On macOS, pick the config matching your CPU: `-aarch64` for Apple Silicon, the
+bare name for Intel. They are not interchangeable — see
+[docs/profiles.md](docs/profiles.md).
 
-```text
-flake.nix          # Entry point — profile compositor, all outputs
-user.nix.example   # Identity template — copy to user.nix and fill in
-modules/
-  base.nix         # "core" — universal baseline (all profiles)
-  env.nix          # Universal — PATH / writable-prefix policy
-  features.nix     # Feature name -> module path registry
-  profiles.nix     # Tier -> feature-name list
-  features/        # lang-rust, lang-node, lang-python, cloud, ai, k8s, dev-tools, ops, shell-tools
-  work.nix         # Work: git identity, corporate PEM env vars, SSH stubs, cloud
-  gui-linux.nix    # Linux GUI: obsidian, alacritty, vscode
-  gui-darwin.nix   # macOS GUI: obsidian, alacritty, vscode, osxkeychain
-system/
-  darwin.nix       # macOS system settings + Homebrew
-  nixos.nix        # NixOS system settings
-config/
-  git/gitalias/    # git submodule — fork of GitAlias/gitalias
-docs/
-  bootstrap.md     # First-time setup checklist
-  profiles.md      # Profile reference
-  tools.md         # Tool reference
+## Everyday commands
+
+```sh
+just switch        # apply this machine's config (detects OS + architecture)
+just check         # lint, then validate the flake
+just eval-all      # fast: evaluate every profile without building
+just update        # re-resolve all flake inputs together
+just --list        # everything else
 ```
+
+## Docs
+
+| | |
+|---|---|
+| [docs/bootstrap.md](docs/bootstrap.md) | First-time setup, per target |
+| [docs/profiles.md](docs/profiles.md) | Every profile and how they compose |
+| [docs/tools.md](docs/tools.md) | What each profile installs |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Common first-boot failures |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Forking, local validation, PR standards |

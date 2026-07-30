@@ -212,15 +212,48 @@ $EDITOR ~/.config/secrets/env
 
 **Not needed on macOS** — `work.nix`'s CA-bundle env vars (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, `REQUESTS_CA_BUNDLE`) are Linux-only (`lib.mkIf (!pkgs.stdenv.isDarwin)`); macOS trusts corporate certs via the system keychain instead. Skip straight to Apply below.
 
-### 6. Apply
+### 6. Pick your config
+
+macOS has two configs per context, and **they are not interchangeable** — pick by
+your Mac's CPU:
+
+| Your Mac | Personal | Work |
+|----------|----------|------|
+| Apple Silicon (M1/M2/M3/M4…) | `personal-darwin-aarch64` | `work-darwin-aarch64` |
+| Intel | `personal-darwin` | `work-darwin` |
+
+Check with `uname -m` — `arm64` means Apple Silicon, `x86_64` means Intel.
+
+They differ by more than architecture: the Intel configs are pinned to nixpkgs
+25.05, because nixpkgs-unstable has dropped x86_64-darwin. Apple Silicon rides
+the same rolling inputs as Linux. Picking the wrong one gets you a build for the
+wrong platform, not a slower build of the right one.
+
+### 7. Apply
+
+`darwin-rebuild` does not exist yet — nix-darwin has no separate installer, so
+the very first apply runs it straight from the flake. Use the line matching your
+Mac:
 
 ```sh
-sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
+# Apple Silicon
+sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+
+# Intel — note the pinned nix-darwin release, matching this repo's 25.05 pin
+sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+```
+
+After that first apply, `darwin-rebuild` is on PATH and every later apply is just:
+
+```sh
+just switch          # detects OS and architecture, appends the right suffix
+# or, explicitly:
+sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 ```
 
 There's no separate "set default shell" step here the way WSL2 has one: nix-darwin's `system/darwin.nix` sets `programs.zsh.enable = true` at the system level, which (unlike standalone home-manager) registers zsh as an available login shell automatically.
 
-### 7. SSH key
+### 8. SSH key
 
 The activation script generates `~/.ssh/<sshKey>` (ed25519, passphraseless) if it does not
 exist. After first apply, add the public key to GitHub:
@@ -232,7 +265,7 @@ cat ~/.ssh/<sshKey>.pub
 
 `<sshKey>` is the prefix of your personal email (derived automatically from `user.nix`).
 
-### 8. Activate pre-commit hooks (dev profile only)
+### 9. Activate pre-commit hooks (dev profile only)
 
 `pre-commit` is installed by the `dev` tier — no separate install needed (`personal-darwin`/`work-darwin` are always dev-tier). After first `darwin-rebuild switch`, wire up the hooks for this repo clone:
 
