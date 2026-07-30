@@ -73,3 +73,17 @@ rust-nightly:
 fmt:
     nix fmt {{justfile_directory()}}
 
+# Regenerate docs/profiles.md and docs/tools.md from Nix (modules/docs-gen.nix)
+# and overwrite the committed files. Run after changing modules/profile-list.nix,
+# modules/tool-catalog.nix, modules/features.nix, or modules/profiles.nix —
+# CI's docs-drift check fails if the committed files disagree with this output.
+docs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="{{justfile_directory()}}"
+    system="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
+    cp "$(nix build "$dir"#packages."$system".docs-profiles-md --impure --no-link --print-out-paths)" "$dir/docs/profiles.md"
+    cp "$(nix build "$dir"#packages."$system".docs-tools-md --impure --no-link --print-out-paths)" "$dir/docs/tools.md"
+    chmod +w "$dir/docs/profiles.md" "$dir/docs/tools.md"
+    echo "docs/profiles.md and docs/tools.md regenerated."
+

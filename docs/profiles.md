@@ -26,6 +26,8 @@ withGui : false | true  (auto-selects gui-linux or gui-darwin)
 
 ## Module composition
 
+Hand-maintained, not generated (below the per-profile tables) — the one row that doesn't reduce to tier/context/withGui cleanly is `cloud.nix`, included both via the `dev` tier *and* independently via `work.nix`'s own `imports`, which isn't expressed as data anywhere (see `modules/docs-gen.nix`'s own note on this).
+
 | Module | Included when |
 |--------|--------------|
 | `base.nix` ("core") | always |
@@ -83,10 +85,10 @@ sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 
 ## Adding a new profile
 
-Add a `mkLinuxPair` call in the `homeConfigurations` block of `flake.nix`:
+Add an entry to `modules/profile-list.nix`:
 
 ```nix
-(mkLinuxPair { name = "my-profile"; context = "personal"; tier = "dev"; withGui = false; })
+my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..."; };
 ```
 
 Then apply with:
