@@ -68,12 +68,18 @@ Non-interactive network downloader. [gnu.org/software/wget](https://www.gnu.org/
 ### fastfetch
 System info display for terminal screenshots. Actively maintained replacement for the archived neofetch. [github.com/fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch)
 
+### hyperfine
+Command-line benchmarking tool — statistically sound timing with warmup runs and outlier detection. [github.com/sharkdp/hyperfine](https://github.com/sharkdp/hyperfine)
+
 ---
 
 ## Editor
 
 ### vim
 Default `$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback. [vim.org](https://www.vim.org)
+
+### nixd
+Nix language server — completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files. [github.com/nix-community/nixd](https://github.com/nix-community/nixd)
 
 ---
 
@@ -90,6 +96,12 @@ GitHub CLI — PRs, issues, workflows, and repo management from the terminal. [c
 
 ### pre-commit
 Manages git pre-commit hooks from a declarative `.pre-commit-config.yaml`; `pre-commit install` wires this repo's own hooks. [pre-commit.com](https://pre-commit.com)
+
+### glab
+GitLab CLI — MRs, issues, pipelines, and repo management from the terminal. [gitlab.com/gitlab-org/cli](https://gitlab.com/gitlab-org/cli)
+
+### difftastic
+Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default — works without vscode, so it's available on headless dev profiles too. [github.com/Wilfred/difftastic](https://github.com/Wilfred/difftastic)
 
 ### gitalias
 Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes` — not a Nix package. [github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)
@@ -115,6 +127,12 @@ Audits `Cargo.lock` against the RustSec advisory database. [github.com/rustsec/r
 
 ### samply
 Command-line CPU profiler; records a Firefox Profiler-compatible trace. [github.com/mstange/samply](https://github.com/mstange/samply)
+
+### cargo-nextest
+Next-generation test runner (`cargo nextest run`) — faster, better output, per-test isolation. [nexte.st](https://nexte.st)
+
+### bacon
+Background code checker — reruns `cargo check`/`test`/`clippy` on file change, in a dedicated terminal pane. [github.com/Canop/bacon](https://github.com/Canop/bacon)
 
 ---
 
@@ -144,6 +162,22 @@ Browser-based notebooks for interactive computing and data exploration. [jupyter
 
 ### ipython
 Enhanced interactive Python REPL with tab completion and magic commands. [ipython.org](https://ipython.org)
+
+### ruff
+Extremely fast Python linter and formatter, written in Rust; replaces flake8/black/isort. [docs.astral.sh/ruff](https://docs.astral.sh/ruff/)
+
+### ty
+Extremely fast Python type checker from Astral (uv/ruff's maintainers); still pre-1.0. [github.com/astral-sh/ty](https://github.com/astral-sh/ty)
+
+### pixi
+Cargo-style project/environment manager (conda-forge + PyPI packages, project-local lockfiles) — chosen over conda/mamba for no base-environment management and reproducible lockfiles. [pixi.sh](https://pixi.sh)
+
+---
+
+## Data
+
+### duckdb
+In-process analytical (OLAP) SQL database — query CSV/Parquet/JSON files directly, no server to run. [duckdb.org](https://duckdb.org)
 
 ---
 

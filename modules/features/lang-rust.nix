@@ -68,6 +68,8 @@
     cargo-watch
     cargo-expand
     cargo-audit
+    cargo-nextest
+    bacon
     samply
   ];
 }

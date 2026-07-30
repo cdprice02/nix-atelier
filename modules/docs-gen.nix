@@ -177,6 +177,7 @@
     "Rust"
     "Node"
     "Python"
+    "Data"
     "AWS"
     "Kubernetes"
     "Secrets"
