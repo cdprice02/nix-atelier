@@ -6,11 +6,21 @@ name: Bootstrap smoke test
 on:
   push:
     branches: [main]
+  # Runs on every PR. This previously did not, on the stated grounds that a
+  # from-scratch container install can't reuse check.yml's nix store cache and
+  # "would slow every PR" -- but the job had never once completed, so that cost
+  # was never actually measured. Its first green run took 1.8 minutes, less
+  # than flake-check (3 min) or eval-all (3-4 min), both of which already gate
+  # every PR. There is no cost argument, and the three separate bugs found
+  # getting it green were all things a new user would have hit first.
+  #
+  # Contrast build-linux/build-darwin, which stay gated to push-to-main: those
+  # genuinely are slow (up to 15 min for the aarch64 GUI profiles).
+  pull_request:
   schedule:
-    # Weekly, not on every PR: a from-scratch container install doesn't
-    # benefit from check.yml's nix store caching and would slow every PR for
-    # a check whose value ("did the documented bootstrap sequence rot")
-    # changes slowly.
+    # Weekly as well, to catch rot in things outside this repo's control --
+    # the Nix installer, the ubuntu:24.04 base image, upstream flake inputs --
+    # which a PR-triggered run wouldn't notice on a quiet week.
     - cron: "17 6 * * 1"
   workflow_dispatch:
 
