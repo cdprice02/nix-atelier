@@ -9,6 +9,12 @@
 }: let
   homeDir = config.home.homeDirectory;
 
+  # Emits whichever option spelling the evaluating home-manager has — the
+  # rolling input (Linux/WSL2 + aarch64-darwin) tracks HM master, which has
+  # renamed several of the options set below; x86_64-darwin is pinned to HM
+  # 25.05, which predates those renames. See modules/lib/hm-compat.nix.
+  compat = import ./lib/hm-compat.nix {inherit lib options;};
+
   # Both paths are tried: single-user Nix (common on WSL2/macOS standalone) sources
   # ~/.nix-profile/...; multi-user Nix daemon sources /nix/var/nix/profiles/...
   # Only the installed variant will exist; the other source is a no-op.
@@ -64,8 +70,11 @@ in {
       git-lfs
       wget
 
-      # Secrets — SOPS-encrypted secrets in git (age recipients), master key
-      # retrieved from Bitwarden at deploy time.
+      # Secrets — sops/age for the opt-in sops-nix secrets management
+      # (modules/secrets-sops.nix; the age private key itself is placed
+      # manually, not retrieved automatically — see that module's own
+      # comment for why). rbw is independent of sops: a general password-
+      # manager CLI, not part of the sops key-retrieval path.
       # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
       # broken in the current nixpkgs pin); its agent caches unlock for scripting.
       # pinentry-tty lets rbw prompt for the master password from the terminal
@@ -147,7 +156,13 @@ in {
     stateVersion = "25.05";
   };
 
-  programs =
+  # lib.mkMerge, not `//`: the compat helpers below return *nested* fragments
+  # (programs.git.settings.user, programs.git.delta) that overlap each other's
+  # parent attributes. `//` is a shallow merge, so it would silently drop the
+  # losing side of any such overlap rather than combining them. mkMerge defers
+  # to the module system's own recursive merge, which also keeps mkForce
+  # priorities working (work.nix overrides the git identity that way).
+  programs = lib.mkMerge [
     {
       # ── Shells ────────────────────────────────────────────────────────────────
 
@@ -240,79 +255,67 @@ in {
       # ── SSH ───────────────────────────────────────────────────────────────────
       # credential.helper is NOT set here — gui-darwin/gui-linux own that
 
+      # Blocks are written in upstream ssh_config(5) directive names, which is
+      # what HM master's `programs.ssh.settings` takes; hm-compat converts them
+      # back to 25.05's typed `matchBlocks` shape on the pinned darwin pair.
+      # Booleans render as yes/no under both.
       ssh =
         {
           enable = true;
           includes = ["~/.ssh/config.d/*"]; # work.nix writes stubs here
-          matchBlocks = {
-            "*" = {
-              identityFile = "~/.ssh/${user.sshKey}";
-              # AddKeysToAgent via extraOptions (a raw ssh directive) rather than
-              # the typed `addKeysToAgent` option: newer home-manager exposes it
-              # as a per-host match-block option, but HM 25.05 (the darwin pin)
-              # only has it as a global `programs.ssh.addKeysToAgent`.
-              # extraOptions is freeform and accepted by both, keeping this match
-              # block valid across HM versions.
-              extraOptions =
-                {
-                  AddKeysToAgent = "yes";
-                }
-                // lib.optionalAttrs pkgs.stdenv.isDarwin {
-                  UseKeychain = "yes";
-                };
+        }
+        // compat.sshBlocks {
+          "*" =
+            {
+              IdentityFile = "~/.ssh/${user.sshKey}";
+              AddKeysToAgent = "yes";
+            }
+            // lib.optionalAttrs pkgs.stdenv.isDarwin {
+              UseKeychain = "yes";
             };
-            "github.com" = {
-              user = "git";
-              identitiesOnly = true;
-            };
+          "github.com" = {
+            User = "git";
+            IdentitiesOnly = true;
           };
         }
-        # enableDefaultConfig only exists in newer home-manager (Linux profiles
-        # track HM master); darwin is pinned to HM release-25.05, which predates
-        # it. On newer HM, disable the injected default `*` match block so the
-        # explicit one above is authoritative; on 25.05 there is no injected
-        # default, so the option is simply absent. Guard on the option's
-        # existence to keep base.nix valid against both HM versions.
-        // lib.optionalAttrs (options.programs.ssh ? enableDefaultConfig) {
-          enableDefaultConfig = false;
-        };
+        // compat.sshDefaultConfigOff;
 
       # ── Git ───────────────────────────────────────────────────────────────────
 
-      git = {
-        enable = true;
-        userName = user.name;
-        userEmail = user.email;
+      git = lib.mkMerge [
+        {
+          enable = true;
 
-        includes = [
-          # self doesn't include submodule contents in the Nix store; use live path instead.
-          # Safe because --impure is already required for user.nix.
-          {path = "${homeDir}/.nix-config/config/git/gitalias/gitalias.txt";}
-        ];
+          includes = [
+            # self doesn't include submodule contents in the Nix store; use live path instead.
+            # Safe because --impure is already required for user.nix.
+            {path = "${homeDir}/.nix-config/config/git/gitalias/gitalias.txt";}
+          ];
 
-        ignores = [
-          ".DS_Store"
-          ".AppleDouble"
-          ".LSOverride"
-          ".env"
-          ".env.local"
-          "*.env"
-          ".env.*"
-          ".config/secrets/"
-          "*.pyc"
-          "__pycache__/"
-          ".venv/"
-          ".ipynb_checkpoints/"
-          ".direnv/"
-          "node_modules/"
-          ".idea/"
-          ".vscode/"
-          "*.swp"
-          "*.swo"
-          "target/"
-        ];
-
-        extraConfig = {
+          ignores = [
+            ".DS_Store"
+            ".AppleDouble"
+            ".LSOverride"
+            ".env"
+            ".env.local"
+            "*.env"
+            ".env.*"
+            ".config/secrets/"
+            "*.pyc"
+            "__pycache__/"
+            ".venv/"
+            ".ipynb_checkpoints/"
+            ".direnv/"
+            "node_modules/"
+            ".idea/"
+            ".vscode/"
+            "*.swp"
+            "*.swo"
+            "target/"
+          ];
+        }
+        (compat.gitIdentity {inherit (user) name email;})
+        (compat.gitConfig {
           init.defaultBranch = "main";
           pull.rebase = false;
           push.default = "simple";
@@ -320,25 +323,17 @@ in {
           core.autocrlf = "input";
           # diff.tool and merge.tool are set by gui-darwin/gui-linux (where `code` is available)
           # credential.helper intentionally absent — set by gui-darwin or gui-linux
-        };
-
-        # enable pulls in the delta package itself (see the home.packages comment
-        # above) and wires it in as git's actual diff pager.
-        delta = {
-          enable = true;
-          options = {
-            navigate = true;
-            line-numbers = true;
-          };
-        };
-      };
+        })
+      ];
     }
-    # Newer HM auto-enables delta's git integration at a low priority and warns
-    # that the implicit behavior is deprecated. Setting it explicitly silences
-    # the warning and pins the behavior this config wants. HM 25.05 has no
-    # programs.delta module at all, so guard on the option's existence — same
-    # pattern as programs.ssh.enableDefaultConfig above.
-    // lib.optionalAttrs (options.programs ? delta) {
-      delta.enableGitIntegration = true;
-    };
+    # delta's `enable` pulls in the delta package itself (see the home.packages
+    # comment above) and wires it in as git's actual diff pager. Which option
+    # path that lives under moved in HM master — hm-compat picks the right one,
+    # and on the pinned pair it lands under programs.git, which is exactly why
+    # this is a mkMerge element rather than a `//` operand.
+    (compat.deltaConfig {
+      navigate = true;
+      line-numbers = true;
+    })
+  ];
 }

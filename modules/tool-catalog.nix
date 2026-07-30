@@ -134,6 +134,13 @@
       description = "System info display for terminal screenshots. Actively maintained replacement for the archived neofetch.";
       link = "[github.com/fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch)";
     }
+    {
+      key = "hyperfine";
+      matches = ["hyperfine"];
+      category = "CLI Utilities";
+      description = "Command-line benchmarking tool — statistically sound timing with warmup runs and outlier detection.";
+      link = "[github.com/sharkdp/hyperfine](https://github.com/sharkdp/hyperfine)";
+    }
 
     # ── Editor ─────────────────────────────────────────────────────────────
     {
@@ -142,6 +149,22 @@
       category = "Editor";
       description = "Default `\$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback.";
       link = "[vim.org](https://www.vim.org)";
+    }
+    {
+      key = "nixd";
+      matches = ["nixd"];
+      category = "Editor";
+      description = "Nix language server — completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files.";
+      link = "[github.com/nix-community/nixd](https://github.com/nix-community/nixd)";
+    }
+
+    # ── Data ───────────────────────────────────────────────────────────────
+    {
+      key = "duckdb";
+      matches = ["duckdb"];
+      category = "Data";
+      description = "In-process analytical (OLAP) SQL database — query CSV/Parquet/JSON files directly, no server to run.";
+      link = "[duckdb.org](https://duckdb.org)";
     }
 
     # ── Git ────────────────────────────────────────────────────────────────
@@ -172,6 +195,20 @@
       category = "Git";
       description = "Manages git pre-commit hooks from a declarative `.pre-commit-config.yaml`; `pre-commit install` wires this repo's own hooks.";
       link = "[pre-commit.com](https://pre-commit.com)";
+    }
+    {
+      key = "glab";
+      matches = ["glab"];
+      category = "Git";
+      description = "GitLab CLI — MRs, issues, pipelines, and repo management from the terminal.";
+      link = "[gitlab.com/gitlab-org/cli](https://gitlab.com/gitlab-org/cli)";
+    }
+    {
+      key = "difftastic";
+      matches = ["difftastic"];
+      category = "Git";
+      description = "Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default — works without vscode, so it's available on headless dev profiles too.";
+      link = "[github.com/Wilfred/difftastic](https://github.com/Wilfred/difftastic)";
     }
 
     # ── Fonts ──────────────────────────────────────────────────────────────
@@ -263,6 +300,20 @@
       description = "Command-line CPU profiler; records a Firefox Profiler-compatible trace.";
       link = "[github.com/mstange/samply](https://github.com/mstange/samply)";
     }
+    {
+      key = "cargo-nextest";
+      matches = ["cargo-nextest"];
+      category = "Rust";
+      description = "Next-generation test runner (`cargo nextest run`) — faster, better output, per-test isolation.";
+      link = "[nexte.st](https://nexte.st)";
+    }
+    {
+      key = "bacon";
+      matches = ["bacon"];
+      category = "Rust";
+      description = "Background code checker — reruns `cargo check`/`test`/`clippy` on file change, in a dedicated terminal pane.";
+      link = "[github.com/Canop/bacon](https://github.com/Canop/bacon)";
+    }
 
     # ── Node ───────────────────────────────────────────────────────────────
     {
@@ -316,6 +367,27 @@
       description = "Enhanced interactive Python REPL with tab completion and magic commands.";
       link = "[ipython.org](https://ipython.org)";
     }
+    {
+      key = "ruff";
+      matches = ["ruff"];
+      category = "Python";
+      description = "Extremely fast Python linter and formatter, written in Rust; replaces flake8/black/isort.";
+      link = "[docs.astral.sh/ruff](https://docs.astral.sh/ruff/)";
+    }
+    {
+      key = "ty";
+      matches = ["ty"];
+      category = "Python";
+      description = "Extremely fast Python type checker from Astral (uv/ruff's maintainers); still pre-1.0.";
+      link = "[github.com/astral-sh/ty](https://github.com/astral-sh/ty)";
+    }
+    {
+      key = "pixi";
+      matches = ["pixi"];
+      category = "Python";
+      description = "Cargo-style project/environment manager (conda-forge + PyPI packages, project-local lockfiles) — chosen over conda/mamba for no base-environment management and reproducible lockfiles.";
+      link = "[pixi.sh](https://pixi.sh)";
+    }
 
     # ── AWS ────────────────────────────────────────────────────────────────
     {
@@ -331,6 +403,20 @@
       category = "AWS";
       description = "Secure AWS credential storage and session management; wraps the CLI to avoid plaintext credentials.";
       link = "[github.com/99designs/aws-vault](https://github.com/99designs/aws-vault)";
+    }
+    {
+      key = "s5cmd";
+      matches = ["s5cmd"];
+      category = "AWS";
+      description = "High-performance S3 and local filesystem execution tool; parallel transfers far faster than the AWS CLI for bulk operations.";
+      link = "[github.com/peak/s5cmd](https://github.com/peak/s5cmd)";
+    }
+    {
+      key = "session-manager-plugin";
+      matches = ["ssm-session-manager-plugin"];
+      category = "AWS";
+      description = "AWS CLI plugin enabling `aws ssm start-session` — shell access to EC2 instances and port forwarding without SSH/bastion hosts.";
+      link = "[docs.aws.amazon.com/systems-manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)";
     }
 
     # ── Kubernetes ─────────────────────────────────────────────────────────
@@ -462,15 +548,19 @@
 
   # Documented but not visible via home.packages at all — no realized
   # package identity exists to match against, so the drift check can't
-  # verify these automatically. A small, named, extensible list, not a
-  # one-off: kiro-cli (Task 21-22, same native-installer pattern as
-  # claude-code) is a known near-future second entry here.
+  # verify these automatically.
   nonPackageTools = [
     {
       key = "gitalias";
       category = "Git";
       description = "Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes` — not a Nix package.";
       link = "[github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)";
+    }
+    {
+      key = "kiro-cli";
+      category = "AI";
+      description = "AWS's agentic CLI. Installed via its official native installer, same rationale as claude-code — not in nixpkgs. Work profiles only.";
+      link = "[kiro.dev/cli](https://kiro.dev/cli/)";
     }
   ];
 

@@ -68,12 +68,18 @@ Non-interactive network downloader. [gnu.org/software/wget](https://www.gnu.org/
 ### fastfetch
 System info display for terminal screenshots. Actively maintained replacement for the archived neofetch. [github.com/fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch)
 
+### hyperfine
+Command-line benchmarking tool — statistically sound timing with warmup runs and outlier detection. [github.com/sharkdp/hyperfine](https://github.com/sharkdp/hyperfine)
+
 ---
 
 ## Editor
 
 ### vim
 Default `$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback. [vim.org](https://www.vim.org)
+
+### nixd
+Nix language server — completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files. [github.com/nix-community/nixd](https://github.com/nix-community/nixd)
 
 ---
 
@@ -90,6 +96,12 @@ GitHub CLI — PRs, issues, workflows, and repo management from the terminal. [c
 
 ### pre-commit
 Manages git pre-commit hooks from a declarative `.pre-commit-config.yaml`; `pre-commit install` wires this repo's own hooks. [pre-commit.com](https://pre-commit.com)
+
+### glab
+GitLab CLI — MRs, issues, pipelines, and repo management from the terminal. [gitlab.com/gitlab-org/cli](https://gitlab.com/gitlab-org/cli)
+
+### difftastic
+Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default — works without vscode, so it's available on headless dev profiles too. [github.com/Wilfred/difftastic](https://github.com/Wilfred/difftastic)
 
 ### gitalias
 Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes` — not a Nix package. [github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)
@@ -115,6 +127,12 @@ Audits `Cargo.lock` against the RustSec advisory database. [github.com/rustsec/r
 
 ### samply
 Command-line CPU profiler; records a Firefox Profiler-compatible trace. [github.com/mstange/samply](https://github.com/mstange/samply)
+
+### cargo-nextest
+Next-generation test runner (`cargo nextest run`) — faster, better output, per-test isolation. [nexte.st](https://nexte.st)
+
+### bacon
+Background code checker — reruns `cargo check`/`test`/`clippy` on file change, in a dedicated terminal pane. [github.com/Canop/bacon](https://github.com/Canop/bacon)
 
 ---
 
@@ -145,6 +163,22 @@ Browser-based notebooks for interactive computing and data exploration. [jupyter
 ### ipython
 Enhanced interactive Python REPL with tab completion and magic commands. [ipython.org](https://ipython.org)
 
+### ruff
+Extremely fast Python linter and formatter, written in Rust; replaces flake8/black/isort. [docs.astral.sh/ruff](https://docs.astral.sh/ruff/)
+
+### ty
+Extremely fast Python type checker from Astral (uv/ruff's maintainers); still pre-1.0. [github.com/astral-sh/ty](https://github.com/astral-sh/ty)
+
+### pixi
+Cargo-style project/environment manager (conda-forge + PyPI packages, project-local lockfiles) — chosen over conda/mamba for no base-environment management and reproducible lockfiles. [pixi.sh](https://pixi.sh)
+
+---
+
+## Data
+
+### duckdb
+In-process analytical (OLAP) SQL database — query CSV/Parquet/JSON files directly, no server to run. [duckdb.org](https://duckdb.org)
+
 ---
 
 ## AWS
@@ -154,6 +188,12 @@ Official AWS CLI v2 — interact with all AWS services from the terminal. [docs.
 
 ### aws-vault
 Secure AWS credential storage and session management; wraps the CLI to avoid plaintext credentials. [github.com/99designs/aws-vault](https://github.com/99designs/aws-vault)
+
+### s5cmd
+High-performance S3 and local filesystem execution tool; parallel transfers far faster than the AWS CLI for bulk operations. [github.com/peak/s5cmd](https://github.com/peak/s5cmd)
+
+### session-manager-plugin
+AWS CLI plugin enabling `aws ssm start-session` — shell access to EC2 instances and port forwarding without SSH/bastion hosts. [docs.aws.amazon.com/systems-manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
 
 ---
 
@@ -233,6 +273,9 @@ Loads/unloads environment variables based on `.envrc` files when entering a dire
 
 ### claude-code
 Installed via its official native installer (curl-piped script), not npm or nixpkgs — ships multiple releases a week and self-updates in place, which nixpkgs packaging and Nix's rebuild cycle can't keep pace with. [claude.com/claude-code](https://claude.com/claude-code)
+
+### kiro-cli
+AWS's agentic CLI. Installed via its official native installer, same rationale as claude-code — not in nixpkgs. Work profiles only. [kiro.dev/cli](https://kiro.dev/cli/)
 
 ---
 

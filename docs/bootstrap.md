@@ -60,6 +60,34 @@ $EDITOR ~/.config/secrets/env
 
 This file is sourced by every shell session. It is gitignored and never committed.
 
+**Optional: sops-nix instead of the manual copy above.** Off by default — only
+worth it if you want secrets encrypted in git rather than living purely as an
+unmanaged local file. Set `useSops = true;` in `user.nix`, then before your
+first `switch` with it enabled:
+
+```sh
+mkdir -p ~/.config/sops/age && chmod 700 ~/.config/sops/age
+# write your own age private key here (see .sops.yaml for which public key
+# secrets/secrets.yaml is currently encrypted for)
+$EDITOR ~/.config/sops/age/keys.txt
+chmod 600 ~/.config/sops/age/keys.txt
+```
+
+If you're forking this repo: `secrets/secrets.yaml` is encrypted for the
+original author's age key, and sops has no way to re-key a file for a new
+recipient without first decrypting it with an existing one — you can't
+"re-encrypt for your key" without a key you don't have. Instead, generate
+your own keypair with `age-keygen`, replace the recipient in `.sops.yaml`
+with your own public key, delete `secrets/secrets.yaml`, and recreate it
+with `sops secrets/secrets.yaml` (opens your `$EDITOR` on an empty file;
+use `secrets.env.example`'s var names as a guide, save to encrypt).
+
+`home-manager switch` then renders the same vars straight to
+`~/.config/secrets/env` from `secrets/secrets.yaml` — the manual copy/fill
+step above becomes unnecessary. To edit the encrypted values later:
+`sops secrets/secrets.yaml` (opens your `$EDITOR` with the decrypted
+plaintext; saving re-encrypts automatically).
+
 ### 5. Corporate CA certificate (work profile only)
 
 The `work` profile sets `SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, and `REQUESTS_CA_BUNDLE`
@@ -92,13 +120,21 @@ After the next login the default shell will be zsh.
 Pick **one** profile that matches your machine — `work` for a work machine, `personal` for a personal machine.
 
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#work --impure      # work machine
-nix run home-manager -- switch --flake ~/.nix-config#personal --impure  # personal machine
+nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk      # work machine
+nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # personal machine
 ```
 
 > **`--impure` is always required** — every `home-manager switch` needs it, not just
 > bootstrap. `user.nix` is gitignored and read from the filesystem via
 > `builtins.getEnv "HOME"`, which is an impure operation in Nix.
+>
+> **`-b bk` is required on the first switch** of any machine that already has
+> shell dotfiles. Home Manager refuses to overwrite an existing `~/.bashrc`,
+> `~/.profile`, `~/.zshrc` etc. and aborts with `Existing file '...' would be
+> clobbered`. Nearly every distro (and WSL2) ships those from `/etc/skel`, so
+> this is the normal case, not the exception. `-b bk` renames each conflicting
+> file to `<name>.bk` instead of failing. `just switch` passes it for you on
+> every subsequent apply.
 
 After first apply, `home-manager` and `just` are on PATH:
 

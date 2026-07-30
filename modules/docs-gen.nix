@@ -133,9 +133,9 @@
     ${linuxProfileRows}
     Bootstrap:
     ```sh
-    nix run home-manager -- switch --flake ~/.nix-config#work --impure
+    nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk
     # After first apply, home-manager is on PATH:
-    home-manager switch --flake ~/.nix-config#work --impure
+    home-manager switch --flake ~/.nix-config#work --impure -b bk
     ```
 
     ## darwinConfigurations (macOS)
@@ -160,7 +160,7 @@
 
     Then apply with:
     ```sh
-    home-manager switch --flake ~/.nix-config#my-profile --impure
+    home-manager switch --flake ~/.nix-config#my-profile --impure -b bk
     ```
   '';
 
@@ -177,6 +177,7 @@
     "Rust"
     "Node"
     "Python"
+    "Data"
     "AWS"
     "Kubernetes"
     "Secrets"

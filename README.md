@@ -28,9 +28,9 @@ git clone --recurse-submodules git@github.com:cdprice02/nix-config.git ~/.nix-co
 cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix  # fill in username, name, email
 
-# 4. Apply
-nix run home-manager -- switch --flake ~/.nix-config#work --impure      # work machine
-nix run home-manager -- switch --flake ~/.nix-config#personal --impure  # personal machine
+# 4. Apply (-b bk backs up any pre-existing ~/.bashrc etc. instead of failing)
+nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk      # work machine
+nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # personal machine
 ```
 
 ### macOS
