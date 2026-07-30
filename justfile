@@ -1,6 +1,10 @@
 # Default profile: read from user.nix's `profile` field if set, else
 # "personal". Backtick assignment runs once when just parses this file.
-default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "personal"' 2>/dev/null | tr -d '"' || echo personal`
+# `grep .` makes the fallback fire on empty output: the trailing `|| echo`
+# guards only the last pipeline stage, so without it a failed `nix eval` (no
+# user.nix, or nix not yet on PATH) would leave `tr` exiting 0 and the default
+# empty. grep exits non-zero on no input, triggering the fallback.
+default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "personal"' 2>/dev/null | tr -d '"' | grep . || echo personal`
 
 # List available commands
 default:
