@@ -3,7 +3,7 @@
 [![CI](https://github.com/cdprice02/nix-config/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-config/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/LnL7/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS, NixOS, and any Linux/WSL2.
+Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS, NixOS, and any Linux/WSL2.
 
 Structured as a composable framework — fork it, fill in `user.nix`, and get a full dev environment on any machine with one command. See [docs/profiles.md](docs/profiles.md) for the profile system and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt it to your own setup.
 

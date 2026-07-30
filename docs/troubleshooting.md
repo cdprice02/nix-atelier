@@ -27,6 +27,56 @@ sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
 
 ---
 
+## home-manager / nixpkgs release mismatch
+
+**Symptom (before the guard existed):** the switch *succeeds*, but prints a
+warning block plus unrelated-looking deprecation noise:
+
+```text
+trace: warning: You are using
+  Home Manager version 25.11 and
+  Nixpkgs version 26.11.
+evaluation warning: fold has been deprecated, use foldr instead
+evaluation warning: The xorg package set has been deprecated, ...
+There are 289 unread and relevant news items.
+```
+
+**Symptom (with the guard):** evaluation fails outright with
+
+```text
+error: Linux/WSL2 (rolling): home-manager (25.11) and nixpkgs (26.11) releases disagree.
+```
+
+**Cause:** one input of a release pair was updated without the other — e.g.
+`nixpkgs` bumped to a new unstable revision while `home-manager` stayed behind.
+The deprecation warnings are old HM module code calling nixpkgs APIs that the
+newer nixpkgs deprecated; the news backlog is the changelog for the months of
+HM history that got skipped.
+
+**Fix:** update both inputs of the pair together.
+
+```sh
+just update      # re-resolves all inputs; never update a single input
+just check       # confirm all profiles still build
+just switch
+```
+
+This does not disturb the macOS pin — `just update` re-resolves each input
+against the ref declared in `flake.nix`, and the darwin refs are release
+branches (`nixpkgs-25.05-darwin` / `release-25.05`), so they can only land on
+another 25.05 commit. Only the rolling Linux inputs advance.
+
+`just update` deliberately accepts no input name — see the pairing invariant in
+`CLAUDE.md`. If you must update one input by hand, update its partner in the
+same command:
+
+```sh
+nix flake update nixpkgs home-manager                 # Linux pair
+nix flake update nixpkgs-darwin home-manager-darwin    # darwin pair
+```
+
+---
+
 ## Submodule directories empty after clone
 
 **Symptom:** `~/.nix-config/config/claude/` is empty, or Home Manager errors on the symlink activation step.
