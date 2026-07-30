@@ -29,10 +29,28 @@
     # builtins.getEnv is impure (value varies per eval), so all home-manager
     # switch calls require --impure. Alternatives (absolute path, sops-nix)
     # trade portability or simplicity — see docs for tradeoff discussion.
+    #
+    # Default location is $HOME/.nix-config/user.nix. If you've cloned this
+    # repo somewhere else, set NIX_CONFIG_USER_FILE to the full path of your
+    # user.nix instead of relying on the default.
     homeDir = builtins.getEnv "HOME";
-    userNixPath = homeDir + "/.nix-config/user.nix";
+    userNixPathOverride = builtins.getEnv "NIX_CONFIG_USER_FILE";
+    userNixPath =
+      if userNixPathOverride != ""
+      then userNixPathOverride
+      else homeDir + "/.nix-config/user.nix";
     userBase =
-      if homeDir != "" && builtins.pathExists userNixPath
+      if userNixPathOverride != ""
+      then
+        # Explicitly set: a typo'd path is a real mistake, not a fresh
+        # checkout that hasn't created user.nix yet — fail loudly instead of
+        # silently building with the placeholder identity.
+        (
+          if builtins.pathExists userNixPath
+          then import userNixPath
+          else throw "NIX_CONFIG_USER_FILE=${userNixPathOverride} does not exist"
+        )
+      else if homeDir != "" && builtins.pathExists userNixPath
       then import userNixPath
       else import (self + /user.nix.example);
     user =
@@ -230,5 +248,95 @@
     # ── nixosConfigurations ─────────────────────────────────────────────────
     # NixOS support is tracked in issue #5. Requires hardware-configuration.nix
     # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
+
+    # ── devShells ────────────────────────────────────────────────────────────
+    # `nix develop` — lint tools for contributors (matches .pre-commit-config.yaml
+    # and CI's lint-* jobs) plus a nightly Rust toolchain, so `rustup` is never
+    # needed alongside rust-overlay's stable default (avoids two cargo/rustc on
+    # PATH).
+    devShells =
+      nixpkgs.lib.genAttrs
+      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      (system: let
+        pkgs = mkPkgs system;
+      in {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            alejandra
+            statix
+            deadnix
+            markdownlint-cli
+            pre-commit
+          ];
+        };
+        rust-nightly = pkgs.mkShell {
+          packages = [
+            (pkgs.rust-bin.nightly.latest.default.override {
+              extensions = ["rust-src" "rustfmt" "clippy"];
+            })
+          ];
+        };
+      });
+
+    # ── formatter ────────────────────────────────────────────────────────────
+    # `nix fmt` — alejandra, matching .pre-commit-config.yaml and CI's
+    # lint-alejandra job so all three (editor, pre-commit, CI) agree.
+    formatter =
+      nixpkgs.lib.genAttrs
+      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      (system: (mkPkgs system).alejandra);
+
+    # ── checks ───────────────────────────────────────────────────────────────
+    # `nix flake check` — previously eval-only (see docs/troubleshooting.md
+    # history); this makes it build every Linux activation package and run the
+    # same lints CI runs, so a green `just check` actually means something
+    # locally, not just "the flake evaluates." Scoped to Linux only: on
+    # x86_64-darwin/aarch64-darwin, `nix flake check --impure` silently skips
+    # `checks` entirely rather than building anything (no local Linux builder
+    # to build these against) — a green check on a Mac isn't this check
+    # running, it's this check not running at all. Real Darwin verification
+    # happens in CI or on an actual Mac.
+    checks = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
+      system: let
+        pkgs = mkPkgs system;
+        homeConfigsForSystem =
+          nixpkgs.lib.filterAttrs
+          (
+            _: cfg:
+              cfg.activationPackage.system or null == system
+          )
+          self.homeConfigurations;
+      in
+        (nixpkgs.lib.mapAttrs'
+          (name: cfg: {
+            name = "activation-${name}";
+            value = cfg.activationPackage;
+          })
+          homeConfigsForSystem)
+        // {
+          alejandra = pkgs.runCommand "check-alejandra" {} ''
+            ${pkgs.alejandra}/bin/alejandra --check ${self}
+            touch $out
+          '';
+          statix = pkgs.runCommand "check-statix" {} ''
+            ${pkgs.statix}/bin/statix check ${self}
+            touch $out
+          '';
+          deadnix = pkgs.runCommand "check-deadnix" {} ''
+            ${pkgs.deadnix}/bin/deadnix --fail ${self}
+            touch $out
+          '';
+          # A relative glob after cd, not an absolute-path glob string: this
+          # markdownlint-cli version resolves those two differently (same
+          # class of discrepancy already seen with deadnix elsewhere in this
+          # repo's history) and only the relative form reliably matches the
+          # files CI's own lint-markdownlint job lints.
+          markdownlint = pkgs.runCommand "check-markdownlint" {} ''
+            cd ${self}
+            ${pkgs.markdownlint-cli}/bin/markdownlint 'docs/**/*.md'
+            touch $out
+          '';
+        }
+    );
   };
 }
