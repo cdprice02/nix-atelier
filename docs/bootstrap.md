@@ -104,8 +104,9 @@ After first apply, `home-manager` and `just` are on PATH:
 
 ```sh
 # subsequent applies
-just switch PROFILE=work      # or: home-manager switch --flake ~/.nix-config#work --impure
-just switch PROFILE=personal  # or: home-manager switch --flake ~/.nix-config#personal --impure
+just switch work      # or: home-manager switch --flake ~/.nix-config#work --impure
+just switch personal  # or: home-manager switch --flake ~/.nix-config#personal --impure
+just switch           # uses user.nix's `profile` field if set, else "personal"
 
 just --list  # shows all available commands
 ```
