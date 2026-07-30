@@ -12,17 +12,14 @@ Default interactive shell. Configured with completions, aliases, and tool integr
 ### bash
 Fallback shell, configured with the same aliases and Nix init as zsh. [gnu.org/software/bash](https://www.gnu.org/software/bash/)
 
-### starship
-Cross-shell prompt showing git status, language versions, AWS region, and command duration. [starship.rs](https://starship.rs)
+### caret
+Zero-subprocess cross-shell prompt — directory, git branch, exit-status arrow. No per-render fork/exec (unlike starship/oh-my-posh). [github.com/cdprice02/caret](https://github.com/cdprice02/caret)
 
 ### zoxide
 Smarter `cd` — learns your most-used directories; `z <partial>` jumps instantly. [github.com/ajeetdsouza/zoxide](https://github.com/ajeetdsouza/zoxide)
 
-### atuin
-Shell history synced across machines, searchable with fuzzy find (Ctrl-R). [atuin.sh](https://atuin.sh)
-
 ### fzf
-General-purpose fuzzy finder; powers Ctrl-T (file), Ctrl-R (history), and Alt-C (directory). [github.com/junegunn/fzf](https://github.com/junegunn/fzf)
+General-purpose fuzzy finder; powers Ctrl-T (file), Ctrl-R (history, native widget), and Alt-C (directory). [github.com/junegunn/fzf](https://github.com/junegunn/fzf)
 
 ---
 

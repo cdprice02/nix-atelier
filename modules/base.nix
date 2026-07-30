@@ -28,6 +28,34 @@
       source "$HOME/.config/secrets/env"
     fi
   '';
+
+  # Capture a tool's shell init once at build time so the shell sources a
+  # static file instead of spawning the tool on every startup. Store-path
+  # interpolation (not builtins.readFile) means no import-from-derivation, so
+  # cross-platform eval keeps working; the capture only builds when the config
+  # is realized, on its own system. Deterministic inits only (zoxide/fzf/direnv
+  # emit the same script every run). fnm is excluded — its `env` output embeds
+  # a per-session multishell dir, so it must run per shell (see dev.nix).
+  mkInit = name: cmd: pkgs.runCommand "hm-shell-init-${name}" {} "${cmd} > $out";
+  toolInit = shell: fzfFlag: let
+    src = tool: cmd: "source ${mkInit "${tool}-${shell}" cmd}";
+    fzfSrc = src "fzf" "${pkgs.fzf}/bin/fzf ${fzfFlag}";
+    # fzf's zsh init toggles the `zle` option; only source it when zle is
+    # available, matching home-manager's own guard — otherwise zsh warns
+    # "can't change option: zle" in interactive-but-non-zle contexts.
+    fzf =
+      if shell == "zsh"
+      then ''
+        if [[ $options[zle] = on ]]; then
+          ${fzfSrc}
+        fi
+      ''
+      else fzfSrc;
+  in ''
+    ${src "zoxide" "${pkgs.zoxide}/bin/zoxide init ${shell}"}
+    ${src "direnv" "${pkgs.direnv}/bin/direnv hook ${shell}"}
+    ${fzf}
+  '';
 in {
   home = {
     inherit (user) username;
@@ -45,8 +73,8 @@ in {
       CLAUDE_PROFILE = context;
     };
 
-    # Binaries installed via `cargo install` outside Nix land here
-    sessionPath = ["$HOME/.cargo/bin" "$HOME/.npm-global/bin"];
+    # Runtime-tool PATH and writable install prefixes (cargo/npm/uv/bun/pixi)
+    # live in modules/env.nix, imported alongside this module for every profile.
 
     packages = with pkgs; [
       # Fonts — used everywhere for terminal rendering and prompt icons
@@ -165,8 +193,28 @@ in {
       zsh = {
         enable = true;
         enableCompletion = true;
+        # Rebuild the completion dump (which audits every fpath dir — the
+        # dominant zsh-startup cost) at most once a day; otherwise reuse the
+        # cached dump and skip the audit with -C. This is the big startup win.
+        completionInit = ''
+          autoload -Uz compinit
+          # Full compinit (rebuild the dump + audit every fpath dir) when the
+          # cached dump is missing OR older than a day; otherwise load it and
+          # skip the audit (-C). The glob alone only catches "exists and
+          # stale" — an (N…) qualifier against a nonexistent file matches
+          # nothing, which would otherwise silently take the fast, unaudited
+          # path on every machine's very first shell startup.
+          _zdumpfile="''${ZDOTDIR:-$HOME}/.zcompdump"
+          _zdump=($_zdumpfile(N.mh+24))
+          if [[ ! -f $_zdumpfile ]] || (( $#_zdump )); then
+            compinit
+          else
+            compinit -C
+          fi
+          unset _zdumpfile _zdump
+        '';
         # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on PATH
-        # before tool integrations (atuin, fnm, zoxide) evaluate their init hooks.
+        # before tool integrations (fnm, zoxide) evaluate their init hooks.
         envExtra = nixProfileInit;
         initContent =
           envLocalInit
@@ -178,194 +226,71 @@ in {
             # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
             bindkey '^[[H' beginning-of-line
             bindkey '^[[F' end-of-line
-          '';
+          ''
+          # Static tool init (see mkInit) — replaces per-startup
+          # `eval "$(zoxide/fzf/direnv init)"` subprocesses.
+          + toolInit "zsh" "--zsh";
       };
 
       bash = {
         enable = true;
         enableCompletion = true;
         profileExtra = nixProfileInit;
-        initExtra = envLocalInit;
+        # Static tool init (see mkInit) replaces per-startup eval subprocesses.
+        initExtra = envLocalInit + toolInit "bash" "--bash";
       };
 
+      # fish is available alongside zsh/bash with tool integrations wired
+      # (fzf/zoxide below). An interactive fish inherits PATH and secrets from
+      # the launching shell, so tools resolve — this repo doesn't set fish as
+      # anyone's login shell, so nix-profile sourcing / secrets-env parsing in
+      # fish's own dialect isn't wired here (fish can't `source` the POSIX
+      # ~/.config/secrets/env directly; zsh/bash always initialize first).
+      fish.enable = true;
+
       # ── Prompt ────────────────────────────────────────────────────────────────
-
-      starship = {
+      # caret: zero-subprocess prompt (directory + git branch + exit-status
+      # arrow only — no hostname, language versions, AWS region, or command
+      # duration; that's caret's own scope boundary, not this config's).
+      # Replaces starship, which forks/execs per render and parses a TOML
+      # config even for modules that render nothing.
+      caret = {
         enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
-        settings = {
-          format = "$os$username$hostname$directory$git_branch$git_status$aws$rust$python$golang$nodejs$package$cmd_duration\n$character";
-
-          aws = {
-            format = "[$symbol$region]($style) ";
-            force_display = false;
-            region_aliases = {
-              "us-east-1" = "va";
-              "us-east-2" = "oh";
-              "us-west-1" = "ca";
-              "us-west-2" = "or";
-              "af-south-1" = "cape";
-              "ap-east-1" = "hk";
-              "ap-south-1" = "mum";
-              "ap-south-2" = "hyd";
-              "ap-southeast-1" = "sg";
-              "ap-southeast-2" = "syd";
-              "ap-southeast-3" = "jkt";
-              "ap-southeast-4" = "mel";
-              "ap-southeast-5" = "my";
-              "ap-southeast-6" = "nz";
-              "ap-southeast-7" = "th";
-              "ap-northeast-1" = "tok";
-              "ap-northeast-2" = "kr";
-              "ap-northeast-3" = "osk";
-              "ap-east-2" = "tw";
-              "ca-central-1" = "ca";
-              "ca-west-1" = "cal";
-              "cn-north-1" = "bj";
-              "cn-northwest-1" = "nx";
-              "eu-central-1" = "de";
-              "eu-central-2" = "ch";
-              "eu-north-1" = "se";
-              "eu-south-1" = "it";
-              "eu-south-2" = "es";
-              "eu-west-1" = "ie";
-              "eu-west-2" = "ldn";
-              "eu-west-3" = "fr";
-              "me-central-1" = "ae";
-              "me-south-1" = "bh";
-              "mx-central-1" = "mx";
-              "sa-east-1" = "br";
-              "us-gov-east-1" = "gov-e";
-              "us-gov-west-1" = "gov-w";
-            };
-          };
-
-          character = {
-            success_symbol = "[❯](bold green)";
-            error_symbol = "[❯](bold red)";
-          };
-
-          cmd_duration = {
-            min_time = 2000;
-            format = "took [$duration]($style) ";
-            style = "bold yellow";
-          };
-
-          directory.truncation_length = 3;
-
-          git_branch.symbol = "🌱 ";
-
-          git_status = {
-            ahead = "⇡\${count}";
-            diverged = "⇕⇡\${ahead_count}⇣\${behind_count}";
-            behind = "⇣\${count}";
-          };
-
-          hostname = {
-            ssh_only = false;
-            format = "[@](black)([$ssh_symbol]($style))[$hostname](bold blue) ";
-          };
-
-          os.disabled = false;
-
-          package.format = "[$symbol$version]($style) ";
-
-          username = {
-            format = "[$user]($style)";
-            show_always = true;
-          };
-
-          rust = {
-            format = "via [$symbol($version)]($style) ";
-            style = "bold red";
-          };
-          python = {
-            format = "via [$symbol($version)]($style) ";
-            style = "bold yellow";
-          };
-          golang = {
-            format = "via [$symbol($version)]($style) ";
-            style = "bold cyan";
-          };
-          nodejs = {
-            format = "via [$symbol($version)]($style) ";
-            style = "bold green";
-          };
-
-          # Disabled language modules
-          buf.disabled = true;
-          bun.disabled = true;
-          c.disabled = true;
-          cmake.disabled = true;
-          cobol.disabled = true;
-          crystal.disabled = true;
-          daml.disabled = true;
-          dart.disabled = true;
-          deno.disabled = true;
-          dotnet.disabled = true;
-          elixir.disabled = true;
-          elm.disabled = true;
-          erlang.disabled = true;
-          fennel.disabled = true;
-          gleam.disabled = true;
-          gradle.disabled = true;
-          haskell.disabled = true;
-          haxe.disabled = true;
-          helm.disabled = true;
-          java.disabled = true;
-          julia.disabled = true;
-          kotlin.disabled = true;
-          lua.disabled = true;
-          meson.disabled = true;
-          nim.disabled = true;
-          nix_shell.disabled = true;
-          ocaml.disabled = true;
-          odin.disabled = true;
-          opa.disabled = true;
-          perl.disabled = true;
-          php.disabled = true;
-          pulumi.disabled = true;
-          purescript.disabled = true;
-          quarto.disabled = true;
-          raku.disabled = true;
-          red.disabled = true;
-          rlang.disabled = true;
-          ruby.disabled = true;
-          scala.disabled = true;
-          solidity.disabled = true;
-          swift.disabled = true;
-          terraform.disabled = true;
-          typst.disabled = true;
-          vagrant.disabled = true;
-          vlang.disabled = true;
-          zig.disabled = true;
-        };
+        truncationLength = 3;
       };
 
       # ── Shell tools ───────────────────────────────────────────────────────────
 
+      # zsh/bash integration is done via static build-time captures (see
+      # toolInit / mkInit) instead of these modules' per-startup `eval`, so the
+      # zsh/bash integrations are disabled here. fish keeps HM's runtime
+      # (`eval`-based) integration — fish is a secondary, not-login shell here
+      # (see the fish.enable comment above), so its startup cost isn't on the
+      # optimized path.
       direnv = {
         enable = true;
         nix-direnv.enable = true;
+        enableZshIntegration = false;
+        enableBashIntegration = false;
       };
 
       zoxide = {
         enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
+        enableZshIntegration = false;
+        enableBashIntegration = false;
+        enableFishIntegration = true;
       };
 
-      atuin = {
-        enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
-      };
-
+      # History search is fzf's native Ctrl-R widget (over the shell history
+      # file), not atuin: no per-command recording hook, no daemon, and fzf
+      # only spawns when a binding is pressed. Ctrl-R = history, Ctrl-T =
+      # files, Alt-C = cd. (atuin was dropped here — it added a startup
+      # subprocess + precmd SQLite write for a richer/synced DB we don't need.)
       fzf = {
         enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
+        enableZshIntegration = false;
+        enableBashIntegration = false;
+        enableFishIntegration = true;
       };
 
       # ── Editor ────────────────────────────────────────────────────────────────
