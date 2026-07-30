@@ -178,9 +178,8 @@ sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin --impure
 
 ## NixOS
 
-Uncomment `nixosConfigurations` in `flake.nix`, add `hardware-configuration.nix`
-for the target machine, then:
-
-```sh
-sudo nixos-rebuild switch --flake ~/.nix-config#personal-nixos
-```
+Not implemented yet (tracked in issue #5) — `flake.nix` has no
+`nixosConfigurations` output to build on. It needs a `mkNixosConfig` helper
+(analogous to `mkDarwinConfig`) plus a target machine's
+`hardware-configuration.nix` before `sudo nixos-rebuild switch` would have
+anything to point at.

@@ -108,7 +108,7 @@ Outputs:
 
 - `homeConfigurations` — standalone home-manager for Linux/WSL2 (16 keys: personal/work × minimal/dev/server × gui × aarch64)
 - `darwinConfigurations` — macOS via nix-darwin + home-manager
-- `nixosConfigurations` — NixOS (commented out until hardware-configuration.nix exists)
+- `nixosConfigurations` — not implemented (tracked in issue #5); no output exists yet, needs a `mkNixosConfig` helper and a target machine's `hardware-configuration.nix`
 
 Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix.example` and fill in values. The `user` attrset is built in `flake.nix` from that file — `sshKey` is derived automatically from the email prefix. Requires `--impure` on all `home-manager switch` calls.
 
@@ -120,7 +120,12 @@ Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix
 - `tier`: `minimal` | `dev` | `server`
 - `withGui`: bool — auto-selects `gui-linux.nix` or `gui-darwin.nix`
 
-Every profile starts with `base.nix`. Darwin configs always include GUI.
+Every profile starts with `base.nix` + `env.nix` + caret. `tier` expands into a
+list of named features via `modules/profiles.nix`, each resolved to a module
+path via `modules/features.nix` (`assert`ed eagerly — an unknown tier or
+feature name fails any `nix eval`/`build`, not just the one profile that
+references it). `user.nix` can layer extra features onto its profile via an
+`extraFeatures` list. Darwin configs always include GUI.
 
 `context` is threaded into `specialArgs` so modules can read it. `base.nix` uses it to set `CLAUDE_PROFILE` via `home.sessionVariables` and to gate the Copilot symlink (personal only).
 

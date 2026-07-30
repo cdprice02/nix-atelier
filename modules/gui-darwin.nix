@@ -45,11 +45,7 @@
     alacritty = {
       enable = true;
       # Home Manager resolves this against pkgs.alacritty-theme (hardcoded
-      # in the module, not itself configurable) and imports it automatically
-      # — previously this pointed at "rose-pine/dist/rose-pine.toml" via
-      # settings.general.import, a relative path nothing in this repo ever
-      # fetched or placed, so Alacritty's config silently failed to load
-      # the theme.
+      # in the module, not itself configurable) and imports it automatically.
       theme = "rose_pine";
       settings = {
         window = {

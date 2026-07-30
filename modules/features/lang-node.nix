@@ -7,8 +7,6 @@
     # Node ecosystem
     nodejs
     fnm
-    # bun — a JS/TS runtime, not part of the Python ecosystem it used to be
-    # filed under before this feature split.
     bun
   ];
 
