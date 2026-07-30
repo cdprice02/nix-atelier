@@ -170,7 +170,15 @@
     darwinPairOk = checkReleasePair "x86_64-darwin (pinned)" home-manager-darwin nixpkgs-darwin;
 
     # ── Helpers ──────────────────────────────────────────────────────────────
-    isLinux = s: builtins.elem s ["x86_64-linux" "aarch64-linux"];
+    # Every system this flake produces per-system outputs for (devShells,
+    # formatter, packages). Named once rather than repeating the literal at
+    # each genAttrs call site, so adding or dropping a platform is one edit.
+    # `checks` deliberately does NOT use this — see its own comment for why it
+    # is Linux-only.
+    allSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
+    linuxSystems = ["x86_64-linux" "aarch64-linux"];
+
+    isLinux = s: builtins.elem s linuxSystems;
     # Only x86_64-darwin uses the pinned 25.05 darwin inputs (see input
     # comment). aarch64-darwin rides the rolling inputs, same as Linux.
     isX86Darwin = s: s == "x86_64-darwin";
@@ -455,8 +463,7 @@
     # `nix develop` — lint tools for contributors, matching
     # .pre-commit-config.yaml and CI's lint-* jobs.
     devShells =
-      nixpkgs.lib.genAttrs
-      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      nixpkgs.lib.genAttrs allSystems
       (system: let
         pkgs = pkgsFor system;
       in {
@@ -475,8 +482,7 @@
     # `nix fmt` — alejandra, matching .pre-commit-config.yaml and CI's
     # lint-alejandra job so all three (editor, pre-commit, CI) agree.
     formatter =
-      nixpkgs.lib.genAttrs
-      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      nixpkgs.lib.genAttrs allSystems
       (system: (pkgsFor system).alejandra);
 
     # ── packages ─────────────────────────────────────────────────────────────
@@ -487,8 +493,7 @@
     # this needs the full system list (same as devShells/formatter) so
     # `just docs` builds natively wherever it's run, darwin included.
     packages =
-      nixpkgs.lib.genAttrs
-      ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"]
+      nixpkgs.lib.genAttrs allSystems
       (
         system: let
           pkgs = pkgsFor system;
@@ -499,15 +504,25 @@
       );
 
     # ── checks ───────────────────────────────────────────────────────────────
-    # Builds every Linux activation package and runs the same lints CI runs,
-    # so a green `just check` actually means something locally, not just
-    # "the flake evaluates." Scoped to Linux only: on x86_64-darwin/
-    # aarch64-darwin, `nix flake check --impure` silently skips `checks`
-    # entirely rather than building anything (no local Linux builder to build
-    # these against) — a green check on a Mac isn't this check running, it's
-    # this check not running at all. Real Darwin verification happens in CI
-    # or on an actual Mac.
-    checks = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
+    # The Nix-specific verification: every Linux activation package builds, and
+    # the generated docs match their sources.
+    #
+    # Deliberately does NOT contain the lints. It used to, which meant every PR
+    # ran alejandra/statix/deadnix/markdownlint twice — once inside this output
+    # via `flake-check`, and again as check.yml's four standalone `lint-*` jobs.
+    # The standalone jobs are the ones worth keeping: a named red check tells
+    # you which linter failed without opening a log, whereas a `flake-check`
+    # failure does not. `just check` now runs `nix flake check` *and*
+    # `just lint-all`, so a green local `just check` still covers lints — it
+    # just gets them from the recipe rather than from this output, and lints the
+    # working tree (what you are about to commit) instead of the last commit.
+    #
+    # Scoped to Linux only: on x86_64-darwin/aarch64-darwin, `nix flake check
+    # --impure` silently skips `checks` entirely rather than building anything
+    # (no local Linux builder to build these against) — a green check on a Mac
+    # isn't this check running, it's this check not running at all. Real Darwin
+    # verification happens in CI or on an actual Mac.
+    checks = nixpkgs.lib.genAttrs linuxSystems (
       system: let
         pkgs = mkPkgs system;
         homeConfigsForSystem =
@@ -525,28 +540,6 @@
           })
           homeConfigsForSystem)
         // {
-          alejandra = pkgs.runCommand "check-alejandra" {} ''
-            ${pkgs.alejandra}/bin/alejandra --check ${self}
-            touch $out
-          '';
-          statix = pkgs.runCommand "check-statix" {} ''
-            ${pkgs.statix}/bin/statix check ${self}
-            touch $out
-          '';
-          deadnix = pkgs.runCommand "check-deadnix" {} ''
-            ${pkgs.deadnix}/bin/deadnix --fail ${self}
-            touch $out
-          '';
-          # A relative glob after cd, not an absolute-path glob string: this
-          # markdownlint-cli version resolves those two differently (same
-          # class of discrepancy already seen with deadnix elsewhere in this
-          # repo's history) and only the relative form reliably matches the
-          # files CI's own lint-markdownlint job lints.
-          markdownlint = pkgs.runCommand "check-markdownlint" {} ''
-            cd ${self}
-            ${pkgs.markdownlint-cli}/bin/markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CLAUDE.md
-            touch $out
-          '';
           # assert docsCatalogValid forces the bidirectional catalog check
           # (see above) before this even attempts the diff, so a catalog
           # drift and a docs-content drift fail with distinct messages.

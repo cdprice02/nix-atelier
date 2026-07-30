@@ -27,9 +27,12 @@ repos:
         language: system
         types: [file]
         files: \.nix$
+      # Every tracked .md, not a hand-listed subset — pre-commit only ever
+      # passes staged files, which are tracked by definition, so this matches
+      # what `just _lint-markdownlint` selects via `git ls-files`. Submodule
+      # content under config/ is excluded by .markdownlintignore.
       - id: markdownlint
         name: markdownlint
         entry: markdownlint
         language: system
-        types: [file]
-        files: ^(README|CONTRIBUTING|CLAUDE)\.md$|^docs/.*\.md$
+        types: [markdown]
