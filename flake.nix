@@ -517,14 +517,29 @@
     # just gets them from the recipe rather than from this output, and lints the
     # working tree (what you are about to commit) instead of the last commit.
     #
-    # Scoped to Linux only: on x86_64-darwin/aarch64-darwin, `nix flake check
-    # --impure` silently skips `checks` entirely rather than building anything
-    # (no local Linux builder to build these against) — a green check on a Mac
-    # isn't this check running, it's this check not running at all. Real Darwin
-    # verification happens in CI or on an actual Mac.
-    checks = nixpkgs.lib.genAttrs linuxSystems (
+    # Covers every system, but the contents differ by platform, and not
+    # arbitrarily: `activation-*` is derived from `homeConfigurations`, which
+    # only exist for Linux (macOS goes through `darwinConfigurations`), so
+    # darwin is left with the platform-independent checks — currently
+    # `docs-drift`. That is thin, but it is not nothing: before this output
+    # covered darwin at all, `nix flake check` on a Mac skipped `checks`
+    # entirely and passed, so a green local check meant only that the flake
+    # evaluated.
+    #
+    # The darwin system closures are deliberately NOT included here. CI's
+    # build-darwin job already builds all four, and adding them would turn
+    # `just check` — the command CONTRIBUTING tells you to run before every PR
+    # — into a multi-minute build. Real assertion-level darwin coverage is
+    # better served by an eval-only test harness that never builds packages
+    # (see issue #51) than by making the pre-PR check expensive.
+    checks = nixpkgs.lib.genAttrs allSystems (
       system: let
-        pkgs = mkPkgs system;
+        # pkgsFor, not mkPkgs: mkPkgs always imports the rolling nixpkgs, which
+        # has dropped x86_64-darwin, so any darwin check evaluated through it
+        # dies with "Nixpkgs 26.11 has dropped support for x86_64-darwin"
+        # before it can run. pkgsFor routes that one system to the pinned
+        # nixpkgs-darwin input. Latent while `checks` was Linux-only.
+        pkgs = pkgsFor system;
         homeConfigsForSystem =
           nixpkgs.lib.filterAttrs
           (
