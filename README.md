@@ -45,10 +45,13 @@ cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix
 
 # 3. Apply. darwin-rebuild does not exist until after the first apply, so run it
-#    from the flake. Pick the line matching your Mac (`uname -m`):
-#      arm64  -> Apple Silicon      x86_64 -> Intel
-sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
-sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+#    from the flake. The flag is needed because sudo runs as root, which has no
+#    flake config until nix-darwin writes one. Pick the line matching your Mac
+#    (`uname -m`): arm64 -> Apple Silicon, x86_64 -> Intel
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 Afterwards `just switch` handles both, appending the right suffix automatically.
