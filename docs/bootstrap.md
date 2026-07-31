@@ -154,6 +154,7 @@ After first apply, `home-manager` and `just` are on PATH:
 just switch work      # or: home-manager switch --flake ~/.nix-config#work --impure
 just switch personal  # or: home-manager switch --flake ~/.nix-config#personal --impure
 just switch           # uses user.nix's `profile` field if set, else "personal"
+                      # (the -aarch64 suffix is added automatically on ARM)
 
 just --list  # shows all available commands
 ```

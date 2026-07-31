@@ -194,7 +194,11 @@ just switch <profile>   # e.g. just switch work
 just switch             # uses user.nix's `profile` field, else "personal"
 ```
 
-On macOS you can pass the bare profile name (`just switch work`) and the
-`-darwin` / `-darwin-aarch64` suffix is appended for you based on the machine's
-architecture. `just rebuild` is an alias for the same recipe, not a macOS-only
+Pass the bare profile name (`just switch work`) on any machine and the right
+suffix is appended for you: `-darwin` / `-darwin-aarch64` on macOS, `-aarch64`
+on ARM Linux, nothing on x86_64 Linux. Passing an explicit name still works and
+is honoured — it is just checked against the machine first, so an
+architecture mismatch warns instead of silently building for the wrong platform,
+and a macOS config name on Linux (or vice versa) is refused with the correct
+name to use. `just rebuild` is an alias for the same recipe, not a macOS-only
 variant.
