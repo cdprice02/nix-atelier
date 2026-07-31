@@ -19,25 +19,69 @@ default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "pe
 default:
     @just --list
 
+# Resolves a bare profile name (e.g. "personal") to the config for THIS
+# machine's OS and CPU, so nobody has to know the naming scheme to apply their
+# own config. An explicit name is still honoured -- it is just checked against
+# the machine first, and warned about rather than silently built for the wrong
+# platform, which is what a mismatched name used to do.
 [group('machine')]
-[doc('Apply configuration for this machine (dispatches by OS)')]
+[doc('Apply configuration for this machine (auto-detects OS and CPU)')]
 switch PROFILE=default_profile:
     #!/usr/bin/env bash
     set -euo pipefail
     profile="{{ PROFILE }}"
+
+    # uname -m reports arm64 on macOS and aarch64 on Linux for the same CPU.
+    case "$(uname -m)" in
+        arm64 | aarch64) arch=aarch64 ;;
+        x86_64 | amd64)  arch=x86_64 ;;
+        *) echo "error: unrecognised CPU '$(uname -m)'." >&2
+           echo "  Pass an explicit profile name: just switch <profile>" >&2
+           exit 1 ;;
+    esac
+
     if [ "$(uname)" = "Darwin" ]; then
+        # darwinConfigurations: <context>-darwin on Intel,
+        # <context>-darwin-aarch64 on Apple Silicon.
         case "$profile" in
-            *-darwin | *-darwin-aarch64) ;; # already an explicit darwin config
+            *-darwin-aarch64)
+                [ "$arch" = aarch64 ] \
+                    || echo "WARNING: $profile is the Apple Silicon config, but this Mac is Intel." >&2 ;;
+            *-darwin)
+                [ "$arch" = x86_64 ] \
+                    || echo "WARNING: $profile is the Intel config, but this Mac is Apple Silicon (did you mean ${profile}-aarch64?)." >&2 ;;
+            # A Linux-style name. Appending a darwin suffix would produce
+            # nonsense like personal-aarch64-darwin-aarch64, so refuse.
+            *-aarch64)
+                echo "error: '$profile' is a Linux config name; this is macOS." >&2
+                echo "  Use '${profile%-aarch64}-darwin-aarch64' (Apple Silicon) or '${profile%-aarch64}-darwin' (Intel)." >&2
+                exit 1 ;;
             *)
-                if [ "$(uname -m)" = "arm64" ]; then
+                if [ "$arch" = aarch64 ]; then
                     profile="${profile}-darwin-aarch64"
                 else
                     profile="${profile}-darwin"
-                fi
-                ;;
+                fi ;;
         esac
         sudo darwin-rebuild switch --flake .#"$profile" --impure
     else
+        # homeConfigurations: <profile> is x86_64-linux, <profile>-aarch64 is
+        # aarch64-linux. This half previously did no arch handling at all, so
+        # on an ARM machine `just switch personal` resolved to the *x86_64*
+        # config and built for the wrong architecture.
+        case "$profile" in
+            *-darwin | *-darwin-aarch64)
+                echo "error: '$profile' is a macOS config; this is $(uname)." >&2
+                echo "  Use '${profile%-darwin*}' (x86_64) or '${profile%-darwin*}-aarch64' (aarch64)." >&2
+                exit 1 ;;
+            *-aarch64)
+                [ "$arch" = aarch64 ] \
+                    || echo "WARNING: $profile is the aarch64 config, but this machine is x86_64." >&2 ;;
+            *)
+                if [ "$arch" = aarch64 ]; then
+                    profile="${profile}-aarch64"
+                fi ;;
+        esac
         home-manager switch --flake .#"$profile" --impure -b bk
     fi
 
