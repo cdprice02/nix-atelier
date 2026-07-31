@@ -1,7 +1,14 @@
 name: Security
 
+# Scoped the same way as check.yml. An unqualified `push:` fires on every
+# branch, so pushing a PR branch produced *two* `secrets` check runs per PR --
+# one for the push, one for the pull_request -- doing identical work and
+# presenting two check contexts with the same name, which a branch-protection
+# ruleset then has to disambiguate. Restricting push to main leaves exactly one
+# run per PR, plus one per merge.
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
