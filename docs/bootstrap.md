@@ -198,6 +198,15 @@ alejandra and markdownlint hooks resolve against the devShell's PATH, so a bare
 sh <(curl -L https://nixos.org/nix/install)
 ```
 
+Unlike the WSL2 section above, there is no separate "enable experimental
+features" step here — the apply command in step 7 passes
+`--extra-experimental-features` itself. That is deliberate: the flake features
+have to be enabled *for root*, since the apply runs under `sudo`, and writing
+`~/.config/nix/nix.conf` would only affect your own user. Once nix-darwin has
+run once it manages `/etc/nix/nix.conf` for you (`system/darwin.nix` sets
+`nix.settings.experimental-features`), so the flag is only needed for the very
+first apply.
+
 ### 2. Clone the repo
 
 ```sh
@@ -248,10 +257,12 @@ Mac:
 
 ```sh
 # Apple Silicon
-sudo nix run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 
 # Intel — note the pinned nix-darwin release, matching this repo's 25.05 pin
-sudo nix run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
 After that first apply, `darwin-rebuild` is on PATH and every later apply is just:
