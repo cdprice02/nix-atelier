@@ -4,22 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-Personal Nix config. Nix is the only path — no fallback scripts. Supports macOS (nix-darwin, both Intel and Apple Silicon) and any Linux/WSL2 via standalone Home Manager. NixOS is **not** supported yet — `system/nixos.nix` exists but no flake output references it (tracked in issue #5).
+Personal Nix config. Nix is the only path; there are no fallback scripts. Supports macOS (nix-darwin, both Intel and Apple Silicon) and any Linux/WSL2 via standalone Home Manager. NixOS is **not** supported yet: `system/nixos.nix` exists but no flake output references it (tracked in issue #5).
 
-Claude Code and Copilot configs are submodules under `config/` — provisioned automatically by Home Manager on first activation.
+Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation.
 
 ## Repo Layout
 
 ```text
-  flake.nix                    # Entry point — inputs, all configuration outputs
+  flake.nix                    # Entry point: inputs, all configuration outputs
   flake.lock
-  justfile                     # Task runner — the sole interface (`just --list`)
-  user.nix.example             # Identity template (tracked) — copy to user.nix
-  user.nix                     # Local identity (gitignored) — never committed
+  justfile                     # Task runner, the sole interface (`just --list`)
+  user.nix.example             # Identity template (tracked); copy to user.nix
+  user.nix                     # Local identity (gitignored); never committed
   .sops.yaml                   # sops age recipients (opt-in secrets, see below)
   secrets/secrets.yaml         # sops-encrypted secrets (opt-in via user.nix)
   secrets.env.example          # Template for the manual ~/.config/secrets/env
-  statix.toml                  # statix lint config (one rule disabled — see issue #46)
+  statix.toml                  # statix lint config (one rule disabled; see issue #46)
   .markdownlintignore          # Single source for what markdownlint skips
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
@@ -48,14 +48,14 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
     gui-darwin.nix             # macOS GUI: obsidian, alacritty, vscode, osxkeychain
   system/
     darwin.nix                 # macOS system settings + Homebrew
-    nixos.nix                  # UNREFERENCED — no nixosConfigurations output (issue #5)
+    nixos.nix                  # UNREFERENCED; no nixosConfigurations output (issue #5)
   config/
     git/
       gitalias/                # git submodule (fork of GitAlias/gitalias)
-      gitalias.txt             # ORPHANED stale duplicate — see issue #47
-    claude/                    # git submodule — symlinked to ~/.claude by Home Manager
-    copilot/                   # git submodule — symlinked to ~/.copilot (personal only)
-  docs/                        # profiles.md and tools.md are GENERATED — edit docs-gen.nix
+      gitalias.txt             # ORPHANED stale duplicate; see issue #47
+    claude/                    # git submodule, symlinked to ~/.claude by Home Manager
+    copilot/                   # git submodule, symlinked to ~/.copilot (personal only)
+  docs/                        # profiles.md and tools.md are GENERATED; edit docs-gen.nix
     bootstrap.md               # First-time setup per target
     profiles.md                # Profile reference (generated)
     tools.md                   # Tool reference (generated)
@@ -69,7 +69,7 @@ Claude Code and Copilot configs are submodules under `config/` — provisioned a
 
 ## Key Commands
 
-Prefer `just` — it is the sole interface and handles OS/arch dispatch.
+Prefer `just`: it is the sole interface and handles OS/arch dispatch.
 
 | Task | Command |
 |------|---------|
@@ -95,38 +95,23 @@ Declares `nixpkgs`, `nix-darwin`, `home-manager`, `rust-overlay` inputs.
 #### Input pairing invariant
 
 Home Manager's modules (and nix-darwin) are coupled to their nixpkgs release,
-so every home-manager / nix-darwin input must be release-matched to its nixpkgs
-input. There are two independent pairs, and the darwin pin is split by
-architecture — only x86_64-darwin is pinned:
+so every home-manager / nix-darwin input must be release-matched to its
+nixpkgs input. Two independent pairs:
 
 | Target | nixpkgs | home-manager | nix-darwin | Tracks |
 |--------|---------|--------------|------------|--------|
-| Linux/WSL2 | `nixpkgs` | `home-manager` | — | rolling (`nixpkgs-unstable` + HM master) |
+| Linux/WSL2 | `nixpkgs` | `home-manager` | none | rolling (`nixpkgs-unstable` + HM master) |
 | aarch64-darwin | `nixpkgs` | `home-manager` | `nix-darwin` | rolling (same as Linux, + nix-darwin master) |
 | x86_64-darwin | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` | pinned (`25.05` across all three) |
 
-Only **x86_64-darwin** is pinned: it's an Intel 2018 MacBook Pro capped at
-macOS 13, and nixpkgs 25.05 is the last release both supporting x86_64-darwin
-and targeting macOS ≤13 (see the `nixpkgs-darwin` input comment). aarch64-darwin
-(Apple Silicon) rides the rolling inputs exactly like Linux — it has no such
-constraint — so it stays current and never inherits the pinned release's
-platform bugs (e.g. 25.05's unbuildable aarch64-darwin dotnet).
-
-`checkReleasePair` in `flake.nix` compares each pair's release strings and
-**fails evaluation** on a mismatch — HM's own `enableNixpkgsReleaseCheck` only
-warns, which is easy to scroll past. `mkDarwinConfig` asserts the pinned pair
-for x86_64-darwin and the rolling pair for aarch64-darwin. Always update both
-inputs of a pair together via `just update` (which takes no input argument by
-design); never `nix flake update <single-input>`.
-
-`just update` is safe to run from either machine and does **not** advance the
-x86_64-darwin pin. The pin is the input *ref* in `flake.nix`, not the revision
-in `flake.lock`: re-resolving `nixpkgs-25.05-darwin` / `nix-darwin-25.05` can
-only ever land on another 25.05 commit, and those branches are frozen upstream,
-so in practice the pinned revisions don't move at all. Only the rolling inputs
-(Linux + aarch64-darwin) advance. Retargeting x86_64-darwin to a newer release
-means editing the `nixpkgs-darwin`, `nix-darwin-x86`, and `home-manager-darwin`
-refs in `flake.nix` by hand — and `checkReleasePair` catches it if they desync.
+Only x86_64-darwin is pinned: an Intel 2018 MacBook Pro capped at macOS 13,
+and 25.05 is the last release supporting both. `checkReleasePair` in
+`flake.nix` fails evaluation on a mismatch (HM's own
+`enableNixpkgsReleaseCheck` only warns, which is easy to miss). Always update
+both inputs of a pair together via `just update`, which takes no input
+argument by design; never `nix flake update <single-input>`. Retargeting the
+pin means editing the `nixpkgs-darwin`, `nix-darwin-x86`, and
+`home-manager-darwin` refs in `flake.nix` by hand.
 
 Because Linux tracks rolling releases, some options must be spelled the way
 both HM versions accept. Where the newer HM has renamed or added an option,
@@ -136,11 +121,11 @@ spelling and breaking the other.
 
 Outputs:
 
-- `homeConfigurations` — standalone home-manager for Linux/WSL2 (16 keys: personal/work × minimal/dev/server × gui × aarch64)
-- `darwinConfigurations` — macOS via nix-darwin + home-manager
-- `nixosConfigurations` — not implemented (tracked in issue #5); no output exists yet, needs a `mkNixosConfig` helper and a target machine's `hardware-configuration.nix`
+- `homeConfigurations`: standalone home-manager for Linux/WSL2 (16 keys: personal/work × minimal/dev/server × gui × aarch64)
+- `darwinConfigurations`: macOS via nix-darwin + home-manager
+- `nixosConfigurations`: not implemented (tracked in issue #5); no output exists yet, needs a `mkNixosConfig` helper and a target machine's `hardware-configuration.nix`
 
-Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix.example` and fill in values. The `user` attrset is built in `flake.nix` from that file — `sshKey` is derived automatically from the email prefix. Requires `--impure` on all `home-manager switch` calls.
+Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix.example` and fill in values. The `user` attrset is built in `flake.nix` from that file; `sshKey` is derived automatically from the email prefix. Requires `--impure` on all `home-manager switch` calls.
 
 ### Profile compositor
 
@@ -148,11 +133,11 @@ Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix
 
 - `context`: `personal` | `work`
 - `tier`: `minimal` | `dev` | `server`
-- `withGui`: bool — auto-selects `gui-linux.nix` or `gui-darwin.nix`
+- `withGui`: bool, auto-selects `gui-linux.nix` or `gui-darwin.nix`
 
 Every profile starts with `base.nix` + `env.nix` + caret. `tier` expands into a
 list of named features via `modules/profiles.nix`, each resolved to a module
-path via `modules/features.nix` (`assert`ed eagerly — an unknown tier or
+path via `modules/features.nix` (`assert`ed eagerly: an unknown tier or
 feature name fails any `nix eval`/`build`, not just the one profile that
 references it). `user.nix` can layer extra features onto its profile via an
 `extraFeatures` list. Darwin configs always include GUI.
@@ -163,16 +148,16 @@ references it). `user.nix` can layer extra features onto its profile via an
 
 Two tiers:
 
-- **Profile vars** (`CLAUDE_PROFILE`, known at build time) — set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in the same way, via `user.nix`'s `aws.profile` field (unset by default, since `cloud.nix` loads on both personal and work profiles and a hardcoded default risks hitting the wrong account).
-- **API keys** — stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template. Optionally populated via sops-nix instead of a manual copy — opt-in per machine via `user.nix`'s `useSops` field; see `modules/secrets-sops.nix` and `docs/bootstrap.md`.
+- **Profile vars** (`CLAUDE_PROFILE`, known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in the same way, via `user.nix`'s `aws.profile` field (unset by default, since `cloud.nix` loads on both personal and work profiles and a hardcoded default risks hitting the wrong account).
+- **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template. Optionally populated via sops-nix instead of a manual copy; opt-in per machine via `user.nix`'s `useSops` field; see `modules/secrets-sops.nix` and `docs/bootstrap.md`.
 
 ### Submodule overrides
 
-`user.nix` accepts an optional `submodules` attrset. For each key matching a submodule name, Home Manager activation adds a `private` remote and checks out a tracking branch automatically — no manual git setup needed after `home-manager switch`. Leave the block empty to use the default public submodule remotes.
+`user.nix` accepts an optional `submodules` attrset. For each key matching a submodule name, Home Manager activation adds a `private` remote and checks out a tracking branch automatically; no manual git setup needed after `home-manager switch`. Leave the block empty to use the default public submodule remotes.
 
 ### VS Code
 
-Binary managed by Nix. Extensions and settings via GitHub Settings Sync — nothing declared in Nix.
+Binary managed by Nix. Extensions and settings via GitHub Settings Sync; nothing declared in Nix.
 
 ### SSH
 
@@ -182,4 +167,4 @@ Work-specific SSH stubs go in `~/.ssh/config.d/work` (written by `work.nix`, inc
 
 ### Corporate PEM (work profile only)
 
-Place at `~/.certs/corporate.pem` — never committed. See `docs/bootstrap.md` for the copy command.
+Place at `~/.certs/corporate.pem`, never committed. See `docs/bootstrap.md` for the copy command.

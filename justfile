@@ -9,7 +9,7 @@ default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "pe
 # Recipes prefixed with `_` are CI-internal plumbing, hidden from `just
 # --list` by design (just's own private-recipe convention) but still
 # runnable (`just _build-linux personal`) and inspectable (`just --show
-# _build-linux`) — not a black box, just not cluttering the everyday list.
+# _build-linux`), not a black box, just not cluttering the everyday list.
 #
 # Relative paths below are bare (`.`, `docs/...`) rather than
 # `{{ justfile_directory() }}`-prefixed: just runs every recipe with cwd set
@@ -87,7 +87,7 @@ switch PROFILE=default_profile:
 
 # `just rebuild` is a pure alias for `switch`, kept only so muscle memory from
 # the pre-`just` `darwin-rebuild` era still works. It is NOT the macOS
-# counterpart to a Linux-only `switch` — `switch` dispatches by OS on its own
+# counterpart to a Linux-only `switch`: `switch` dispatches by OS on its own
 # (see the uname branch above), so the two are the same recipe on every
 # platform. docs/troubleshooting.md used to present them as an OS split, which
 # was misleading; it now documents `switch` alone.
@@ -95,14 +95,14 @@ alias rebuild := switch
 
 # Safe to run on any machine: this does NOT advance any release pin. The darwin
 # pin lives in flake.nix's input refs (nixpkgs-25.05-darwin / release-25.05),
-# not in flake.lock, so re-resolving can only ever land on another 25.05 commit
-# — moving that pin means editing flake.nix by hand. Only the rolling
+# not in flake.lock, so re-resolving can only ever land on another 25.05 commit;
+# moving that pin means editing flake.nix by hand. Only the rolling
 # Linux/WSL2 inputs (nixpkgs-unstable / home-manager master) actually advance.
 [group('machine')]
-[doc('Re-resolve all flake inputs together — never a single input')]
+[doc('Re-resolve all flake inputs together, never a single input')]
 update:
     nix flake update
-    @echo "Inputs updated — run 'just check' before 'just switch'."
+    @echo "Inputs updated, run 'just check' before 'just switch'."
 
 [group('machine')]
 [doc('Update submodules to latest commit on their tracked branch')]
@@ -110,7 +110,7 @@ sync:
     git submodule update --remote --merge
 
 # Propagate shared Claude config from the public repo into the private work
-# overlay. Profiles are separated by branch and remote — public `main` holds
+# overlay. Profiles are separated by branch and remote: public `main` holds
 # everything shareable, the private `work` branch adds employer-specific config
 # that must never reach a public repo. Without a cadence the work branch rots;
 # it has already drifted once.
@@ -124,7 +124,7 @@ sync-work:
     cd config/claude
     branch=$(git rev-parse --abbrev-ref HEAD)
     if [ "$branch" != "work" ]; then
-        echo "config/claude is on '$branch', not 'work' — nothing to do." >&2
+        echo "config/claude is on '$branch', not 'work'; nothing to do." >&2
         echo "This recipe is for work machines. See user.nix submodules." >&2
         exit 1
     fi
@@ -144,7 +144,7 @@ sync-work:
 # CI runs the full cross-system matrix (see .github/workflows/check.yml).
 #
 # Runs lint-all explicitly because the lints deliberately live outside the
-# flake's `checks` output (see flake.nix's comment there — they were being run
+# flake's `checks` output (see flake.nix's comment there: they were being run
 # twice per PR). Keeping them here means a green `just check` still covers
 # formatting and lint, and covers the working tree rather than the last commit.
 [group('check')]
@@ -167,14 +167,15 @@ eval-all:
         echo "eval darwinConfigurations.$p"
         nix eval --impure --raw .#darwinConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
     done
-    echo "All 20 profiles evaluated cleanly."
+    total=$(( ${#linux[@]} + ${#darwin[@]} ))
+    echo "All $total profiles evaluated cleanly."
 
 [group('check')]
 [doc('Run all lints (alejandra, statix, deadnix, markdownlint)')]
 lint-all: _lint-alejandra _lint-statix _lint-deadnix _lint-markdownlint
 
 # Wraps the run in `nix develop` because .pre-commit-config.yaml's alejandra
-# and markdownlint hooks use `language: system` — they resolve to whatever is
+# and markdownlint hooks use `language: system`; they resolve to whatever is
 # on PATH, which is only correct inside the devShell. Running `pre-commit run`
 # bare either picks up a different version of those tools or fails to find
 # them, and the docs told users to do exactly that (CONTRIBUTING.md,
@@ -193,7 +194,7 @@ precommit:
 fmt:
     nix fmt
 
-# Regenerated content only — see modules/docs-gen.nix for what's generated
+# Regenerated content only; see modules/docs-gen.nix for what's generated
 # vs. hand-maintained within the two files.
 [group('generate')]
 [doc('Regenerate docs/profiles.md + docs/tools.md from Nix')]
@@ -236,8 +237,8 @@ _lint-deadnix:
 
 # Lints exactly the Markdown this repo tracks, derived from git rather than a
 # hand-listed set of paths (which previously lived here, in flake.nix and in
-# .pre-commit-config.yaml in three different syntaxes, and had already drifted
-# — CODE_OF_CONDUCT.md and .github/pull_request_template.md were in none of
+# .pre-commit-config.yaml in three different syntaxes, and had already drifted:
+# CODE_OF_CONDUCT.md and .github/pull_request_template.md were in none of
 # them). `git ls-files` also naturally excludes untracked local scratch files,
 # which a bare '**/*.md' glob would pick up. Submodule content under config/ is
 # excluded via .markdownlintignore.

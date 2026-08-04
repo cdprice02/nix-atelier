@@ -7,10 +7,10 @@ description: Work on the personal Nix configuration repo (nix-darwin on macOS, s
 
 Personal Nix config at `~/.nix-config`. macOS via nix-darwin (Intel and Apple
 Silicon), any Linux/WSL2/HPC via standalone Home Manager. **Nix is the only
-path — there are no fallback scripts.** NixOS is not supported: `system/nixos.nix`
+path: there are no fallback scripts.** NixOS is not supported: `system/nixos.nix`
 exists but no flake output references it.
 
-## Use `just` — it is the interface
+## Use `just`: it is the interface
 
 ```bash
 just switch [PROFILE]   # apply for this machine (auto-detects OS and CPU)
@@ -22,7 +22,7 @@ just sync               # update submodules to their tracked branch
 just fmt                # alejandra over all Nix files
 ```
 
-`just check` is the gate — it runs `nix flake check`, four lints (alejandra,
+`just check` is the gate: it runs `nix flake check`, four lints (alejandra,
 statix, deadnix, markdownlint), and the eval-time assertions below. Run it before
 proposing a change is done.
 
@@ -41,19 +41,20 @@ independent pairs, and darwin is split by architecture:
 | Linux/WSL2 + aarch64-darwin | `nixpkgs` | `home-manager` | `nix-darwin` (rolling) |
 | x86_64-darwin | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` (pinned 25.05) |
 
-`checkReleasePair` (flake.nix ~line 152) compares release strings and throws on
-mismatch. Only x86_64-darwin is pinned — it is an Intel 2018 MacBook Pro capped
-at macOS 13, and 25.05 is the last release supporting both.
+`checkReleasePair` (`grep -n checkReleasePair flake.nix` to find it; line
+numbers here would rot) compares release strings and throws on mismatch. Only
+x86_64-darwin is pinned: it is an Intel 2018 MacBook Pro capped at macOS 13,
+and 25.05 is the last release supporting both.
 
 **Always update a pair together via `just update`.** Never
 `nix flake update <single-input>`. `just update` deliberately takes no input
-argument, and it cannot advance the x86_64-darwin pin — those refs are frozen
+argument, and it cannot advance the x86_64-darwin pin: those refs are frozen
 branches, so re-resolving lands on the same release.
 
 ### 2. Tool catalog drift
 
 `modules/tool-catalog.nix` maps package → description for the generated
-`docs/tools.md`, and the check runs **both ways** (flake.nix ~line 275):
+`docs/tools.md`, and the check runs **both ways**:
 
 - installed but uncatalogued → throws
 - catalogued but not installed → throws
@@ -96,7 +97,7 @@ to set `CLAUDE_PROFILE` and gate the Copilot symlink.
 
 ## Adding a package
 
-1. Put it in the right `modules/features/*.nix` — match tier and context
+1. Put it in the right `modules/features/*.nix`, matching tier and context
 2. **Add a `modules/tool-catalog.nix` entry** or eval fails
 3. `just eval-all` (fast), then `just check`
 4. `just docs` if the catalog changed
@@ -111,7 +112,7 @@ Doing it by hand:
 ```bash
 # macOS
 sudo darwin-rebuild switch --flake ~/.nix-config#<config> --impure
-# Linux / WSL2 — -b bk is required on first apply or HM refuses to overwrite
+# Linux / WSL2: -b bk is required on first apply or HM refuses to overwrite
 home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
 ```
 
@@ -122,7 +123,7 @@ Optional keys: `profile`, `extraFeatures`, `work.{name,email}`, `aws.profile`,
 `kiroRepo`, `useSops`, `submodules`. `sshKey` is derived from the email prefix in
 flake.nix, not set directly.
 
-`submodules` wires a private remote per submodule — `base.nix`'s
+`submodules` wires a private remote per submodule: `base.nix`'s
 `submoduleOverrides` adds a `private` remote and checks out a local `work` branch
 tracking `private/main`. This is how the work Claude config stays out of the
 public repo.
@@ -132,10 +133,10 @@ public repo.
 - **HM option spellings differ across the two pins.** Where the newer HM renamed
   an option, `base.nix` guards on `options.<path> ? <name>` rather than picking
   one spelling and breaking the other target. Follow that pattern.
-- **`config/` submodules are live paths**, not store copies — that is why
+- **`config/` submodules are live paths**, not store copies. That is why
   `--impure` is needed and why `mkOutOfStoreSymlink` is used for `~/.claude`.
 - **`ai.nix` installs no packages.** It is activation hooks running vendor
-  installers, guarded by a path test — so once `~/.local/bin/claude` exists the
+  installers, guarded by a path test, so once `~/.local/bin/claude` exists the
   hook never runs again and never upgrades. Use `claude update` out of band.
 - **Homebrew casks in `system/darwin.nix` are darwin-wide and unconditional**,
   including on work profiles. `onActivation.upgrade = true` means they upgrade on
