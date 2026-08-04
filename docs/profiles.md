@@ -2,15 +2,15 @@
 
 ## Choosing a profile
 
-**New machine?** Start with `*-minimal` to bootstrap quickly — it installs only the base tools needed to get Nix and home-manager working. Once stable, switch to `work` or `personal` for the full dev toolchain.
+**New machine?** Start with `*-minimal` to bootstrap quickly: it installs only the base tools needed to get Nix and home-manager working. Once stable, switch to `work` or `personal` for the full dev toolchain.
 
-**Daily driver (WSL2/Linux)?** Use `work` or `personal` — these include the full dev tier: Rust, Node, Python, AWS, tmux, and Claude Code.
+**Daily driver (WSL2/Linux)?** Use `work` or `personal`, which include the full dev tier: Rust, Node, Python, AWS, tmux, and Claude Code.
 
-**Headless server or CI?** Use `*-server` — stripped-down, no dev toolchain, large tmux scrollback.
+**Headless server or CI?** Use `*-server`: stripped-down, no dev toolchain, large tmux scrollback.
 
-**Desktop Linux?** Use `work-gui` or `personal-gui` — adds Obsidian, Alacritty, and VS Code.
+**Desktop Linux?** Use `work-gui` or `personal-gui`: adds Obsidian, Alacritty, and VS Code.
 
-**macOS?** Use `work-darwin` or `personal-darwin` — GUI is always included on Darwin.
+**macOS?** Use `work-darwin` or `personal-darwin`: GUI is always included on Darwin.
 
 ---
 
@@ -22,11 +22,11 @@ tier    : minimal | dev | server
 withGui : false | true  (auto-selects gui-linux or gui-darwin)
 ```
 
-`tier` expands into a set of named features via `modules/profiles.nix`, each resolved to a module path via `modules/features.nix`. `user.nix` can add extra features beyond a machine's tier via an `extraFeatures` list — see `user.nix.example`.
+`tier` expands into a set of named features via `modules/profiles.nix`, each resolved to a module path via `modules/features.nix`. `user.nix` can add extra features beyond a machine's tier via an `extraFeatures` list; see `user.nix.example`.
 
 ## Module composition
 
-Hand-maintained, not generated (below the per-profile tables) — the one row that doesn't reduce to tier/context/withGui cleanly is `cloud.nix`, included both via the `dev` tier *and* independently via `work.nix`'s own `imports`, which isn't expressed as data anywhere (see `modules/docs-gen.nix`'s own note on this).
+Hand-maintained, not generated (below the per-profile tables). The one row that doesn't reduce to tier/context/withGui cleanly is `cloud.nix`, included both via the `dev` tier *and* independently via `work.nix`'s own `imports`, which isn't expressed as data anywhere (see `modules/docs-gen.nix`'s own note on this).
 
 | Module | Included when |
 |--------|--------------|
@@ -43,7 +43,7 @@ Hand-maintained, not generated (below the per-profile tables) — the one row th
 | `gui-linux.nix` | withGui = true, Linux |
 | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
 
-`minimal` gets only `core` + `env` — no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains. It keeps `jq`/`wget`/`git-lfs` in `core` itself — bootstrap/scripting utilities, not comfort tools, so "minimal" means lean rather than feature-free.
+`minimal` gets only `core` + `env`: no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains. It keeps `jq`/`wget`/`git-lfs` in `core` itself; bootstrap/scripting utilities, not comfort tools, so "minimal" means lean rather than feature-free.
 
 ## homeConfigurations (Linux / WSL2)
 
@@ -78,20 +78,20 @@ Darwin always includes GUI (`gui-darwin.nix`). Tier is always `dev`.
 | `work-darwin` | Work macOS (Intel) |
 | `work-darwin-aarch64` | Work macOS (Apple Silicon) |
 
-**Pick by CPU, not preference** — `uname -m` prints `arm64` for Apple
+**Pick by CPU, not preference.** `uname -m` prints `arm64` for Apple
 Silicon, `x86_64` for Intel. The two are not interchangeable: the Intel
 configs build against a pinned nixpkgs 25.05 (nixpkgs-unstable has dropped
 x86_64-darwin), while the Apple Silicon configs ride the same rolling inputs
 as Linux.
 
-Bootstrap — `darwin-rebuild` does not exist until after the first apply, so
+Bootstrap: `darwin-rebuild` does not exist until after the first apply, so
 the first one runs nix-darwin straight from the flake:
 ```sh
 # Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 
-# Intel — pinned nix-darwin release, matching this repo's 25.05 pin
+# Intel: pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
@@ -107,7 +107,7 @@ Add an entry to `modules/profile-list.nix`:
 my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..."; };
 ```
 
-Regenerate this file and commit the result — the `docs-drift` check fails
+Regenerate this file and commit the result; the `docs-drift` check fails
 otherwise, since the table above is generated from that same list:
 ```sh
 just docs

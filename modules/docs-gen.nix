@@ -1,12 +1,12 @@
 # Pure-Nix generator for docs/profiles.md and docs/tools.md, consumed by
 # flake.nix's `packages.<system>.docs-*` (buildable, for `just docs`) and
 # `checks.<system>.docs-drift` (fails CI if the committed file disagrees).
-# No fallback bash/python script — matches this repo's own "Nix is the only
+# No fallback bash/python script; matches this repo's own "Nix is the only
 # path" rule (CLAUDE.md).
 #
 # Prose sections (profile-choosing guidance, "Adding a new profile", the
-# Module composition table) are literal strings here, not derived from data
-# — they're editorial content, not enumerable facts. Once a doc is
+# Module composition table) are literal strings here, not derived from data.
+# They're editorial content, not enumerable facts. Once a doc is
 # generated, ALL edits go through its generator, including these "hand
 # maintained" parts: editing the committed docs/*.md directly gets
 # overwritten on the next `just docs` / CI regeneration.
@@ -23,7 +23,7 @@
   darwinNamesOk =
     lib.throwIf
     (lib.sort lib.lessThan darwinConfigNames != lib.sort lib.lessThan expectedDarwinNames)
-    "docs-gen.nix: darwinConfigurations names changed (now ${toString darwinConfigNames}) — update the hardcoded darwin table in modules/docs-gen.nix to match"
+    "docs-gen.nix: darwinConfigurations names changed (now ${toString darwinConfigNames}); update the hardcoded darwin table in modules/docs-gen.nix to match"
     true;
 
   # ═══════════════════════════════════════════════════════════════════════
@@ -31,12 +31,12 @@
   # ═══════════════════════════════════════════════════════════════════════
 
   # Editorial ordering (bootstrap-complexity progression), not attrNames'
-  # alphabetical sort — validated against profiles.nix's real keys below.
+  # alphabetical sort; validated against profiles.nix's real keys below.
   tierOrder = ["minimal" "dev" "server"];
   tierOrderOk =
     lib.throwIf
     (lib.sort lib.lessThan tierOrder != lib.sort lib.lessThan (lib.attrNames profiles))
-    "docs-gen.nix: tierOrder (${toString tierOrder}) doesn't match profiles.nix's keys (${toString (lib.attrNames profiles)}) — update tierOrder"
+    "docs-gen.nix: tierOrder (${toString tierOrder}) doesn't match profiles.nix's keys (${toString (lib.attrNames profiles)}); update tierOrder"
     true;
 
   describeModules = {
@@ -81,15 +81,15 @@
 
     ## Choosing a profile
 
-    **New machine?** Start with `*-minimal` to bootstrap quickly — it installs only the base tools needed to get Nix and home-manager working. Once stable, switch to `work` or `personal` for the full dev toolchain.
+    **New machine?** Start with `*-minimal` to bootstrap quickly: it installs only the base tools needed to get Nix and home-manager working. Once stable, switch to `work` or `personal` for the full dev toolchain.
 
-    **Daily driver (WSL2/Linux)?** Use `work` or `personal` — these include the full dev tier: Rust, Node, Python, AWS, tmux, and Claude Code.
+    **Daily driver (WSL2/Linux)?** Use `work` or `personal`, which include the full dev tier: Rust, Node, Python, AWS, tmux, and Claude Code.
 
-    **Headless server or CI?** Use `*-server` — stripped-down, no dev toolchain, large tmux scrollback.
+    **Headless server or CI?** Use `*-server`: stripped-down, no dev toolchain, large tmux scrollback.
 
-    **Desktop Linux?** Use `work-gui` or `personal-gui` — adds Obsidian, Alacritty, and VS Code.
+    **Desktop Linux?** Use `work-gui` or `personal-gui`: adds Obsidian, Alacritty, and VS Code.
 
-    **macOS?** Use `work-darwin` or `personal-darwin` — GUI is always included on Darwin.
+    **macOS?** Use `work-darwin` or `personal-darwin`: GUI is always included on Darwin.
 
     ---
 
@@ -101,11 +101,11 @@
     withGui : false | true  (auto-selects gui-linux or gui-darwin)
     ```
 
-    `tier` expands into a set of named features via `modules/profiles.nix`, each resolved to a module path via `modules/features.nix`. `user.nix` can add extra features beyond a machine's tier via an `extraFeatures` list — see `user.nix.example`.
+    `tier` expands into a set of named features via `modules/profiles.nix`, each resolved to a module path via `modules/features.nix`. `user.nix` can add extra features beyond a machine's tier via an `extraFeatures` list; see `user.nix.example`.
 
     ## Module composition
 
-    Hand-maintained, not generated (below the per-profile tables) — the one row that doesn't reduce to tier/context/withGui cleanly is `cloud.nix`, included both via the `dev` tier *and* independently via `work.nix`'s own `imports`, which isn't expressed as data anywhere (see `modules/docs-gen.nix`'s own note on this).
+    Hand-maintained, not generated (below the per-profile tables). The one row that doesn't reduce to tier/context/withGui cleanly is `cloud.nix`, included both via the `dev` tier *and* independently via `work.nix`'s own `imports`, which isn't expressed as data anywhere (see `modules/docs-gen.nix`'s own note on this).
 
     | Module | Included when |
     |--------|--------------|
@@ -122,7 +122,7 @@
     | `gui-linux.nix` | withGui = true, Linux |
     | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
 
-    `minimal` gets only `core` + `env` — no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains. It keeps `jq`/`wget`/`git-lfs` in `core` itself — bootstrap/scripting utilities, not comfort tools, so "minimal" means lean rather than feature-free.
+    `minimal` gets only `core` + `env`: no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains. It keeps `jq`/`wget`/`git-lfs` in `core` itself; bootstrap/scripting utilities, not comfort tools, so "minimal" means lean rather than feature-free.
 
     ## homeConfigurations (Linux / WSL2)
 
@@ -145,20 +145,20 @@
     | Profile | Use for |
     |---------|---------|
     ${darwinProfileRows}
-    **Pick by CPU, not preference** — `uname -m` prints `arm64` for Apple
+    **Pick by CPU, not preference.** `uname -m` prints `arm64` for Apple
     Silicon, `x86_64` for Intel. The two are not interchangeable: the Intel
     configs build against a pinned nixpkgs 25.05 (nixpkgs-unstable has dropped
     x86_64-darwin), while the Apple Silicon configs ride the same rolling inputs
     as Linux.
 
-    Bootstrap — `darwin-rebuild` does not exist until after the first apply, so
+    Bootstrap: `darwin-rebuild` does not exist until after the first apply, so
     the first one runs nix-darwin straight from the flake:
     ```sh
     # Apple Silicon
     sudo nix --extra-experimental-features "nix-command flakes" \
       run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 
-    # Intel — pinned nix-darwin release, matching this repo's 25.05 pin
+    # Intel: pinned nix-darwin release, matching this repo's 25.05 pin
     sudo nix --extra-experimental-features "nix-command flakes" \
       run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
     ```
@@ -174,7 +174,7 @@
     my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..."; };
     ```
 
-    Regenerate this file and commit the result — the `docs-drift` check fails
+    Regenerate this file and commit the result; the `docs-drift` check fails
     otherwise, since the table above is generated from that same list:
     ```sh
     just docs
@@ -215,7 +215,7 @@
     lib.throwIf
     (lib.sort lib.lessThan categoryOrder
       != lib.sort lib.lessThan (lib.unique (map (e: e.category) allToolEntries)))
-    "docs-gen.nix: categoryOrder doesn't match the categories actually used in tool-catalog.nix — update categoryOrder"
+    "docs-gen.nix: categoryOrder doesn't match the categories actually used in tool-catalog.nix; update categoryOrder"
     true;
 
   toolEntry = e: ''
@@ -239,7 +239,7 @@
     ${lib.concatStringsSep "\n" (map categorySection categoryOrder)}
   '';
 
-  # Collapse trailing blank lines down to exactly one final newline —
+  # Collapse trailing blank lines down to exactly one final newline:
   # string-concatenating multi-line ''...'' blocks naturally accumulates
   # extra trailing newlines at each join point.
   dropTrailingEmpty = lines:

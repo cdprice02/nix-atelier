@@ -1,5 +1,5 @@
 # Hand-curated tool metadata for the generated docs/tools.md. This is the one
-# piece of the docs pipeline that genuinely can't be derived from Nix —
+# piece of the docs pipeline that genuinely can't be derived from Nix:
 # descriptions/categories/links are human judgment, not facts extractable
 # from nixpkgs (its own `meta.description` has no category concept and
 # doesn't match this doc's tailored wording). What's no longer hand-written
@@ -13,7 +13,7 @@
 # `pkgs.buildEnv { name = "rust-analyzer-nightly-bundle"; ... }` resolves to
 # that literal string, not any real attribute) or HM-module-owned (enabling
 # `programs.bash` realizes as `bash-interactive`, not `bash`). `key` is the
-# doc heading text — independent of `matches`, since one heading sometimes
+# doc heading text, independent of `matches`, since one heading sometimes
 # covers several realized names (the stable + nightly Rust bundle) and
 # sometimes reads better than the raw realized name (`bash-interactive` ->
 # "bash").
@@ -45,14 +45,14 @@
       key = "caret";
       matches = ["caret"];
       category = "Shell";
-      description = "Zero-subprocess cross-shell prompt — directory, git branch, exit-status arrow. No per-render fork/exec (unlike starship/oh-my-posh).";
+      description = "Zero-subprocess cross-shell prompt: directory, git branch, exit-status arrow. No per-render fork/exec (unlike starship/oh-my-posh).";
       link = "[github.com/cdprice02/caret](https://github.com/cdprice02/caret)";
     }
     {
       key = "zoxide";
       matches = ["zoxide"];
       category = "Shell";
-      description = "Smarter `cd` — learns your most-used directories; `z <partial>` jumps instantly.";
+      description = "Smarter `cd`: learns your most-used directories; `z <partial>` jumps instantly.";
       link = "[github.com/ajeetdsouza/zoxide](https://github.com/ajeetdsouza/zoxide)";
     }
     {
@@ -110,7 +110,7 @@
       key = "lazygit";
       matches = ["lazygit"];
       category = "CLI Utilities";
-      description = "TUI git client — stage hunks, rebase interactively, manage branches visually.";
+      description = "TUI git client: stage hunks, rebase interactively, manage branches visually.";
       link = "[github.com/jesseduffield/lazygit](https://github.com/jesseduffield/lazygit)";
     }
     {
@@ -138,7 +138,7 @@
       key = "hyperfine";
       matches = ["hyperfine"];
       category = "CLI Utilities";
-      description = "Command-line benchmarking tool — statistically sound timing with warmup runs and outlier detection.";
+      description = "Command-line benchmarking tool: statistically sound timing with warmup runs and outlier detection.";
       link = "[github.com/sharkdp/hyperfine](https://github.com/sharkdp/hyperfine)";
     }
 
@@ -154,14 +154,14 @@
       key = "nixd";
       matches = ["nixd"];
       category = "Editor";
-      description = "Nix language server — completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files.";
+      description = "Nix language server: completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files.";
       link = "[github.com/nix-community/nixd](https://github.com/nix-community/nixd)";
     }
     {
       key = "alejandra";
       matches = ["alejandra"];
       category = "Editor";
-      description = "Nix formatter — this repo's `nix fmt`, pre-commit hook, and CI lint all agree on it. Also on PATH for Claude Code's format-on-edit hook.";
+      description = "Nix formatter: this repo's `nix fmt`, pre-commit hook, and CI lint all agree on it. Also on PATH for Claude Code's format-on-edit hook.";
       link = "[github.com/kamadorueda/alejandra](https://github.com/kamadorueda/alejandra)";
     }
 
@@ -170,7 +170,7 @@
       key = "duckdb";
       matches = ["duckdb"];
       category = "Data";
-      description = "In-process analytical (OLAP) SQL database — query CSV/Parquet/JSON files directly, no server to run.";
+      description = "In-process analytical (OLAP) SQL database: query CSV/Parquet/JSON files directly, no server to run.";
       link = "[duckdb.org](https://duckdb.org)";
     }
 
@@ -193,7 +193,7 @@
       key = "gh";
       matches = ["gh"];
       category = "Git";
-      description = "GitHub CLI — PRs, issues, workflows, and repo management from the terminal.";
+      description = "GitHub CLI: PRs, issues, workflows, and repo management from the terminal.";
       link = "[cli.github.com](https://cli.github.com)";
     }
     {
@@ -207,21 +207,21 @@
       key = "glab";
       matches = ["glab"];
       category = "Git";
-      description = "GitLab CLI — MRs, issues, pipelines, and repo management from the terminal.";
+      description = "GitLab CLI: MRs, issues, pipelines, and repo management from the terminal.";
       link = "[gitlab.com/gitlab-org/cli](https://gitlab.com/gitlab-org/cli)";
     }
     {
       key = "difftastic";
       matches = ["difftastic"];
       category = "Git";
-      description = "Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default — works without vscode, so it's available on headless dev profiles too.";
+      description = "Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default: works without vscode, so it's available on headless dev profiles too.";
       link = "[github.com/Wilfred/difftastic](https://github.com/Wilfred/difftastic)";
     }
     {
       key = "git-filter-repo";
       matches = ["git-filter-repo"];
       category = "Git";
-      description = "Rewrites git history — mailmaps, path filtering, blob removal. The supported replacement for `git filter-branch`.";
+      description = "Rewrites git history: mailmaps, path filtering, blob removal. The supported replacement for `git filter-branch`.";
       link = "[github.com/newren/git-filter-repo](https://github.com/newren/git-filter-repo)";
     }
 
@@ -260,14 +260,14 @@
       key = "ncdu";
       matches = ["ncdu"];
       category = "Server Tools";
-      description = "Interactive disk-usage analyzer — navigate directories by size, delete from within the TUI.";
+      description = "Interactive disk-usage analyzer: navigate directories by size, delete from within the TUI.";
       link = "[dev.yorhel.nl/ncdu](https://dev.yorhel.nl/ncdu)";
     }
     {
       key = "htop";
       matches = ["htop"];
       category = "Server Tools";
-      description = "Interactive process viewer — an ncurses `top` replacement.";
+      description = "Interactive process viewer: an ncurses `top` replacement.";
       link = "[htop.dev](https://htop.dev)";
     }
 
@@ -276,7 +276,7 @@
       key = "rust-overlay (stable toolchain + nightly rust-analyzer/rustfmt)";
       matches = ["rust-minimal" "rust-analyzer-nightly-bundle"];
       category = "Rust";
-      description = "Stable Rust toolchain (`rustc`, `cargo`, `clippy`) via oxalica/rust-overlay is the daily-driver default. `rust-analyzer` and `rustfmt` are pinned to nightly instead, pulled as individual components so nightly never puts a second `rustc`/`cargo` on `PATH`. `rust-src` travels with `rust-analyzer`, not the stable toolchain — stable and nightly `rust-src` have different internal layouts, and a mismatch breaks std-type resolution in the editor. `clippy` stays on stable since it lints whatever's actually compiled and shipped.";
+      description = "Stable Rust toolchain (`rustc`, `cargo`, `clippy`) via oxalica/rust-overlay is the daily-driver default. `rust-analyzer` and `rustfmt` are pinned to nightly instead, pulled as individual components so nightly never puts a second `rustc`/`cargo` on `PATH`. `rust-src` travels with `rust-analyzer`, not the stable toolchain: stable and nightly `rust-src` have different internal layouts, and a mismatch breaks std-type resolution in the editor. `clippy` stays on stable since it lints whatever's actually compiled and shipped.";
       link = "[github.com/oxalica/rust-overlay](https://github.com/oxalica/rust-overlay)";
     }
     {
@@ -318,14 +318,14 @@
       key = "cargo-nextest";
       matches = ["cargo-nextest"];
       category = "Rust";
-      description = "Next-generation test runner (`cargo nextest run`) — faster, better output, per-test isolation.";
+      description = "Next-generation test runner (`cargo nextest run`): faster, better output, per-test isolation.";
       link = "[nexte.st](https://nexte.st)";
     }
     {
       key = "bacon";
       matches = ["bacon"];
       category = "Rust";
-      description = "Background code checker — reruns `cargo check`/`test`/`clippy` on file change, in a dedicated terminal pane.";
+      description = "Background code checker: reruns `cargo check`/`test`/`clippy` on file change, in a dedicated terminal pane.";
       link = "[github.com/Canop/bacon](https://github.com/Canop/bacon)";
     }
 
@@ -341,7 +341,7 @@
       key = "fnm";
       matches = ["fnm"];
       category = "Node";
-      description = "Fast Node version manager — `.nvmrc` auto-switching on `cd`.";
+      description = "Fast Node version manager: `.nvmrc` auto-switching on `cd`.";
       link = "[github.com/Schniz/fnm](https://github.com/Schniz/fnm)";
     }
     {
@@ -399,7 +399,7 @@
       key = "pixi";
       matches = ["pixi"];
       category = "Python";
-      description = "Cargo-style project/environment manager (conda-forge + PyPI packages, project-local lockfiles) — chosen over conda/mamba for no base-environment management and reproducible lockfiles.";
+      description = "Cargo-style project/environment manager (conda-forge + PyPI packages, project-local lockfiles): chosen over conda/mamba for no base-environment management and reproducible lockfiles.";
       link = "[pixi.sh](https://pixi.sh)";
     }
 
@@ -408,7 +408,7 @@
       key = "awscli2";
       matches = ["awscli2"];
       category = "AWS";
-      description = "Official AWS CLI v2 — interact with all AWS services from the terminal.";
+      description = "Official AWS CLI v2: interact with all AWS services from the terminal.";
       link = "[docs.aws.amazon.com/cli](https://docs.aws.amazon.com/cli/latest/userguide/)";
     }
     {
@@ -429,7 +429,7 @@
       key = "session-manager-plugin";
       matches = ["ssm-session-manager-plugin"];
       category = "AWS";
-      description = "AWS CLI plugin enabling `aws ssm start-session` — shell access to EC2 instances and port forwarding without SSH/bastion hosts.";
+      description = "AWS CLI plugin enabling `aws ssm start-session`: shell access to EC2 instances and port forwarding without SSH/bastion hosts.";
       link = "[docs.aws.amazon.com/systems-manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)";
     }
 
@@ -438,14 +438,14 @@
       key = "kubectl";
       matches = ["kubectl"];
       category = "Kubernetes";
-      description = "Kubernetes CLI — homelab k3s cluster ops. Kubeconfig lives at `~/.kube/config` (contains client certs — never committed, not Nix-managed).";
+      description = "Kubernetes CLI: homelab k3s cluster ops. Kubeconfig lives at `~/.kube/config` (contains client certs, never committed, not Nix-managed).";
       link = "[kubernetes.io/docs/reference/kubectl](https://kubernetes.io/docs/reference/kubectl/)";
     }
     {
       key = "helm (`kubernetes-helm`)";
       matches = ["kubernetes-helm"];
       category = "Kubernetes";
-      description = "Kubernetes package manager — install and manage chart releases.";
+      description = "Kubernetes package manager: install and manage chart releases.";
       link = "[helm.sh](https://helm.sh)";
     }
     {
@@ -491,7 +491,7 @@
       key = "tmux";
       matches = ["tmux"];
       category = "Shell Multiplexing";
-      description = "Terminal multiplexer — persistent sessions, split panes, detach/reattach. Vi key bindings configured. On `*-server` profiles, tmux-resurrect and tmux-continuum are also installed, so long-lived server sessions survive a reboot — continuum wraps resurrect for automatic save and restore; neither works without the other.";
+      description = "Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. On `*-server` profiles, tmux-resurrect and tmux-continuum are also installed, so long-lived server sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other.";
       link = "[github.com/tmux/tmux](https://github.com/tmux/tmux)";
     }
 
@@ -500,7 +500,7 @@
       key = "qmk";
       matches = ["qmk"];
       category = "Firmware";
-      description = "QMK firmware CLI — compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only; unavailable on x86_64-darwin (its `gcc-arm-embedded` dependency has no build for that platform).";
+      description = "QMK firmware CLI: compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only; unavailable on x86_64-darwin (its `gcc-arm-embedded` dependency has no build for that platform).";
       link = "[qmk.fm](https://qmk.fm)";
     }
 
@@ -532,7 +532,7 @@
       key = "claude-code";
       matches = [];
       category = "AI";
-      description = "Installed via its official native installer (curl-piped script), not npm or nixpkgs — ships multiple releases a week and self-updates in place, which nixpkgs packaging and Nix's rebuild cycle can't keep pace with.";
+      description = "Installed via its official native installer (curl-piped script), not npm or nixpkgs: ships multiple releases a week and self-updates in place, which nixpkgs packaging and Nix's rebuild cycle can't keep pace with.";
       link = "[claude.com/claude-code](https://claude.com/claude-code)";
     }
 
@@ -560,26 +560,26 @@
     }
   ];
 
-  # Documented but not visible via home.packages at all — no realized
+  # Documented but not visible via home.packages at all: no realized
   # package identity exists to match against, so the drift check can't
   # verify these automatically.
   nonPackageTools = [
     {
       key = "gitalias";
       category = "Git";
-      description = "Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes` — not a Nix package.";
+      description = "Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes`: not a Nix package.";
       link = "[github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)";
     }
     {
       key = "kiro-cli";
       category = "AI";
-      description = "AWS's agentic CLI. Installed via its official native installer, same rationale as claude-code — not in nixpkgs. Work profiles only.";
+      description = "AWS's agentic CLI. Installed via its official native installer, same rationale as claude-code: not in nixpkgs. Work profiles only.";
       link = "[kiro.dev/cli](https://kiro.dev/cli/)";
     }
   ];
 
   # Nix/home-manager plumbing that's expected to appear in every closure and
-  # never needs a doc entry — implicitly injected by enabling programs (zsh
+  # never needs a doc entry: implicitly injected by enabling programs (zsh
   # completion, bash, XDG mime defaults, HM's own manpage/session-var
   # generation), not something this repo's code chose to install.
   infraExclude = [
