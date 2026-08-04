@@ -109,6 +109,35 @@ update:
 sync:
     git submodule update --remote --merge
 
+# Propagate shared Claude config from the public repo into the private work
+# overlay. Profiles are separated by branch and remote — public `main` holds
+# everything shareable, the private `work` branch adds employer-specific config
+# that must never reach a public repo. Without a cadence the work branch rots;
+# it has already drifted once.
+#
+# Run this on a work machine, where config/claude is checked out on `work`.
+[group('machine')]
+[doc('Merge shared changes from public main into the private work branch')]
+sync-work:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd config/claude
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$branch" != "work" ]; then
+        echo "config/claude is on '$branch', not 'work' — nothing to do." >&2
+        echo "This recipe is for work machines. See user.nix submodules." >&2
+        exit 1
+    fi
+    git fetch origin
+    behind=$(git rev-list --count HEAD..origin/main)
+    if [ "$behind" -eq 0 ]; then
+        echo "work is already up to date with origin/main."
+        exit 0
+    fi
+    echo "Merging $behind commit(s) from origin/main into work…"
+    git merge origin/main
+    echo "Merged. Review, then: git push private work:main"
+
 # Validate flake without applying. Checks THIS system only: the `checks`
 # output builds Linux activation packages, so `--all-systems` on a Mac would
 # try to build `checks.x86_64-linux.*` and fail for lack of a Linux builder.
