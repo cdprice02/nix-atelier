@@ -7,14 +7,14 @@
 }: let
   compat = import ./lib/hm-compat.nix {inherit lib options;};
 in {
-  # cloud (AWS tooling) — present on all work tiers (minimal, dev, server).
+  # cloud (AWS tooling): present on all work tiers (minimal, dev, server).
   # dev tier also pulls it independently via profiles.nix; the module system
   # dedupes identical module paths across the import graph, so work+dev
   # profiles get it once, not twice.
   imports = [./features/cloud.nix];
 
   home = {
-    # Corporate root CA — Linux only; macOS uses the system keychain
+    # Corporate root CA: Linux only; macOS uses the system keychain
     # The PEM file is never committed. Place it manually at ~/.certs/corporate.pem.
     # See docs/bootstrap.md for how to obtain it.
     #
@@ -29,7 +29,7 @@ in {
       NODE_EXTRA_CA_CERTS = "$HOME/.certs/corporate.pem";
     };
 
-    # Linux only — macOS trusts corporate certs via system keychain, not this bundle
+    # Linux only: macOS trusts corporate certs via system keychain, not this bundle
     activation.mergeCorporateCerts =
       lib.mkIf (!pkgs.stdenv.isDarwin)
       (lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -39,13 +39,13 @@ in {
           $DRY_RUN_CMD sh -c 'printf "%s" "$1" > "$2"' -- "$_bundle" \
             "$HOME/.certs/combined-ca-bundle.crt"
         else
-          echo "WARNING: ~/.certs/corporate.pem not found — see docs/bootstrap.md"
+          echo "WARNING: ~/.certs/corporate.pem not found: see docs/bootstrap.md"
         fi
       '');
 
-    # Work SSH stubs — included via the `Include ~/.ssh/config.d/*` in base.nix programs.ssh
+    # Work SSH stubs: included via the `Include ~/.ssh/config.d/*` in base.nix programs.ssh
     file.".ssh/config.d/work".text = ''
-      # Work VPN / jump host — fill in hostnames before use
+      # Work VPN / jump host: fill in hostnames before use
       # Host work-jump
       #   HostName jump.corp.example.com
       #   User ${user.username}
@@ -53,7 +53,7 @@ in {
     '';
   };
 
-  # Git identity for work — overrides the personal identity set in base.nix
+  # Git identity for work: overrides the personal identity set in base.nix
   programs.git = compat.gitIdentity {
     inherit (user.work) name email;
     force = true;

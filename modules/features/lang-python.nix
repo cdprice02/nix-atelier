@@ -8,7 +8,7 @@
     ruff
     ty
     # Project/environment manager independent of Python's own tooling
-    # (uv handles Python specifically) — chosen over conda/mamba: no base
+    # (uv handles Python specifically): chosen over conda/mamba: no base
     # environment to manage, Cargo-style project-local lockfiles.
     pixi
   ];

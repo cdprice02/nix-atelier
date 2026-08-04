@@ -12,8 +12,8 @@ in {
   programs.tmux =
     tmuxBase
     // {
-      historyLimit = 50000; # larger than dev — server sessions are long-lived
-      # tmux-continuum wraps tmux-resurrect for automatic save/restore — both
+      historyLimit = 50000; # larger than dev: server sessions are long-lived
+      # tmux-continuum wraps tmux-resurrect for automatic save/restore: both
       # are required; continuum alone does not save/restore sessions itself.
       # @continuum-restore is attached to continuum's own plugin entry, not
       # the general extraConfig below: home-manager renders each plugin's

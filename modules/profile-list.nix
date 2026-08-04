@@ -1,6 +1,6 @@
 # Linux/WSL2 profile name -> {context, tier, withGui, useFor} axes, consumed
 # by flake.nix's homeConfigurations (each entry becomes a mkLinuxPair call)
-# and by the generated docs/profiles.md — single-sourced so the two can't
+# and by the generated docs/profiles.md: single-sourced so the two can't
 # drift. `useFor` is the doc table's editorial "Use for" text; everything
 # else feeds mkProfile directly.
 #

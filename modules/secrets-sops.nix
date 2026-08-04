@@ -1,8 +1,8 @@
-# Opt-in only — see mkProfile's sopsMods in flake.nix for why this module
+# Opt-in only: see mkProfile's sopsMods in flake.nix for why this module
 # isn't imported by default. Enable per-machine via user.nix: useSops = true;
 #
 # The age private key at sops.age.keyFile below is NOT provisioned by this
-# module — deliberately manual, not an activation-script fetch from any
+# module: deliberately manual, not an activation-script fetch from any
 # particular password manager. Two reasons:
 #   1. Chicken-and-egg: sops/age/rbw only land on PATH after a completed
 #      `home-manager switch`, so an activation hook can't lean on them
@@ -29,7 +29,7 @@
     };
 
     # Renders straight to the same path envLocalInit (base.nix) already
-    # sources on every shell — nothing downstream needs to change to pick
+    # sources on every shell: nothing downstream needs to change to pick
     # this up once useSops is on.
     templates."secrets-env" = {
       path = "${config.home.homeDirectory}/.config/secrets/env";

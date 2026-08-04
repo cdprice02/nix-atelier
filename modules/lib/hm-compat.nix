@@ -16,7 +16,7 @@
 #   compat = import ../lib/hm-compat.nix {inherit lib options pkgs;};
 #
 # Delete a helper once the pinned darwin input moves past the rename that
-# motivated it — at that point both pairs agree and the shim is dead weight.
+# motivated it: at that point both pairs agree and the shim is dead weight.
 {
   lib,
   options,
@@ -90,7 +90,7 @@
 
   # ── ssh ─────────────────────────────────────────────────────────────────────
   # master: programs.ssh.matchBlocks -> programs.ssh.settings. Not a plain
-  # rename — the shape changes too. matchBlocks took typed camelCase options
+  # rename: the shape changes too. matchBlocks took typed camelCase options
   # (identityFile, identitiesOnly) plus a freeform `extraOptions` escape hatch;
   # settings is freeform throughout and keyed by upstream ssh_config(5)
   # directive names (IdentityFile, IdentitiesOnly), with extraOptions explicitly

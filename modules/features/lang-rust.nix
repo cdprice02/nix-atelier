@@ -1,11 +1,11 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
-    # Rust — stable toolchain is the daily-driver default. rust-analyzer and
+    # Rust: stable toolchain is the daily-driver default. rust-analyzer and
     # rustfmt are pinned to nightly (better proc-macro/type inference;
     # unstable formatting options). rust-src travels with rust-analyzer (not
     # the stable toolchain) since stable/nightly rust-src have different
     # internal layouts and a mismatch breaks std-type resolution; rustfmt
-    # has no rust-src dependency. clippy stays on stable — it lints
+    # has no rust-src dependency. clippy stays on stable: it lints
     # whatever's actually compiled and shipped.
     #
     # Nightly here is deliberately floating, not pinned to a specific date
@@ -54,7 +54,7 @@
       #      structurally excludes them; the stable toolchain stays the
       #      authoritative source for everything else.
       #   2. rust-src's top-level `lib` is a symlink, which symlinkJoin
-      #      cannot merge ("lib is a link instead of a directory") — the src
+      #      cannot merge ("lib is a link instead of a directory"): the src
       #      tree silently goes missing, defeating the point of bundling it.
       #      buildEnv follows the symlink and links the src tree correctly.
       pkgs.buildEnv {

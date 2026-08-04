@@ -10,7 +10,7 @@
     bun
   ];
 
-  # fnm shell init — appended after core shell config. fnm is excluded from
+  # fnm shell init: appended after core shell config. fnm is excluded from
   # the static toolInit mechanism (see shell-tools.nix): its `env` output
   # embeds a per-session multishell dir, so it must run per shell.
   programs = {

@@ -18,7 +18,7 @@
     onActivation = {
       autoUpdate = true;
       upgrade = true;
-      # TODO: was "zap" — nix-darwin's generated activation script used a
+      # TODO: was "zap": nix-darwin's generated activation script used a
       # brew-bundle-cleanup invocation newer Homebrew treats as a dry-run,
       # failing activation. nix-darwin has since moved well past the
       # revision this was diagnosed against; worth re-testing "zap" before

@@ -9,7 +9,7 @@
 }: let
   homeDir = config.home.homeDirectory;
 
-  # Emits whichever option spelling the evaluating home-manager has — the
+  # Emits whichever option spelling the evaluating home-manager has: the
   # rolling input (Linux/WSL2 + aarch64-darwin) tracks HM master, which has
   # renamed several of the options set below; x86_64-darwin is pinned to HM
   # 25.05, which predates those renames. See modules/lib/hm-compat.nix.
@@ -46,7 +46,7 @@ in {
     );
 
     sessionVariables = {
-      # EDITOR is set by programs.vim.defaultEditor below, not here — avoid
+      # EDITOR is set by programs.vim.defaultEditor below, not here: avoid
       # declaring it twice.
       CLAUDE_PROFILE = context;
     };
@@ -55,14 +55,14 @@ in {
     # live in modules/env.nix, imported alongside this module for every profile.
 
     packages = with pkgs; [
-      # Home Manager — needed for setup across all profiles and devices
+      # Home Manager: needed for setup across all profiles and devices
       pkgs.home-manager
 
-      # just — task runner / discoverability layer (`just --list` shows all commands)
+      # just: task runner / discoverability layer (`just --list` shows all commands)
       just
 
       # CLI essentials with no comfort-tool equivalent (genuine bootstrap/
-      # scripting value, not "nicer than something already available") —
+      # scripting value, not "nicer than something already available");
       # everything else (fonts, ripgrep/fd/bat/eza/lazygit/btop/fastfetch,
       # zoxide/fzf/direnv) lives in the shell-tools feature instead, which
       # `minimal` doesn't pull in.
@@ -70,9 +70,9 @@ in {
       git-lfs
       wget
 
-      # Secrets — sops/age for the opt-in sops-nix secrets management
+      # Secrets: sops/age for the opt-in sops-nix secrets management
       # (modules/secrets-sops.nix; the age private key itself is placed
-      # manually, not retrieved automatically — see that module's own
+      # manually, not retrieved automatically: see that module's own
       # comment for why). rbw is independent of sops: a general password-
       # manager CLI, not part of the sops key-retrieval path.
       # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
@@ -86,7 +86,7 @@ in {
     ];
 
     activation = {
-      # entryAfter writeBoundary — ~/.ssh must exist (written by HM) before ssh-keygen runs.
+      # entryAfter writeBoundary: ~/.ssh must exist (written by HM) before ssh-keygen runs.
       sshKey = lib.hm.dag.entryAfter ["writeBoundary"] ''
         if [ ! -f "$HOME/.ssh/${user.sshKey}" ]; then
           $DRY_RUN_CMD mkdir -p "$HOME/.ssh"
@@ -101,8 +101,8 @@ in {
 
       # For each entry in user.submodules, wire up a private remote in the
       # corresponding config/ submodule and check out a tracking branch.
-      # Idempotent — skips if the remote already exists.
-      # entryAfter writeBoundary — submodule dirs must be cloned before we can add remotes.
+      # Idempotent: skips if the remote already exists.
+      # entryAfter writeBoundary: submodule dirs must be cloned before we can add remotes.
       # user.submodules = { claude = "git@github.com:you/private-claude.git"; };
       submoduleOverrides = lib.hm.dag.entryAfter ["writeBoundary"] (
         let
@@ -148,7 +148,7 @@ in {
     };
 
     # stateVersion gates Home Manager's migration behavior (default file
-    # locations/formats), not a version pin — bumping it can require manual
+    # locations/formats), not a version pin: bumping it can require manual
     # data migration on a machine that has already applied an older value.
     # Before switching on an existing machine, diff `home-manager news`
     # output and check for anything relevant to programs enabled here (git,
@@ -169,7 +169,7 @@ in {
       zsh = {
         enable = true;
         enableCompletion = true;
-        # Rebuild the completion dump (which audits every fpath dir — the
+        # Rebuild the completion dump (which audits every fpath dir: the
         # dominant zsh-startup cost) at most once a day; otherwise reuse the
         # cached dump and skip the audit with -C. This is the big startup win.
         completionInit = ''
@@ -177,7 +177,7 @@ in {
           # Full compinit (rebuild the dump + audit every fpath dir) when the
           # cached dump is missing OR older than a day; otherwise load it and
           # skip the audit (-C). The glob alone only catches "exists and
-          # stale" — an (N…) qualifier against a nonexistent file matches
+          # stale": an (N…) qualifier against a nonexistent file matches
           # nothing, which would otherwise silently take the fast, unaudited
           # path on every machine's very first shell startup.
           _zdumpfile="''${ZDOTDIR:-$HOME}/.zcompdump"
@@ -215,7 +215,7 @@ in {
       # fish is available alongside zsh/bash; fzf/zoxide fish integration is
       # wired in the shell-tools feature, not here. An interactive fish
       # inherits PATH and secrets from the launching shell, so tools resolve
-      # — this repo doesn't set fish as anyone's login shell, so nix-profile
+      #: this repo doesn't set fish as anyone's login shell, so nix-profile
       # sourcing / secrets-env parsing in fish's own dialect isn't wired here
       # (fish can't `source` the POSIX ~/.config/secrets/env directly; zsh/
       # bash always initialize first).
@@ -223,7 +223,7 @@ in {
 
       # ── Prompt ────────────────────────────────────────────────────────────────
       # caret: zero-subprocess prompt (directory + git branch + exit-status
-      # arrow only — no hostname, language versions, AWS region, or command
+      # arrow only: no hostname, language versions, AWS region, or command
       # duration; that's caret's own scope boundary, not this config's).
       # Replaces starship, which forks/execs per render and parses a TOML
       # config even for modules that render nothing.
@@ -253,7 +253,7 @@ in {
       };
 
       # ── SSH ───────────────────────────────────────────────────────────────────
-      # credential.helper is NOT set here — gui-darwin/gui-linux own that
+      # credential.helper is NOT set here: gui-darwin/gui-linux own that
 
       # Blocks are written in upstream ssh_config(5) directive names, which is
       # what HM master's `programs.ssh.settings` takes; hm-compat converts them
@@ -322,13 +322,13 @@ in {
           push.autoSetupRemote = true;
           core.autocrlf = "input";
           # diff.tool and merge.tool are set by gui-darwin/gui-linux (where `code` is available)
-          # credential.helper intentionally absent — set by gui-darwin or gui-linux
+          # credential.helper intentionally absent: set by gui-darwin or gui-linux
         })
       ];
     }
     # delta's `enable` pulls in the delta package itself (see the home.packages
     # comment above) and wires it in as git's actual diff pager. Which option
-    # path that lives under moved in HM master — hm-compat picks the right one,
+    # path that lives under moved in HM master: hm-compat picks the right one,
     # and on the pinned pair it lands under programs.git, which is exactly why
     # this is a mkMerge element rather than a `//` operand.
     (compat.deltaConfig {

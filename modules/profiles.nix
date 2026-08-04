@@ -1,5 +1,5 @@
 # Tier -> feature-name list (resolved against features.nix's registry by
-# mkProfile in flake.nix). Only the tier-specific additions — core/env are a
+# mkProfile in flake.nix). Only the tier-specific additions: core/env are a
 # separate, always-on prefix mkProfile adds unconditionally.
 {
   minimal = [];

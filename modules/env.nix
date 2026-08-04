@@ -24,7 +24,7 @@ in {
       BUN_INSTALL = "${homeDir}/.bun";
       # pixi: global install root; `pixi global install` links into $PIXI_HOME/bin.
       PIXI_HOME = "${homeDir}/.pixi";
-      # XDG user bin dir — uv (and pipx/others) default tool installs here.
+      # XDG user bin dir: uv (and pipx/others) default tool installs here.
       XDG_BIN_HOME = "${homeDir}/.local/bin";
       # Refuse bare `pip install` outside a virtualenv, so pip never tries to
       # write into the read-only Nix Python prefix. Use uv or an explicit venv.
@@ -37,7 +37,7 @@ in {
     # user-installed binary there. On darwin this is inverted: nix-darwin's
     # /etc/zshenv sets PATH (including ~/.nix-profile/bin) before ~/.zshenv
     # sources hm-session-vars.sh, which then prepends these dirs onto that
-    # already-populated PATH — so on darwin a user-installed binary here can
+    # already-populated PATH: so on darwin a user-installed binary here can
     # shadow a same-named Nix-provided one instead. Verified against this
     # machine's actual generated hm-session-vars.sh and /etc/zshenv.
     sessionPath = [
@@ -55,7 +55,7 @@ in {
     #
     # This makes ~/.npmrc a read-only Nix store symlink, so anything that writes
     # to it directly (`npm login`, `npm config set --global`) fails with a
-    # permission error rather than updating it. Not worked around here — doing
+    # permission error rather than updating it. Not worked around here: doing
     # so would mean pointing NPM_CONFIG_USERCONFIG at a separate writable file,
     # which would stop npm from reading this declarative one at all. Known
     # limitation, not a silent one.

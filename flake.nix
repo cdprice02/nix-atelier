@@ -9,14 +9,14 @@
     #      nixos.org/manual/nixpkgs/unstable/release-notes#x86_64-darwin-26.11).
     #   2. This is an Intel 2018 MacBook Pro capped at macOS 13 (Ventura,
     #      Darwin 22). nixpkgs 25.11-darwin and later bumped darwinMinVersion
-    #      to 14.0 — their binaries link against macOS 14's libc++ (e.g.
+    #      to 14.0: their binaries link against macOS 14's libc++ (e.g.
     #      std::pmr symbols) and abort under dyld on macOS 13. 25.05-darwin is
     #      the newest release still targeting macOS <=13 (darwinMinVersion
     #      11.3) AND still supporting x86_64-darwin, so it is the ceiling for
     #      this machine.
     # Tradeoff: 25.05 is past its upstream security-support window. The
     # binding constraint is the OS (can't upgrade a 2018 Intel Mac past
-    # Ventura), not security recency — revisit only if the machine is replaced
+    # Ventura), not security recency: revisit only if the machine is replaced
     # or moved to NixOS. Crucially, BOTH reasons above are specific to
     # x86_64-darwin: aarch64-darwin (Apple Silicon) is a first-class platform
     # on nixpkgs-unstable AND runs current macOS, so it has neither problem.
@@ -62,7 +62,7 @@
       url = "github:cdprice02/caret";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
-    # Only ever imported when a machine's user.nix opts in (useSops = true) —
+    # Only ever imported when a machine's user.nix opts in (useSops = true);
     # see mkProfile's sopsMods below. Follows nixpkgs (not nixpkgs-darwin):
     # unlike caret, sops-nix has no x86_64-darwin-specific build concern, so
     # it doesn't need the same override.
@@ -100,7 +100,7 @@
     # darwin-rebuild switch` / `sudo nixos-rebuild switch` reset $HOME to
     # root's home (/var/root), so getEnv "HOME" alone would miss the real
     # user.nix and silently fall back to user.nix.example (username
-    # "yourusername") — which then fails activation on `system.primaryUser`.
+    # "yourusername"): which then fails activation on `system.primaryUser`.
     # Fall back to the invoking user's home in that case, trying both the
     # darwin (/Users) and Linux (/home) prefixes rather than probing the
     # eval system. First existing candidate wins.
@@ -118,7 +118,7 @@
       if userNixPathOverride != ""
       then
         # Explicitly set: a typo'd path is a real mistake, not a fresh
-        # checkout that hasn't created user.nix yet — fail loudly instead of
+        # checkout that hasn't created user.nix yet: fail loudly instead of
         # silently building with the placeholder identity.
         (
           if builtins.pathExists userNixPathOverride
@@ -131,7 +131,7 @@
     user =
       userBase
       // {
-        # Derive SSH key name from email prefix — key file: ~/.ssh/<sshKey>
+        # Derive SSH key name from email prefix: key file: ~/.ssh/<sshKey>
         sshKey = builtins.elemAt (builtins.split "@" userBase.email) 0;
       };
 
@@ -141,8 +141,8 @@
     # Home Manager's module code is coupled to its nixpkgs release: a mismatched
     # pair evaluates but emits deprecation warnings and can silently generate
     # wrong config (HM itself only warns, via home.enableNixpkgsReleaseCheck).
-    # This repo maintains two independent pairs — rolling (Linux/WSL2) and
-    # pinned (darwin) — so a `nix flake update <one-input>` can desync either
+    # This repo maintains two independent pairs: rolling (Linux/WSL2) and
+    # pinned (darwin): so a `nix flake update <one-input>` can desync either
     # one.
     #
     # Fail evaluation instead of warning, so drift can't be ignored. To fix a
@@ -159,7 +159,7 @@
         Home Manager modules are coupled to their nixpkgs release; a mismatched
         pair produces deprecation warnings and can generate incorrect config.
 
-        Fix: update both inputs of this pair together — `just update`.
+        Fix: update both inputs of this pair together: `just update`.
       ''
       true;
 
@@ -173,7 +173,7 @@
     # Every system this flake produces per-system outputs for (devShells,
     # formatter, packages). Named once rather than repeating the literal at
     # each genAttrs call site, so adding or dropping a platform is one edit.
-    # `checks` deliberately does NOT use this — see its own comment for why it
+    # `checks` deliberately does NOT use this: see its own comment for why it
     # is Linux-only.
     allSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     linuxSystems = ["x86_64-linux" "aarch64-linux"];
@@ -193,7 +193,7 @@
 
     # x86_64-darwin uses the pinned nixpkgs-darwin input (see the flake input
     # comment above for why), not the rolling nixpkgs-unstable used everywhere
-    # else — including aarch64-darwin.
+    # else: including aarch64-darwin.
     mkPkgsDarwin = system:
       import nixpkgs-darwin {
         inherit system;
@@ -214,9 +214,9 @@
 
     # ── Feature/tier data model ────────────────────────────────────────────────
     # features.nix: name -> module path registry. profiles.nix: tier -> list of
-    # feature names. core/env aren't in the registry — they're an always-on
+    # feature names. core/env aren't in the registry: they're an always-on
     # prefix mkProfile adds unconditionally, not a selectable feature.
-    # profileList.nix: Linux profile name -> {context,tier,withGui,useFor} —
+    # profileList.nix: Linux profile name -> {context,tier,withGui,useFor};
     # single-sourced by homeConfigurations below and the generated docs.
     features = import ./modules/features.nix;
     profiles = import ./modules/profiles.nix;
@@ -227,7 +227,7 @@
         name
       }
       or (throw ''
-        unknown feature "${name}" — valid features: ${builtins.concatStringsSep ", " (builtins.attrNames features)}
+        unknown feature "${name}": valid features: ${builtins.concatStringsSep ", " (builtins.attrNames features)}
       '');
 
     # Forces every tier's feature list through resolveFeature so a typo in
@@ -255,7 +255,7 @@
 
     # ── Docs generation (Task 15) ───────────────────────────────────────────
     # Realized package identities (p.pname or p.name) across every already-
-    # built home/darwin config — reuses the actual mkProfile composition
+    # built home/darwin config: reuses the actual mkProfile composition
     # rather than statically re-scanning modules/features/*.nix, so it also
     # catches packages home-manager's own program modules inject implicitly
     # (e.g. programs.git.delta.enable -> the delta package, with no
@@ -269,7 +269,7 @@
 
     # Bidirectional: every installed package needs a tool-catalog.nix entry
     # (or an explicit exclusion), and every catalog entry needs to actually
-    # correspond to something installed — same "fail eval, don't drift
+    # correspond to something installed: same "fail eval, don't drift
     # silently" idiom as profilesValidated/profileListValidated above.
     catalogedNames = nixpkgs.lib.concatMap (e: e.matches) toolCatalog.entries;
     uncatalogedInstalled = nixpkgs.lib.subtractLists (catalogedNames ++ toolCatalog.infraExclude) installedPackageNames;
@@ -294,7 +294,7 @@
     # Produces the ordered module list for a profile.
     # context : "personal" | "work"
     # tier    : "minimal" | "dev" | "server"
-    # withGui : bool — gui module auto-selected from system
+    # withGui : bool: gui module auto-selected from system
     mkProfile = {
       context,
       tier,
@@ -323,7 +323,7 @@
         else [./modules/gui-darwin.nix];
 
       # Opt-in only (user.nix: useSops = true;), never on by default. This
-      # repo is public and forked by others (see CONTRIBUTING.md) — sops-nix
+      # repo is public and forked by others (see CONTRIBUTING.md): sops-nix
       # decrypts at *activation* time using whichever age key is on disk, so
       # if this were wired in unconditionally, `home-manager switch` would
       # hard-fail on any machine that isn't this repo owner's (no matching
@@ -371,7 +371,7 @@
     };
 
     # ── Darwin (nix-darwin + home-manager) ──────────────────────────────────
-    # Darwin always includes GUI — nix-darwin implies a graphical macOS environment.
+    # Darwin always includes GUI: nix-darwin implies a graphical macOS environment.
     # Linux profiles use withGui to opt in; macOS never runs headless via nix-darwin.
     mkDarwinConfig = {
       context,
@@ -460,7 +460,7 @@
     # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
 
     # ── devShells ────────────────────────────────────────────────────────────
-    # `nix develop` — lint tools for contributors, matching
+    # `nix develop`: lint tools for contributors, matching
     # .pre-commit-config.yaml and CI's lint-* jobs.
     devShells =
       nixpkgs.lib.genAttrs allSystems
@@ -479,7 +479,7 @@
       });
 
     # ── formatter ────────────────────────────────────────────────────────────
-    # `nix fmt` — alejandra, matching .pre-commit-config.yaml and CI's
+    # `nix fmt`: alejandra, matching .pre-commit-config.yaml and CI's
     # lint-alejandra job so all three (editor, pre-commit, CI) agree.
     formatter =
       nixpkgs.lib.genAttrs allSystems
@@ -489,7 +489,7 @@
     # Buildable outputs of docsGenerated, for `just docs` to copy over the
     # committed docs/*.md. docsGenerated's content is pure Nix data (no
     # platform-dependent logic), but `pkgs.writeText` still needs a matching-
-    # platform builder to realize it — unlike the eval-only `checks` output,
+    # platform builder to realize it: unlike the eval-only `checks` output,
     # this needs the full system list (same as devShells/formatter) so
     # `just docs` builds natively wherever it's run, darwin included.
     packages =
@@ -508,19 +508,19 @@
     # the generated docs match their sources.
     #
     # Deliberately does NOT contain the lints. It used to, which meant every PR
-    # ran alejandra/statix/deadnix/markdownlint twice — once inside this output
+    # ran alejandra/statix/deadnix/markdownlint twice: once inside this output
     # via `flake-check`, and again as check.yml's four standalone `lint-*` jobs.
     # The standalone jobs are the ones worth keeping: a named red check tells
     # you which linter failed without opening a log, whereas a `flake-check`
     # failure does not. `just check` now runs `nix flake check` *and*
-    # `just lint-all`, so a green local `just check` still covers lints — it
+    # `just lint-all`, so a green local `just check` still covers lints: it
     # just gets them from the recipe rather than from this output, and lints the
     # working tree (what you are about to commit) instead of the last commit.
     #
     # Covers every system, but the contents differ by platform, and not
     # arbitrarily: `activation-*` is derived from `homeConfigurations`, which
     # only exist for Linux (macOS goes through `darwinConfigurations`), so
-    # darwin is left with the platform-independent checks — currently
+    # darwin is left with the platform-independent checks: currently
     # `docs-drift`. That is thin, but it is not nothing: before this output
     # covered darwin at all, `nix flake check` on a Mac skipped `checks`
     # entirely and passed, so a green local check meant only that the flake
@@ -528,8 +528,8 @@
     #
     # The darwin system closures are deliberately NOT included here. CI's
     # build-darwin job already builds all four, and adding them would turn
-    # `just check` — the command CONTRIBUTING tells you to run before every PR
-    # — into a multi-minute build. Real assertion-level darwin coverage is
+    # `just check`: the command CONTRIBUTING tells you to run before every PR
+    #: into a multi-minute build. Real assertion-level darwin coverage is
     # better served by an eval-only test harness that never builds packages
     # (see issue #51) than by making the pre-PR check expensive.
     checks = nixpkgs.lib.genAttrs allSystems (
@@ -561,11 +561,11 @@
           docs-drift = assert docsCatalogValid;
             pkgs.runCommand "check-docs-drift" {} ''
               if ! diff -u ${./docs/profiles.md} ${pkgs.writeText "profiles.md" docsGenerated.profilesMd}; then
-                echo "docs/profiles.md is out of date — run 'just docs' and commit the result"
+                echo "docs/profiles.md is out of date: run 'just docs' and commit the result"
                 exit 1
               fi
               if ! diff -u ${./docs/tools.md} ${pkgs.writeText "tools.md" docsGenerated.toolsMd}; then
-                echo "docs/tools.md is out of date — run 'just docs' and commit the result"
+                echo "docs/tools.md is out of date: run 'just docs' and commit the result"
                 exit 1
               fi
               touch $out
