@@ -12,7 +12,7 @@ Common first-boot failures and how to fix them.
 error: … builtins.getEnv "HOME" evaluated to ""
 ```
 
-**Fix:** Every `home-manager switch` and `darwin-rebuild switch` requires `--impure`. At first bootstrap, `home-manager` may not be on PATH yet — use the `nix run` form:
+**Fix:** Every `home-manager switch` and `darwin-rebuild switch` requires `--impure`. At first bootstrap, `home-manager` may not be on PATH yet: use the `nix run` form:
 
 ```sh
 # First bootstrap (home-manager / darwin-rebuild not yet on PATH)
@@ -49,7 +49,7 @@ There are 289 unread and relevant news items.
 error: Linux/WSL2 (rolling): home-manager (25.11) and nixpkgs (26.11) releases disagree.
 ```
 
-**Cause:** one input of a release pair was updated without the other — e.g.
+**Cause:** one input of a release pair was updated without the other: e.g.
 `nixpkgs` bumped to a new unstable revision while `home-manager` stayed behind.
 The deprecation warnings are old HM module code calling nixpkgs APIs that the
 newer nixpkgs deprecated; the news backlog is the changelog for the months of
@@ -63,22 +63,22 @@ just check       # confirm all profiles still build
 just switch
 ```
 
-This does not disturb the x86_64-darwin pin — `just update` re-resolves each
+This does not disturb the x86_64-darwin pin: `just update` re-resolves each
 input against the ref declared in `flake.nix`, and the pinned darwin refs are
 release branches (`nixpkgs-25.05-darwin` / `release-25.05` / `nix-darwin-25.05`),
 so they can only land on another 25.05 commit. Only the rolling inputs
 (Linux/WSL2 + aarch64-darwin) advance.
 
-`just update` deliberately accepts no input name — see the pairing invariant in
+`just update` deliberately accepts no input name: see the pairing invariant in
 `CLAUDE.md`. If you must update by hand, move a whole release group together
 (each nix-darwin / home-manager is coupled to its nixpkgs release; nix-darwin
 hard-fails eval on a mismatch, and `checkReleasePair` guards the home-manager
 side):
 
 ```sh
-# Rolling group — Linux/WSL2 + aarch64-darwin
+# Rolling group: Linux/WSL2 + aarch64-darwin
 nix flake update nixpkgs home-manager nix-darwin
-# Pinned group — x86_64-darwin
+# Pinned group: x86_64-darwin
 nix flake update nixpkgs-darwin home-manager-darwin nix-darwin-x86
 ```
 
@@ -149,7 +149,7 @@ If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-con
 **Symptom:** SSL errors from curl, AWS CLI, Python requests, or npm after applying a `work` profile. The activation script also warns:
 
 ```text
-WARNING: ~/.certs/corporate.pem not found — see docs/bootstrap.md
+WARNING: ~/.certs/corporate.pem not found: see docs/bootstrap.md
 ```
 
 **Fix:** Obtain the corporate root CA from your IT team and place it at `~/.certs/corporate.pem`:
@@ -167,10 +167,10 @@ Then re-run `home-manager switch` to rebuild the combined bundle. See [bootstrap
 
 **Symptom:** `just: command not found` or `home-manager: command not found` on the first run.
 
-**Cause:** These are installed by Home Manager — they aren't on PATH until after the first successful `switch`.
+**Cause:** These are installed by Home Manager: they aren't on PATH until after the first successful `switch`.
 
 **Fix:** Use the full bootstrap command for the first apply. On macOS this
-applies to `darwin-rebuild` too — nix-darwin has no separate installer, so
+applies to `darwin-rebuild` too: nix-darwin has no separate installer, so
 `darwin-rebuild` only exists *after* the first apply and the first one has to be
 run straight from the flake:
 
@@ -182,12 +182,12 @@ nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
 
-# macOS, Intel — pinned nix-darwin release, matching this repo's 25.05 pin
+# macOS, Intel: pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
 ```
 
-After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS — `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:
+After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS: `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:
 
 ```sh
 just switch <profile>   # e.g. just switch work
@@ -197,7 +197,7 @@ just switch             # uses user.nix's `profile` field, else "personal"
 Pass the bare profile name (`just switch work`) on any machine and the right
 suffix is appended for you: `-darwin` / `-darwin-aarch64` on macOS, `-aarch64`
 on ARM Linux, nothing on x86_64 Linux. Passing an explicit name still works and
-is honoured — it is just checked against the machine first, so an
+is honoured: it is just checked against the machine first, so an
 architecture mismatch warns instead of silently building for the wrong platform,
 and a macOS config name on Linux (or vice versa) is refused with the correct
 name to use. `just rebuild` is an alias for the same recipe, not a macOS-only

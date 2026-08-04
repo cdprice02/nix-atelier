@@ -1,12 +1,12 @@
 # Contributing
 
-## This repo is a personal config — and a reusable framework
+## This repo is a personal config, and a reusable framework
 
 Two kinds of contributions make sense here, and it helps to know the difference before opening a PR.
 
 ### Fork for personal preferences
 
-Tool choices, dotfile content, prompt theming, personal modules, your own username — these belong in your fork. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted here, but forks are actively encouraged. See [docs/profiles.md](docs/profiles.md) for how to add your own profiles without touching shared code.
+Tool choices, dotfile content, prompt theming, personal modules, your own username: these belong in your fork. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted here, but forks are actively encouraged. See [docs/profiles.md](docs/profiles.md) for how to add your own profiles without touching shared code.
 
 ### PRs welcome for framework improvements
 
@@ -44,13 +44,13 @@ just lint-all                 # alejandra, statix, deadnix, markdownlint
 pre-commit run --all-files    # trailing whitespace, secrets scan (+ the two lints above)
 ```
 
-`just --list` only shows the everyday recipes — a few CI-internal ones (profile listing, per-profile build, individual lints) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux personal`, `just --show _build-linux`.
+`just --list` only shows the everyday recipes; a few CI-internal ones (profile listing, per-profile build, individual lints) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux personal`, `just --show _build-linux`.
 
-CI runs these same recipes (see `.github/workflows/check.yml`) plus full builds for every profile — but full builds only run on push to `main` or manual dispatch, not on every PR (see `check.yml`'s comments for why). So a green `just eval-all` + `just lint-all` locally is close to, but not identical to, full CI coverage.
+CI runs these same recipes (see `.github/workflows/check.yml`) plus full builds for every profile, but full builds only run on push to `main` or manual dispatch, not on every PR (see `check.yml`'s comments for why). So a green `just eval-all` + `just lint-all` locally is close to, but not identical to, full CI coverage.
 
 ## Verifying large refactors
 
-For a change that's supposed to be behavior-preserving (a mechanism reorganization, not a functional change), `nix eval`'s output is a stronger check than "does it still build": capture every profile's `drvPath` before the change (`just eval-all` prints them), make the change, capture again, and diff. Any profile whose `drvPath` changed needs an explanation — either it's a real, intended behavior change, or the refactor wasn't actually behavior-preserving. This isn't a blanket CI gate (ordinary commits are *supposed* to change `drvPath`s), just a manual technique worth reaching for on big refactors specifically. A disposable `git worktree add <tmp-dir> <pre-change-commit>` is safer than `git stash` for getting a clean baseline when there's a lot of already-pending uncommitted work.
+For a change that's supposed to be behavior-preserving (a mechanism reorganization, not a functional change), `nix eval`'s output is a stronger check than "does it still build": capture every profile's `drvPath` before the change (`just eval-all` prints them), make the change, capture again, and diff. Any profile whose `drvPath` changed needs an explanation: either it's a real, intended behavior change, or the refactor wasn't actually behavior-preserving. This isn't a blanket CI gate (ordinary commits are *supposed* to change `drvPath`s), just a manual technique worth reaching for on big refactors specifically. A disposable `git worktree add <tmp-dir> <pre-change-commit>` is safer than `git stash` for getting a clean baseline when there's a lot of already-pending uncommitted work.
 
 ---
 
@@ -75,7 +75,7 @@ GitHub does not raise workflow-triggering events for actions taken with the
 default `GITHUB_TOKEN`, so a PR opened with it receives **no CI at all**. Without
 this secret the weekly lock-update PR would look reviewable while having been
 tested by nothing. The workflow falls back to `GITHUB_TOKEN` when the secret is
-absent (so forks still work) and says so in the PR body — if you see a lock PR
+absent (so forks still work) and says so in the PR body; if you see a lock PR
 with no checks, that is why, and it needs a push or a close/reopen before it is
 safe to merge.
 

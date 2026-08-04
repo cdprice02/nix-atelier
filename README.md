@@ -3,9 +3,9 @@
 [![CI](https://github.com/cdprice02/nix-config/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-config/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS (Intel and Apple Silicon) and any Linux/WSL2. NixOS support is planned but not implemented — see [issue #5](https://github.com/cdprice02/nix-config/issues/5).
+Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS (Intel and Apple Silicon) and any Linux/WSL2. NixOS support is planned but not implemented; see [issue #5](https://github.com/cdprice02/nix-config/issues/5).
 
-Structured as a composable framework — fork it, fill in `user.nix`, and get a full dev environment on any machine with one command. See [docs/profiles.md](docs/profiles.md) for the profile system and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt it to your own setup.
+Structured as a composable framework: fork it, fill in `user.nix`, and get a full dev environment on any machine with one command. See [docs/profiles.md](docs/profiles.md) for the profile system and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt it to your own setup.
 
 ## Quick start
 
@@ -62,13 +62,13 @@ See [docs/profiles.md](docs/profiles.md) for the full table. Common ones:
 
 | Profile | Use for |
 |---------|---------|
-| `work` | Work Linux/WSL2 — dev toolchain + work identity + corporate PEM |
-| `personal` | Personal Linux/WSL2 — dev toolchain |
+| `work` | Work Linux/WSL2: dev toolchain + work identity + corporate PEM |
+| `personal` | Personal Linux/WSL2: dev toolchain |
 | `personal-minimal` | New machine bootstrap or low-resource machine |
-| `work-darwin-aarch64` | Work macOS, Apple Silicon — dev + GUI |
+| `work-darwin-aarch64` | Work macOS, Apple Silicon: dev + GUI |
 
 On macOS, pick the config matching your CPU: `-aarch64` for Apple Silicon, the
-bare name for Intel. They are not interchangeable — see
+bare name for Intel. They are not interchangeable; see
 [docs/profiles.md](docs/profiles.md).
 
 ## Everyday commands
