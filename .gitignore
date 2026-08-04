@@ -7,5 +7,7 @@ secrets.env
 .config/secrets/
 .certs/
 
-# Claude Code runtime data
-.claude/
+# Claude Code runtime data — everything except a tracked project skill
+.claude/*
+!.claude/skills/
+!.claude/skills/**
