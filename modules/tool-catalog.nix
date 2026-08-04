@@ -424,7 +424,7 @@
       key = "kubectl";
       matches = ["kubectl"];
       category = "Kubernetes";
-      description = "Kubernetes CLI — homelab cluster ops (queen.local k3s). Kubeconfig lives at `~/.kube/config` (contains client certs — never committed, not Nix-managed).";
+      description = "Kubernetes CLI — homelab k3s cluster ops. Kubeconfig lives at `~/.kube/config` (contains client certs — never committed, not Nix-managed).";
       link = "[kubernetes.io/docs/reference/kubectl](https://kubernetes.io/docs/reference/kubectl/)";
     }
     {

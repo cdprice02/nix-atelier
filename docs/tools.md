@@ -200,7 +200,7 @@ AWS CLI plugin enabling `aws ssm start-session` — shell access to EC2 instance
 ## Kubernetes
 
 ### kubectl
-Kubernetes CLI — homelab cluster ops (queen.local k3s). Kubeconfig lives at `~/.kube/config` (contains client certs — never committed, not Nix-managed). [kubernetes.io/docs/reference/kubectl](https://kubernetes.io/docs/reference/kubectl/)
+Kubernetes CLI — homelab k3s cluster ops. Kubeconfig lives at `~/.kube/config` (contains client certs — never committed, not Nix-managed). [kubernetes.io/docs/reference/kubectl](https://kubernetes.io/docs/reference/kubectl/)
 
 ### helm (`kubernetes-helm`)
 Kubernetes package manager — install and manage chart releases. [helm.sh](https://helm.sh)
