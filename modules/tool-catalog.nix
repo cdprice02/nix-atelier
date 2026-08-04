@@ -157,6 +157,13 @@
       description = "Nix language server — completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files.";
       link = "[github.com/nix-community/nixd](https://github.com/nix-community/nixd)";
     }
+    {
+      key = "alejandra";
+      matches = ["alejandra"];
+      category = "Editor";
+      description = "Nix formatter — this repo's `nix fmt`, pre-commit hook, and CI lint all agree on it. Also on PATH for Claude Code's format-on-edit hook.";
+      link = "[github.com/kamadorueda/alejandra](https://github.com/kamadorueda/alejandra)";
+    }
 
     # ── Data ───────────────────────────────────────────────────────────────
     {
@@ -209,6 +216,13 @@
       category = "Git";
       description = "Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default — works without vscode, so it's available on headless dev profiles too.";
       link = "[github.com/Wilfred/difftastic](https://github.com/Wilfred/difftastic)";
+    }
+    {
+      key = "git-filter-repo";
+      matches = ["git-filter-repo"];
+      category = "Git";
+      description = "Rewrites git history — mailmaps, path filtering, blob removal. The supported replacement for `git filter-branch`.";
+      link = "[github.com/newren/git-filter-repo](https://github.com/newren/git-filter-repo)";
     }
 
     # ── Fonts ──────────────────────────────────────────────────────────────

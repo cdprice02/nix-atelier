@@ -81,6 +81,9 @@ Default `$EDITOR` for commit messages and quick edits. vscode is the daily-drive
 ### nixd
 Nix language server — completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files. [github.com/nix-community/nixd](https://github.com/nix-community/nixd)
 
+### alejandra
+Nix formatter — this repo's `nix fmt`, pre-commit hook, and CI lint all agree on it. Also on PATH for Claude Code's format-on-edit hook. [github.com/kamadorueda/alejandra](https://github.com/kamadorueda/alejandra)
+
 ---
 
 ## Git
@@ -102,6 +105,9 @@ GitLab CLI — MRs, issues, pipelines, and repo management from the terminal. [g
 
 ### difftastic
 Structural (AST-aware) diff tool. Wired as an explicit `git difftool -t difftastic`, not the default — works without vscode, so it's available on headless dev profiles too. [github.com/Wilfred/difftastic](https://github.com/Wilfred/difftastic)
+
+### git-filter-repo
+Rewrites git history — mailmaps, path filtering, blob removal. The supported replacement for `git filter-branch`. [github.com/newren/git-filter-repo](https://github.com/newren/git-filter-repo)
 
 ### gitalias
 Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes` — not a Nix package. [github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)

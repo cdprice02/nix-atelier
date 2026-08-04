@@ -14,6 +14,8 @@ in {
     difftastic
     pre-commit
     nixd
+    alejandra
+    git-filter-repo
     duckdb
     hyperfine
     qmk
