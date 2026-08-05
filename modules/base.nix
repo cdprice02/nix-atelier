@@ -110,11 +110,11 @@ in {
           git = "${pkgs.git}/bin/git";
           mkOverride = name: url: ''
             _sm_dir="$HOME/.nix-config/config/${name}"
-            if [ -d "$_sm_dir/.git" ]; then
+            if [ -e "$_sm_dir/.git" ]; then
               _has_private=$(${git} -C "$_sm_dir" remote get-url private 2>/dev/null && echo yes || echo no)
               if [ "$_has_private" = "no" ]; then
                 $DRY_RUN_CMD ${git} -C "$_sm_dir" remote add private "${url}"
-                if $DRY_RUN_CMD ${git} -C "$_sm_dir" fetch private; then
+                if GIT_SSH="${pkgs.openssh}/bin/ssh" $DRY_RUN_CMD ${git} -C "$_sm_dir" fetch private; then
                   $DRY_RUN_CMD ${git} -C "$_sm_dir" checkout -b work --track private/main \
                     || ${git} -C "$_sm_dir" checkout work
                   echo "submodule ${name}: private remote configured (${url})"
