@@ -26,6 +26,7 @@
       GITLAB_ACCESS_TOKEN = {};
       GITLAB_VERIFY_SSL = {};
       JIRA_PAT = {};
+      CONTEXT7_API_KEY = {};
     };
 
     # Renders straight to the same path envLocalInit (base.nix) already
@@ -40,6 +41,7 @@
         export GITLAB_ACCESS_TOKEN="${config.sops.placeholder.GITLAB_ACCESS_TOKEN}"
         export GITLAB_VERIFY_SSL="${config.sops.placeholder.GITLAB_VERIFY_SSL}"
         export JIRA_PAT="${config.sops.placeholder.JIRA_PAT}"
+        export CONTEXT7_API_KEY="${config.sops.placeholder.CONTEXT7_API_KEY}"
       '';
     };
   };
