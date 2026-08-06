@@ -20,6 +20,14 @@ in {
       #   HostName jump.corp.example.com
       #   User ${user.username}
       #   IdentityFile ~/.ssh/${user.sshKey}
+
+      # USGS EROS corporate GitLab: ErosMarketplace and other internal repos.
+      # Separate keypair from the personal/GitHub key (carsondp02); this
+      # instance needs its own key registered under GitLab profile > SSH Keys.
+      Host code.chs.usgs.gov
+        User git
+        IdentityFile ~/.ssh/eros-gitlab
+        IdentitiesOnly yes
     '';
   };
 
