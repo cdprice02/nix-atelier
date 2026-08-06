@@ -149,7 +149,15 @@ sync-work:
 # formatting and lint, and covers the working tree rather than the last commit.
 [group('check')]
 [doc('Full local validation (builds profiles for this system + lints)')]
-check: lint-all
+check: lint-all flake-check
+
+# Split out of `check` so CI's flake-check job can run just this half: it
+# already gets the four lints from its own dedicated lint-* jobs, and calling
+# `just check` there ran every lint twice per PR. `just check` above still
+# runs both for local use.
+[group('check')]
+[doc("nix flake check only, no lints; CI's flake-check job uses this")]
+flake-check:
     nix flake check --impure
 
 [group('check')]
