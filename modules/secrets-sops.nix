@@ -21,7 +21,6 @@
     defaultSopsFile = ../secrets/secrets.yaml;
 
     secrets = {
-      OBSIDIAN_API_KEY = {};
       GITHUB_PERSONAL_ACCESS_TOKEN = {};
       GITLAB_ACCESS_TOKEN = {};
       GITLAB_VERIFY_SSL = {};
@@ -36,7 +35,6 @@
       path = "${config.home.homeDirectory}/.config/secrets/env";
       mode = "0400";
       content = ''
-        export OBSIDIAN_API_KEY="${config.sops.placeholder.OBSIDIAN_API_KEY}"
         export GITHUB_PERSONAL_ACCESS_TOKEN="${config.sops.placeholder.GITHUB_PERSONAL_ACCESS_TOKEN}"
         export GITLAB_ACCESS_TOKEN="${config.sops.placeholder.GITLAB_ACCESS_TOKEN}"
         export GITLAB_VERIFY_SSL="${config.sops.placeholder.GITLAB_VERIFY_SSL}"
