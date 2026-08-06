@@ -84,6 +84,68 @@ nix flake update nixpkgs-darwin home-manager-darwin nix-darwin-x86
 
 ---
 
+## A newly installed tool stays shadowed, or a `sessionPath` entry is missing from `PATH`
+
+**Symptom:** After a `switch` that adds a new entry to `home.sessionPath`
+(e.g. `modules/env.nix`'s `~/.local/bin`), the new directory is missing from
+`PATH` in *every* shell, including brand-new ones, while older entries are
+still present. A freshly installed tool stays shadowed by an older copy
+elsewhere: `command -v claude` resolves to `~/.npm-global/bin/claude` instead
+of the newer `~/.local/bin/claude`, and the claude-code installer even reports
+it directly:
+
+```text
+⚠ Native installation exists but ~/.local/bin is not in your PATH.
+```
+
+Opening a new terminal window does **not** fix it, which is the confusing
+part.
+
+**Cause:** not a bug in this config. Home Manager's generated
+`hm-session-vars.sh` guards itself against being sourced twice per shell:
+
+```sh
+if [ -n "$__HM_SESS_VARS_SOURCED" ]; then return; fi
+export __HM_SESS_VARS_SOURCED=1
+```
+
+That guard variable is **exported**, so every child process inherits it. Once
+one shell has sourced an *older* version of the file, every shell descended
+from it — including `zsh -l`, tmux panes, and editor terminals — sees the
+guard already set and returns before applying the new `PATH`. The stale value
+propagates indefinitely, which is why even a new terminal window doesn't help
+if it was itself spawned from (or inherits the environment of) an
+already-affected session.
+
+**Diagnose:** compare `PATH` with and without the guard:
+
+```sh
+# stale/current PATH, whatever this shell inherited
+echo $PATH
+
+# what PATH would be if hm-session-vars.sh were sourced fresh
+env -u __HM_SESS_VARS_SOURCED zsh -l -c 'echo $PATH'
+```
+
+If the two differ, the guard is the cause.
+
+**Fix:**
+
+```sh
+# fix the current session in place
+exec env -u __HM_SESS_VARS_SOURCED zsh -l
+```
+
+A genuinely new *login* session — a new terminal app launch, or logging out
+and back in — also clears it, since neither inherits environment from the
+affected shell. Spawning a shell from within the affected session does not.
+
+See `modules/env.nix`'s comment block for the related (and separate)
+Linux-vs-darwin `PATH`-ordering behavior, which is often what you're checking
+when this surfaces.
+
+---
+
 ## Submodule directories empty after clone
 
 **Symptom:** `~/.nix-config/config/claude/` is empty, or Home Manager errors on the symlink activation step.

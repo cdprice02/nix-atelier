@@ -54,6 +54,10 @@ in {
     # already-populated PATH: so on darwin a user-installed binary here can
     # shadow a same-named Nix-provided one instead. Verified against this
     # machine's actual generated hm-session-vars.sh and /etc/zshenv.
+    #
+    # If a switch that changes this list doesn't seem to take effect in any
+    # shell, including new ones, see docs/troubleshooting.md's entry on
+    # hm-session-vars.sh's exported __HM_SESS_VARS_SOURCED guard.
     sessionPath = [
       "${homeDir}/.local/bin"
       "${homeDir}/.cargo/bin"
