@@ -1,7 +1,0 @@
-# manual_inherit_from false-positives on dynamic attribute access wrapped in
-# a transform, e.g. flake.nix's `map resolveFeature (profiles.${tier} or
-# (throw "..."))` — `inherit` only supports static identifier names, so
-# there's no actual rewrite this rule could be suggesting here.
-disabled = [
-  "manual_inherit_from",
-]
