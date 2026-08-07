@@ -128,12 +128,11 @@
       else if existingUserNix != []
       then import (builtins.head existingUserNix)
       else import (self + /user.nix.example);
-    user =
-      userBase
-      // {
-        # Derive SSH key name from email prefix: key file: ~/.ssh/<sshKey>
-        sshKey = builtins.elemAt (builtins.split "@" userBase.email) 0;
-      };
+    # Derive SSH key name from email prefix: key file: ~/.ssh/<sshKey>. Shared
+    # with testUser below (the nmt harness's identity-independent stand-in),
+    # so both go through the same derivation.
+    mkUser = base: base // {sshKey = builtins.elemAt (builtins.split "@" base.email) 0;};
+    user = mkUser userBase;
 
     pkgsConfig = {allowUnfree = true;};
 
@@ -343,6 +342,167 @@
       ++ guiMods
       ++ sopsMods;
 
+    # ── Test harness (nmt) ───────────────────────────────────────────────────
+    # nmt (home-manager's own module test framework) evaluates a home-manager
+    # configuration with every derivation's outPath replaced by a
+    # "@package-name@" placeholder, then runs bash assertions against the
+    # rendered home-files tree. It never builds a real package, so it runs on
+    # every system this flake targets, including x86_64-darwin, where `checks`
+    # otherwise has almost nothing to say (see docs-drift's own comment below).
+    nmtSrc = builtins.fetchTarball {
+      url = "https://git.sr.ht/~rycee/nmt/archive/v0.5.1.tar.gz";
+      sha256 = "0qhn7nnwdwzh910ss78ga2d00v42b0lspfd7ybl61mpfgz3lmdcj";
+    };
+
+    # user.nix.example, not a real user.nix: tests must be identity-independent,
+    # not a description of whichever machine happens to be evaluating them.
+    testUser = mkUser (import (self + /user.nix.example));
+
+    # Replaces a single derivation's outPath with "@name@" (its own name, not
+    # the caller's attribute name, so e.g. buildPackages.gettext and
+    # top-level gettext scrub identically). Reached only for the specific
+    # top-level packages named below, never applied to the rest of pkgs.
+    scrubDerivation = name: value:
+      value
+      // {
+        outPath = "@${value.name or name}@";
+        outputSpecified = true;
+      };
+
+    # Real, unscrubbed pkgs stay the default; only the specific packages this
+    # repo actually installs (installedPackageNames, below -- the same list
+    # the docs/tool-catalog bidirectional check validates against) get
+    # scrubbed. This is the inverse of scrubbing everything and clawing back
+    # exceptions, and it is deliberate, not merely simpler: recursively
+    # scrubbing the *whole* pkgs tree (the more obvious approach, tried
+    # first) reaches into pkgs.stdenv's own internal bootstrap-stage
+    # cross-references on x86_64-darwin and breaks an internal consistency
+    # assertion there (isBuiltByBootstrapFilesCompiler). home-manager's own
+    # test suite hits the identical problem and solves it the same way
+    # (tests/darwinScrublist.nix): start from real pkgs, scrub only a named
+    # list of leaf application packages, never touch stdenv or anything not
+    # explicitly named. Ported directly rather than rediscovered
+    # independently -- their own comment on it: "TODO: figure out stdenv
+    # stubbing so we don't have to do this".
+    #
+    # A useful side effect: packages referenced only through option-value
+    # string interpolation rather than home.packages (nix-direnv, this
+    # repo's own kubernetes-helmPlugins.helm-diff) are never in
+    # installedPackageNames, so they are never scrubbed and their
+    # interpolated paths stay real absolute paths automatically -- no
+    # separate exception list needed for that class of failure at all.
+
+    # shell-tools.nix's mkInit genuinely *executes* fzf/zoxide/direnv at build
+    # time (pkgs.runCommand "${cmd} > $out", capturing their static shell-init
+    # output), rather than merely referencing their path in rendered text.
+    # These three must stay real regardless of installedPackageNames
+    # membership, or that runCommand's builder itself becomes unrunnable
+    # (fake path, exit 127) -- the same failure class as the buildPackages
+    # cases above, but caused by this repo's own modules rather than Home
+    # Manager's.
+    executedAtBuildTime = ["fzf" "zoxide" "direnv"];
+    mkScrubbedPkgs = realPkgs: let
+      overlay = _final: super:
+        nixpkgs.lib.mapAttrs (
+          name: value:
+            if
+              builtins.elem name installedPackageNames
+              && !(builtins.elem name executedAtBuildTime)
+              && nixpkgs.lib.isDerivation value
+            then scrubDerivation name value
+            else value
+        )
+        super;
+    in
+      (nixpkgs.lib.makeExtensible (_final: realPkgs)).extend (
+        final: super: overlay final super // {buildPackages = super.buildPackages.extend overlay;}
+      );
+
+    # Same home-manager-input selection as mkDarwinConfig: x86_64-darwin rides
+    # the pinned 25.05 home-manager-darwin input, everything else rides the
+    # rolling home-manager input.
+    hmInputFor = system:
+      if isX86Darwin system
+      then home-manager-darwin
+      else home-manager;
+    hmModulesFor = system: hmInputFor system + "/modules/modules.nix";
+    # Home Manager's own modules use an `lib.hm.*` namespace (deprecations,
+    # string-casing helpers, etc.) added by their own stdlib-extended.nix, not
+    # present in plain nixpkgs.lib. Every one of HM's modules assumes it is
+    # there; without it, evaluation dies on the first module that reaches for
+    # `lib.hm.deprecations` or similar. Mirrors home-manager's own test suite
+    # (tests/default.nix), which does the same thing for the same reason.
+    hmLibFor = system: import (hmInputFor system + "/modules/lib/stdlib-extended.nix") nixpkgs.lib;
+
+    # The module list nmt evaluates: home-manager's own modules (scrubbed
+    # pkgs, check = false so HM's own option-type-mismatch warnings don't fire
+    # against placeholder values) plus this repo's own profile, plus a
+    # fixture supplying pkgs/user/context via _module.args -- nmt's own
+    # evalModules call has no specialArgs passthrough, so anything a module
+    # destructures as a function argument (pkgs included) has to arrive this
+    # way instead. base.nix's own mkForce on home.homeDirectory (keyed off
+    # testUser.username and the target system) supersedes any default nmt
+    # would otherwise pick, so no separate override is needed here.
+    mkNmtModules = system: let
+      realPkgs = pkgsFor system;
+      scrubbedPkgs = mkScrubbedPkgs realPkgs;
+    in
+      import (hmModulesFor system) {
+        lib = hmLibFor system;
+        pkgs = scrubbedPkgs;
+        check = false;
+      }
+      ++ mkProfile {
+        context = "personal";
+        tier = "dev";
+        withGui = false;
+        inherit system;
+      }
+      ++ [
+        {
+          _module.args = {
+            # mkForce: misc/nixpkgs.nix (pulled in by modules.nix above) also
+            # sets _module.args.pkgs, from its own reimport of pkgsPath at the
+            # same default priority as a bare assignment here -- an outright
+            # conflict, not merely a default to override. mkForce breaks the
+            # tie in favor of the scrubbed pkgs, which is the one point of
+            # this harness. pkgsPath itself is forced to abort, matching
+            # home-manager's own test suite (tests/default.nix): nothing in
+            # this repo's modules should ever need a real nixpkgs reimport,
+            # and an abort here turns a silent real build into a loud failure
+            # if that assumption ever breaks.
+            pkgsPath = abort "pkgsPath is unavailable in the nmt harness: every package must come from the scrubbed pkgs";
+            pkgs = nixpkgs.lib.mkForce scrubbedPkgs;
+            user = testUser;
+            context = "personal";
+          };
+          # programs.fish.generateCompletions builds one real runCommand
+          # derivation per package in home.packages (reading each package's
+          # /share/man to synthesize completions), regardless of whether the
+          # package itself is scrubbed -- unlike a string interpolation, this
+          # is home-manager's own module code constructing new, genuinely
+          # buildable derivations from the package list, which defeats the
+          # entire premise of a scrub-based, build-free harness. Off here
+          # only; the real profile still ships real completions.
+          programs.fish.generateCompletions = false;
+        }
+      ];
+
+    # nmt's own `pkgs` (unlike the scrubbed pkgs above) must be real: it backs
+    # the handful of packages (coreutils, ncurses, diffutils, findutils,
+    # gnugrep, gnused) that actually run the assertion scripts themselves, via
+    # a real runCommandLocal build. Tests live in ./tests/nmt, one file per
+    # area, folded together the same way home-manager's own tests/default.nix
+    # folds its per-module test directories.
+    mkNmtTests = system:
+      import nmtSrc {
+        lib = hmLibFor system;
+        pkgs = pkgsFor system;
+        modules = mkNmtModules system;
+        testedAttrPath = ["home" "activationPackage"];
+        tests = import ./tests/nmt {};
+      };
+
     # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
     mkHomeConfig = {
       context,
@@ -529,9 +689,10 @@
     # The darwin system closures are deliberately NOT included here. CI's
     # build-darwin job already builds all four, and adding them would turn
     # `just check`: the command CONTRIBUTING tells you to run before every PR
-    #: into a multi-minute build. Real assertion-level darwin coverage is
-    # better served by an eval-only test harness that never builds packages
-    # (see issue #51) than by making the pre-PR check expensive.
+    #: into a multi-minute build. Real assertion-level darwin coverage comes
+    # from the nmt-* entries below instead: an eval-only test harness that
+    # never builds a real package, so it stays cheap even on every darwin
+    # system.
     checks = nixpkgs.lib.genAttrs allSystems (
       system: let
         # pkgsFor, not mkPkgs: mkPkgs always imports the rolling nixpkgs, which
@@ -547,6 +708,10 @@
               cfg.activationPackage.system or null == system
           )
           self.homeConfigurations;
+        # nmt's own `build` attrset already includes an `all` aggregate
+        # (build.all), which surfaces here as nmt-all: a single check that
+        # depends on every individual nmt test.
+        nmtBuild = (mkNmtTests system).build;
       in
         (nixpkgs.lib.mapAttrs'
           (name: cfg: {
@@ -554,6 +719,12 @@
             value = cfg.activationPackage;
           })
           homeConfigsForSystem)
+        // (nixpkgs.lib.mapAttrs'
+          (name: drv: {
+            name = "nmt-${name}";
+            value = drv;
+          })
+          nmtBuild)
         // {
           # assert docsCatalogValid forces the bidirectional catalog check
           # (see above) before this even attempts the diff, so a catalog
