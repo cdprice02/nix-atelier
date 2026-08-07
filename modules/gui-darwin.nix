@@ -5,6 +5,7 @@
   ...
 }: let
   compat = import ./lib/hm-compat.nix {inherit lib options;};
+  guiBase = import ./lib/gui-base.nix;
 in {
   home.packages = with pkgs; [
     obsidian
@@ -52,26 +53,20 @@ in {
       theme = "rose_pine";
       settings = {
         window = {
-          opacity = 0.9;
+          opacity = guiBase.alacritty.windowOpacity;
           decorations = "buttonless";
           option_as_alt = "Both";
         };
-        font = {
-          size = 14;
-          normal.family = "Fira Code";
-        };
+        inherit (guiBase.alacritty) font;
         general.import = [
           "~/.config/alacritty/keybindings.toml"
         ];
       };
     };
     vscode.enable = true;
-    git = compat.gitConfig {
-      credential.helper = lib.mkForce "osxkeychain";
-      diff.tool = "vscode";
-      merge.tool = "vscode";
-      difftool."vscode".cmd = "code --wait --diff $LOCAL $REMOTE";
-      mergetool."vscode".cmd = "code --wait $MERGED";
-    };
+    git = compat.gitConfig (guiBase.git
+      // {
+        credential.helper = lib.mkForce "osxkeychain";
+      });
   };
 }

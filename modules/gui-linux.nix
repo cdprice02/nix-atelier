@@ -5,6 +5,7 @@
   ...
 }: let
   compat = import ./lib/hm-compat.nix {inherit lib options;};
+  guiBase = import ./lib/gui-base.nix;
 in {
   home.packages = with pkgs; [
     obsidian
@@ -15,13 +16,10 @@ in {
       enable = true;
       settings = {
         window = {
-          opacity = 0.9;
+          opacity = guiBase.alacritty.windowOpacity;
           decorations = "none";
         };
-        font = {
-          size = 14;
-          normal.family = "Fira Code";
-        };
+        inherit (guiBase.alacritty) font;
         colors = {
           primary = {
             background = "#1e1e1e";
@@ -34,12 +32,9 @@ in {
     vscode.enable = true;
 
     # credential.helper for Linux GUI machines
-    git = compat.gitConfig {
-      credential.helper = lib.mkForce "store";
-      diff.tool = "vscode";
-      merge.tool = "vscode";
-      difftool."vscode".cmd = "code --wait --diff $LOCAL $REMOTE";
-      mergetool."vscode".cmd = "code --wait $MERGED";
-    };
+    git = compat.gitConfig (guiBase.git
+      // {
+        credential.helper = lib.mkForce "store";
+      });
   };
 }
