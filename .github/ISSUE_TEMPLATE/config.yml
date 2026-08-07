@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question about adapting this config for your own fork
+    url: https://github.com/cdprice02/nix-config/discussions/categories/q-a
+    about: Fork-specific and personal-config questions belong in Discussions, not an issue. See CONTRIBUTING.md for the framework-vs-personal-preference distinction.
+  - name: General Nix / Home Manager / nix-darwin support
+    url: https://discourse.nixos.org
+    about: Questions not specific to this repo are better answered by the wider Nix community.
+  - name: Report a security vulnerability
+    url: https://github.com/cdprice02/nix-config/security/advisories/new
+    about: Do not open a public issue for a security report. See SECURITY.md.
