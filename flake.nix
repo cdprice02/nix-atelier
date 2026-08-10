@@ -407,26 +407,40 @@
     #  - Everything else here: also something this repo installs, but also
     #    something Home Manager's own internal derivations (fish config
     #    rendering, session-vars generation, gettext-based message
-    #    formatting) or nixpkgs' own darwin bootstrap (apple-sdk's build
-    #    needs real jq) depend on as a genuine build input, independent of
-    #    anything in this repo's own modules. Unlike programs.fish's
-    #    generateCompletions or manual.manpages above, there is no "just
-    #    disable it" option for either of these, so the fix is keeping the
-    #    tool real rather than scrubbing something nixpkgs itself needs.
+    #    formatting, mime-database updates in the profile's own activation)
+    #    or nixpkgs' own darwin bootstrap (apple-sdk's build needs real jq)
+    #    depend on as a genuine build input, independent of anything in this
+    #    repo's own modules. Unlike programs.fish's generateCompletions or
+    #    manual.manpages above, there is no "just disable it" option for
+    #    either of these, so the fix is keeping the tool real rather than
+    #    scrubbing something nixpkgs itself needs.
+    #
+    #    This is home-manager's own darwinScrublist.nix whitelist in full
+    #    (its comment: "Needed by pretty much all tests"), taken wholesale
+    #    rather than rediscovered one CI failure at a time -- upstream
+    #    already did the exhaustive enumeration once; the first two attempts
+    #    at trimming it down here (assuming only a subset applied) each cost
+    #    a full CI round-trip to find the next omission.
     mustStayReal = [
       "fzf"
       "zoxide"
       "direnv"
-      "jq"
       "coreutils"
+      "crudini"
+      "jq"
+      "desktop-file-utils"
+      "diffutils"
       "findutils"
+      "glibcLocales"
+      "gettext"
       "gnugrep"
       "gnused"
-      "gettext"
-      "bash"
-      "fish"
+      "shared-mime-info"
+      "emptyDirectory"
       "babelfish"
+      "fish"
       "lndir"
+      "bash"
     ];
     mkScrubbedPkgs = realPkgs: let
       overlay = _final: super:
