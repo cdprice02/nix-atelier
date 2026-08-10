@@ -22,8 +22,8 @@ body:
     id: profile
     attributes:
       label: Profile
-      description: Which profile were you applying? (e.g. `personal`, `work-darwin-aarch64`)
-      placeholder: personal
+      description: Which profile were you applying? (e.g. `full`, `full-darwin-aarch64`)
+      placeholder: full
     validations:
       required: true
 

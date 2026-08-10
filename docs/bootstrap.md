@@ -32,7 +32,7 @@ has run and you've added the key to GitHub.
 If you've forked this repo, clone **your fork's** URL instead: everything below
 works the same, and `user.nix` keeps your identity out of the repo either way.
 
-This also clones `config/claude` (Claude Code config), `config/copilot` (Copilot config, personal only), and `config/git/gitalias`. Home Manager symlinks these into `~` on first activation.
+This also clones `config/claude` (Claude Code config), `config/copilot` (Copilot config), and `config/git/gitalias`. Home Manager symlinks these into `~` on first activation.
 
 If you forgot `--recurse-submodules`, initialize them after the fact:
 
@@ -49,7 +49,7 @@ cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix
 ```
 
-`user.nix` is gitignored and never committed. Each machine has its own copy. Set `username`, `name`, `email`, and `work` identity. If you have a private overlay for any submodule (e.g. work-specific Claude config), add it to the `submodules` block:
+`user.nix` is gitignored and never committed. Each machine has its own copy. Set `username`, `name`, `email`, and `github`. If you have a private overlay for any submodule (e.g. a private Claude config), add it to the `submodules` block:
 
 ```nix
 submodules = {
@@ -99,20 +99,17 @@ step above becomes unnecessary. To edit the encrypted values later:
 `sops secrets/secrets.yaml` (opens your `$EDITOR` with the decrypted
 plaintext; saving re-encrypts automatically).
 
-### 5. Corporate CA certificate (work profile only)
+### 5. Corporate or self-signed CA certificate (if applicable)
 
-The `work` profile sets `SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, and `REQUESTS_CA_BUNDLE`
-to `~/.certs/corporate.pem`. This file is **never committed**: place it manually.
-
-On a corporate WSL2 machine the bundle may already be present under
-`/usr/local/share/ca-certificates/`. Check with your IT team for the exact path, then:
-
-```sh
-mkdir -p ~/.certs
-cp /path/to/corporate-root-ca.crt ~/.certs/corporate.pem
-```
-
-The activation script will warn on each `home-manager switch` until the file is present.
+`env.nix` points Nix-managed tools (curl, AWS CLI, Python `requests`, npm) at
+the system CA bundle (`/etc/ssl/certs/ca-certificates.crt` on Linux/WSL2) via
+`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, and `REQUESTS_CA_BUNDLE`: Nix-built
+binaries don't inherit the system trust store automatically the way
+distro-packaged ones do. If your network sits behind a TLS-inspecting proxy,
+install the corporate root CA into that system bundle the normal distro way
+(e.g. `update-ca-certificates` after copying it into
+`/usr/local/share/ca-certificates/`) — nothing in this repo needs to know
+about it separately.
 
 ### 6. Set default shell to zsh (optional, one-time)
 
@@ -128,11 +125,10 @@ After the next login the default shell will be zsh.
 
 ### 7. Apply the profile
 
-Pick **one** profile that matches your machine: `work` for a work machine, `personal` for a personal machine.
+Pick **one** profile that matches your machine: `full` for the complete dev toolchain, `minimal` for a lean bootstrap. See [docs/profiles.md](profiles.md) for the full list, including the `-gui` and `-aarch64` variants.
 
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk      # work machine
-nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # personal machine
+nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
 ```
 
 > **`--impure` is always required**: every `home-manager switch` needs it, not just
@@ -151,10 +147,10 @@ After first apply, `home-manager` and `just` are on PATH:
 
 ```sh
 # subsequent applies
-just switch work      # or: home-manager switch --flake ~/.nix-config#work --impure
-just switch personal  # or: home-manager switch --flake ~/.nix-config#personal --impure
-just switch           # uses user.nix's `profile` field if set, else "personal"
-                      # (the -aarch64 suffix is added automatically on ARM)
+just switch full    # or: home-manager switch --flake ~/.nix-config#full --impure
+just switch minimal # or: home-manager switch --flake ~/.nix-config#minimal --impure
+just switch         # uses user.nix's `profile` field if set, else "full"
+                    # (the -aarch64 suffix is added automatically on ARM)
 
 just --list  # shows all available commands
 ```
@@ -171,9 +167,9 @@ cat ~/.ssh/<sshKey>.pub
 
 `<sshKey>` is the prefix of your personal email (derived automatically from `user.nix`).
 
-### 9. Activate pre-commit hooks (dev profile only)
+### 9. Activate pre-commit hooks (full tier only)
 
-`pre-commit` is installed by the `dev` profile: no separate install needed. After first `home-manager switch`, wire up the hooks for this repo clone:
+`pre-commit` is installed by the `full` tier: no separate install needed. After first `home-manager switch`, wire up the hooks for this repo clone:
 
 ```sh
 pre-commit install
@@ -229,23 +225,24 @@ cp ~/.nix-config/secrets.env.example ~/.config/secrets/env
 $EDITOR ~/.config/secrets/env
 ```
 
-### 5. Corporate CA certificate (work profile only)
+### 5. Corporate or self-signed CA certificate (if applicable)
 
-**Not needed on macOS**: `work.nix`'s CA-bundle env vars (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, `REQUESTS_CA_BUNDLE`) are Linux-only (`lib.mkIf (!pkgs.stdenv.isDarwin)`); macOS trusts corporate certs via the system keychain instead. Skip straight to Apply below.
+**Not needed on macOS**: it trusts certs added to the system keychain, not an
+env-var-pointed bundle the way Linux/WSL2's `env.nix` does (see the Linux
+section's step 5). Skip straight to Apply below.
 
 ### 6. Pick your config
 
-macOS has two configs per context, and **they are not interchangeable**: pick by
-your Mac's CPU:
+macOS has two configs, one per CPU, and **they are not interchangeable**:
 
-| Your Mac | Personal | Work |
-|----------|----------|------|
-| Apple Silicon (M1/M2/M3/M4…) | `personal-darwin-aarch64` | `work-darwin-aarch64` |
-| Intel | `personal-darwin` | `work-darwin` |
+| Your Mac | Config |
+|----------|--------|
+| Apple Silicon (M1/M2/M3/M4…) | `full-darwin-aarch64` |
+| Intel | `full-darwin` |
 
 Check with `uname -m`: `arm64` means Apple Silicon, `x86_64` means Intel.
 
-They differ by more than architecture: the Intel configs are pinned to nixpkgs
+They differ by more than architecture: the Intel config is pinned to nixpkgs
 25.05, because nixpkgs-unstable has dropped x86_64-darwin. Apple Silicon rides
 the same rolling inputs as Linux. Picking the wrong one gets you a build for the
 wrong platform, not a slower build of the right one.
@@ -259,11 +256,11 @@ Mac:
 ```sh
 # Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
 
 # Intel: note the pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
 ```
 
 After that first apply, `darwin-rebuild` is on PATH and every later apply is just:
@@ -271,7 +268,7 @@ After that first apply, `darwin-rebuild` is on PATH and every later apply is jus
 ```sh
 just switch          # detects OS and architecture, appends the right suffix
 # or, explicitly:
-sudo darwin-rebuild switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+sudo darwin-rebuild switch --flake ~/.nix-config#full-darwin-aarch64 --impure
 ```
 
 There's no separate "set default shell" step here the way WSL2 has one: nix-darwin's `system/darwin.nix` sets `programs.zsh.enable = true` at the system level, which (unlike standalone home-manager) registers zsh as an available login shell automatically.
@@ -288,9 +285,9 @@ cat ~/.ssh/<sshKey>.pub
 
 `<sshKey>` is the prefix of your personal email (derived automatically from `user.nix`).
 
-### 9. Activate pre-commit hooks (dev profile only)
+### 9. Activate pre-commit hooks (full tier only)
 
-`pre-commit` is installed by the `dev` tier: no separate install needed (`personal-darwin`/`work-darwin` are always dev-tier). After first `darwin-rebuild switch`, wire up the hooks for this repo clone:
+`pre-commit` is installed by the `full` tier: no separate install needed (`full-darwin`/`full-darwin-aarch64` are always `full` tier). After first `darwin-rebuild switch`, wire up the hooks for this repo clone:
 
 ```sh
 pre-commit install

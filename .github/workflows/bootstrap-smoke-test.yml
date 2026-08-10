@@ -39,7 +39,7 @@ jobs:
   # curl-piped installer the docs use) on a fully-provisioned ubuntu-latest
   # runner (not a bare container) and jumps straight to `nix build
   # .#homeConfigurations.X.activationPackage` (not the docs' own `nix run
-  # home-manager -- switch`). Scoped to personal-minimal only (the docs'
+  # home-manager -- switch`). Scoped to minimal only (the docs'
   # own recommended starting point, fastest to build) — this job is about
   # the install sequence, not re-running the full profile matrix.
   #
@@ -85,7 +85,7 @@ jobs:
       # (clone — actions/checkout stands in, the documented git@github.com
       # SSH remote can't authenticate in CI without a deploy key), 4-6,
       # 8-9 aren't exercised: they're either not relevant to a
-      # personal-minimal bootstrap (secrets, corporate CA, default shell)
+      # minimal bootstrap (secrets, corporate CA, default shell)
       # or don't affect whether the bootstrap sequence itself still works
       # (SSH key, pre-commit).
       - name: Run the documented bootstrap sequence
@@ -113,7 +113,7 @@ jobs:
           # real distro or WSL2 install, and Home Manager aborts rather than
           # clobber them. This is the single most likely first-run failure for
           # a new user, so the sequence under test has to cover it.
-          nix run home-manager -- switch --flake .#personal-minimal --impure -b bk
+          nix run home-manager -- switch --flake .#minimal --impure -b bk
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh
