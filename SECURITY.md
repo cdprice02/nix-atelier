@@ -8,7 +8,7 @@ library: apply fixes by pulling latest, not by requesting a backport.
 ## Reporting a vulnerability
 
 Use GitHub's
-[private vulnerability reporting](https://github.com/cdprice02/nix-config/security/advisories/new),
+[private vulnerability reporting](https://github.com/cdprice02/nix-atelier/security/advisories/new),
 which is visible only to the maintainer. If you would rather not use GitHub,
 use any contact listed on the maintainer's
 [profile](https://github.com/cdprice02).

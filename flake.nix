@@ -92,7 +92,7 @@
     # switch calls require --impure. Alternatives (a hardcoded absolute path,
     # sops-nix) trade portability or simplicity for that impurity.
     #
-    # Default location is $HOME/.nix-config/user.nix. If you've cloned this
+    # Default location is $HOME/.nix-atelier/user.nix. If you've cloned this
     # repo somewhere else, set NIX_CONFIG_USER_FILE to the full path of your
     # user.nix instead of relying on the default.
     homeDir = builtins.getEnv "HOME";
@@ -108,10 +108,10 @@
     userNixPathOverride = builtins.getEnv "NIX_CONFIG_USER_FILE";
     userNixCandidates =
       nixpkgs.lib.optional (userNixPathOverride != "") userNixPathOverride
-      ++ nixpkgs.lib.optional (homeDir != "") (homeDir + "/.nix-config/user.nix")
+      ++ nixpkgs.lib.optional (homeDir != "") (homeDir + "/.nix-atelier/user.nix")
       ++ nixpkgs.lib.optionals (sudoUser != "") [
-        "/Users/${sudoUser}/.nix-config/user.nix"
-        "/home/${sudoUser}/.nix-config/user.nix"
+        "/Users/${sudoUser}/.nix-atelier/user.nix"
+        "/home/${sudoUser}/.nix-atelier/user.nix"
       ];
     existingUserNix = builtins.filter builtins.pathExists userNixCandidates;
     userBase =
@@ -241,7 +241,7 @@
       then (f.unsupported or [])
       else [];
 
-    # ── Docs generation (Task 15) ───────────────────────────────────────────
+    # ── Docs generation ────────────────────────────────────────────────────
     # Realized package identities (p.pname or p.name) across every already-
     # built home/darwin config: reuses the actual mkProfile composition
     # rather than statically re-scanning modules/features/*.nix, so it also
@@ -307,10 +307,10 @@
       featureMods = map (n: featureModule (resolveFeature n)) usableNames;
 
       # Absolute paths to private, machine-specific modules outside this
-      # repo (see the mechanism note in the nix-atelier plan: a string
-      # absolute path imports to a real module, and relative imports inside
-      # it resolve against the real filesystem, the same --impure trick
-      # user.nix itself relies on). Empty by default.
+      # repo: a string absolute path imports to a real module, and relative
+      # imports inside it resolve against the real filesystem, the same
+      # --impure trick user.nix itself relies on. See examples/private-config/
+      # for a worked example. Empty by default.
       privateMods = map import (user.extraModulePaths or []);
 
       guiMods =
@@ -652,15 +652,15 @@
         };
   in {
     # ── homeConfigurations ──────────────────────────────────────────────────
-    # Bootstrap: nix run home-manager -- switch --flake ~/.nix-config#<name>
-    # After first apply: home-manager switch --flake ~/.nix-config#<name>
+    # Bootstrap: nix run home-manager -- switch --flake ~/.nix-atelier#<name>
+    # After first apply: home-manager switch --flake ~/.nix-atelier#<name>
     #
     # Generated from tiers x {gui,no-gui} x {x86_64,aarch64}: adding a tier or
     # a feature never means adding a name here.
     homeConfigurations = builtins.listToAttrs homeConfigMatrix;
 
     # ── darwinConfigurations ────────────────────────────────────────────────
-    # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-config#<name>
+    # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-atelier#<name>
     darwinConfigurations = {
       "full-darwin" = mkDarwinConfig {
         system = "x86_64-darwin";

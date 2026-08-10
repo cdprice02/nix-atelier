@@ -7,6 +7,6 @@
   home.file.".copilot" = {
     source =
       config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/.nix-config/config/copilot";
+      "${config.home.homeDirectory}/.nix-atelier/config/copilot";
   };
 }

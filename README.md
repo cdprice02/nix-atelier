@@ -1,11 +1,11 @@
-# nix-config
+# nix-atelier
 
-[![CI](https://github.com/cdprice02/nix-config/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-config/actions/workflows/check.yml)
+[![CI](https://github.com/cdprice02/nix-atelier/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-atelier/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Personal Nix config managed with [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay). Supports macOS (Intel and Apple Silicon) and any Linux/WSL2. NixOS support is planned but not implemented; see [issue #5](https://github.com/cdprice02/nix-config/issues/5).
+A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay): macOS (Intel and Apple Silicon) and any Linux/WSL2, same modules, one command. Fork it, fill in `user.nix`, and get a full dev environment on any machine. NixOS support is planned but not implemented; see [issue #5](https://github.com/cdprice02/nix-atelier/issues/5).
 
-Structured as a composable framework: fork it, fill in `user.nix`, and get a full dev environment on any machine with one command. See [docs/profiles.md](docs/profiles.md) for the profile system and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt it to your own setup.
+Machine-specific and private data — work identity, real secrets, anything that shouldn't be public — never has to live in this repo, forked or not. See [docs/profiles.md](docs/profiles.md) for the profile system, [examples/private-config/](examples/private-config/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
 
 ## Quick start
 
@@ -24,12 +24,12 @@ mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 # 3. Clone and configure identity
-git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
-cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
-$EDITOR ~/.nix-config/user.nix  # fill in username, name, email
+git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier
+cp ~/.nix-atelier/user.nix.example ~/.nix-atelier/user.nix
+$EDITOR ~/.nix-atelier/user.nix  # fill in username, name, email
 
 # 4. Apply (-b bk backs up any pre-existing ~/.bashrc etc. instead of failing)
-nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
+nix run home-manager -- switch --flake ~/.nix-atelier#full --impure -b bk
 ```
 
 ### macOS
@@ -39,18 +39,18 @@ nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
 sh <(curl -L https://nixos.org/nix/install)
 
 # 2. Clone and configure identity
-git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
-cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
-$EDITOR ~/.nix-config/user.nix
+git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier
+cp ~/.nix-atelier/user.nix.example ~/.nix-atelier/user.nix
+$EDITOR ~/.nix-atelier/user.nix
 
 # 3. Apply. darwin-rebuild does not exist until after the first apply, so run it
 #    from the flake. The flag is needed because sudo runs as root, which has no
 #    flake config until nix-darwin writes one. Pick the line matching your Mac
 #    (`uname -m`): arm64 -> Apple Silicon, x86_64 -> Intel
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
 ```
 
 Afterwards `just switch` handles both, appending the right suffix automatically.

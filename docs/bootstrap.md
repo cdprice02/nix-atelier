@@ -18,7 +18,7 @@ echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ### 2. Clone the repo
 
 ```sh
-git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier
 ```
 
 **HTTPS, not SSH, deliberately.** A `git@github.com:` remote needs an SSH key
@@ -37,7 +37,7 @@ This also clones `config/claude` (Claude Code config), `config/copilot` (Copilot
 If you forgot `--recurse-submodules`, initialize them after the fact:
 
 ```sh
-git -C ~/.nix-config submodule update --init --recursive
+git -C ~/.nix-atelier submodule update --init --recursive
 ```
 
 ### 3. Set up local identity
@@ -45,8 +45,8 @@ git -C ~/.nix-config submodule update --init --recursive
 Copy the example and fill in your values before running home-manager:
 
 ```sh
-cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
-$EDITOR ~/.nix-config/user.nix
+cp ~/.nix-atelier/user.nix.example ~/.nix-atelier/user.nix
+$EDITOR ~/.nix-atelier/user.nix
 ```
 
 `user.nix` is gitignored and never committed. Each machine has its own copy. Set `username`, `name`, `email`, and `github`. If you have a private overlay for any submodule (e.g. a private Claude config), add it to the `submodules` block:
@@ -65,7 +65,7 @@ Create the secrets file from the template and fill in your API keys:
 
 ```sh
 mkdir -p ~/.config/secrets
-cp ~/.nix-config/secrets.env.example ~/.config/secrets/env
+cp ~/.nix-atelier/secrets.env.example ~/.config/secrets/env
 $EDITOR ~/.config/secrets/env
 ```
 
@@ -135,7 +135,7 @@ After the next login the default shell will be zsh.
 Pick **one** profile that matches your machine: `full` for the complete dev toolchain, `minimal` for a lean bootstrap. See [docs/profiles.md](profiles.md) for the full list, including the `-gui` and `-aarch64` variants.
 
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
+nix run home-manager -- switch --flake ~/.nix-atelier#full --impure -b bk
 ```
 
 > **`--impure` is always required**: every `home-manager switch` needs it, not just
@@ -154,8 +154,8 @@ After first apply, `home-manager` and `just` are on PATH:
 
 ```sh
 # subsequent applies
-just switch full    # or: home-manager switch --flake ~/.nix-config#full --impure
-just switch minimal # or: home-manager switch --flake ~/.nix-config#minimal --impure
+just switch full    # or: home-manager switch --flake ~/.nix-atelier#full --impure
+just switch minimal # or: home-manager switch --flake ~/.nix-atelier#minimal --impure
 just switch         # uses user.nix's `profile` field if set, else "full"
                     # (the -aarch64 suffix is added automatically on ARM)
 
@@ -214,21 +214,21 @@ first apply.
 ### 2. Clone the repo
 
 ```sh
-git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier
 ```
 
 ### 3. Set up local identity
 
 ```sh
-cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
-$EDITOR ~/.nix-config/user.nix
+cp ~/.nix-atelier/user.nix.example ~/.nix-atelier/user.nix
+$EDITOR ~/.nix-atelier/user.nix
 ```
 
 ### 4. Set up secrets
 
 ```sh
 mkdir -p ~/.config/secrets
-cp ~/.nix-config/secrets.env.example ~/.config/secrets/env
+cp ~/.nix-atelier/secrets.env.example ~/.config/secrets/env
 $EDITOR ~/.config/secrets/env
 ```
 
@@ -263,11 +263,11 @@ Mac:
 ```sh
 # Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
 
 # Intel: note the pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
 ```
 
 After that first apply, `darwin-rebuild` is on PATH and every later apply is just:
@@ -275,7 +275,7 @@ After that first apply, `darwin-rebuild` is on PATH and every later apply is jus
 ```sh
 just switch          # detects OS and architecture, appends the right suffix
 # or, explicitly:
-sudo darwin-rebuild switch --flake ~/.nix-config#full-darwin-aarch64 --impure
+sudo darwin-rebuild switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
 ```
 
 There's no separate "set default shell" step here the way WSL2 has one: nix-darwin's `system/darwin.nix` sets `programs.zsh.enable = true` at the system level, which (unlike standalone home-manager) registers zsh as an available login shell automatically.

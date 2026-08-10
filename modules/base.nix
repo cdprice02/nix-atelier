@@ -122,7 +122,7 @@ in {
           submodules = user.submodules or {};
           git = "${pkgs.git}/bin/git";
           mkOverride = name: url: ''
-            _sm_dir="$HOME/.nix-config/config/${name}"
+            _sm_dir="$HOME/.nix-atelier/config/${name}"
             if [ -e "$_sm_dir/.git" ]; then
               _has_private=$(${git} -C "$_sm_dir" remote get-url private 2>/dev/null && echo yes || echo no)
               if [ "$_has_private" = "no" ]; then
@@ -133,7 +133,7 @@ in {
                   echo "submodule ${name}: private remote configured (${url})"
                 else
                   echo "WARNING: submodule ${name}: fetch from private remote failed."
-                  echo "  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-config --impure"
+                  echo "  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier --impure"
                   $DRY_RUN_CMD ${git} -C "$_sm_dir" remote remove private
                 fi
               fi
@@ -287,7 +287,7 @@ in {
           includes = [
             # self doesn't include submodule contents in the Nix store; use live path instead.
             # Safe because --impure is already required for user.nix.
-            {path = "${homeDir}/.nix-config/config/git/gitalias/gitalias.txt";}
+            {path = "${homeDir}/.nix-atelier/config/git/gitalias/gitalias.txt";}
           ];
 
           ignores = [

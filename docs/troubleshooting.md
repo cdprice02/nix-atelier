@@ -16,13 +16,13 @@ error: … builtins.getEnv "HOME" evaluated to ""
 
 ```sh
 # First bootstrap (home-manager / darwin-rebuild not yet on PATH)
-nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
+nix run home-manager -- switch --flake ~/.nix-atelier#<profile> --impure -b bk
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#<profile> --impure
+  run nix-darwin -- switch --flake ~/.nix-atelier#<profile> --impure
 
 # Subsequent applies
-home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
-sudo darwin-rebuild switch --flake ~/.nix-config#<profile> --impure
+home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk
+sudo darwin-rebuild switch --flake ~/.nix-atelier#<profile> --impure
 ```
 
 `user.nix` is read from the filesystem via `builtins.getEnv "HOME"`, which is an impure operation. This flag is always needed, not just at bootstrap.
@@ -148,20 +148,20 @@ when this surfaces.
 
 ## Submodule directories empty after clone
 
-**Symptom:** `~/.nix-config/config/claude/` is empty, or Home Manager errors on the symlink activation step.
+**Symptom:** `~/.nix-atelier/config/claude/` is empty, or Home Manager errors on the symlink activation step.
 
 **Cause:** The repo was cloned without `--recurse-submodules`.
 
 **Fix:**
 
 ```sh
-git -C ~/.nix-config submodule update --init --recursive
+git -C ~/.nix-atelier submodule update --init --recursive
 ```
 
 Or clone correctly from the start:
 
 ```sh
-git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.nix-config
+git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier
 ```
 
 ---
@@ -172,7 +172,7 @@ git clone --recurse-submodules https://github.com/cdprice02/nix-config.git ~/.ni
 
 ```text
 WARNING: submodule claude: fetch from private remote failed.
-  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-config --impure
+  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier --impure
 ```
 
 **Fix:**
@@ -183,7 +183,7 @@ cat ~/.ssh/<sshKey>.pub
 
 # Paste it at: https://github.com/settings/keys
 # Then re-run:
-home-manager switch --flake ~/.nix-config#<profile> --impure
+home-manager switch --flake ~/.nix-atelier#<profile> --impure
 ```
 
 `<sshKey>` is the prefix of your personal email from `user.nix` (e.g. `you` for `you@example.com`).
@@ -199,10 +199,10 @@ home-manager switch --flake ~/.nix-config#<profile> --impure
 **Fix:** After the switch, verify the symlink is in place:
 
 ```sh
-ls -la ~/.claude   # should point to ~/.nix-config/config/claude
+ls -la ~/.claude   # should point to ~/.nix-atelier/config/claude
 ```
 
-If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-config/config/claude` before deleting the backup.
+If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-atelier/config/claude` before deleting the backup.
 
 ---
 
@@ -229,15 +229,15 @@ run straight from the flake:
 
 ```sh
 # Linux / WSL2
-nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
+nix run home-manager -- switch --flake ~/.nix-atelier#<profile> --impure -b bk
 
 # macOS, Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
 
 # macOS, Intel: pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
 ```
 
 After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS: `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:

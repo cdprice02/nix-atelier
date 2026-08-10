@@ -5,7 +5,7 @@ This project follows the [Contributor Covenant v2.1](https://www.contributor-cov
 ## Reporting
 
 The Contributor Covenant requires a reporting channel; this project's is a
-[private security advisory](https://github.com/cdprice02/nix-config/security/advisories/new),
+[private security advisory](https://github.com/cdprice02/nix-atelier/security/advisories/new),
 which is visible only to the maintainer. If you would rather not use GitHub,
 use any contact listed on the maintainer's
 [profile](https://github.com/cdprice02).
