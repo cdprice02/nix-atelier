@@ -33,6 +33,20 @@
       source "$HOME/.config/secrets/env"
     fi
   '';
+
+  # Commits use the GitHub noreply address so the real email never enters
+  # public commit history — this repo, and any fork of it, is public.
+  # GitHub attributes commits from either noreply form to the account, so
+  # this costs nothing and is strictly better than a real address by default.
+  # Falls back to user.email when user.nix has no github block at all (e.g.
+  # the nmt test fixture). user.email itself stays required regardless: it's
+  # still where sshKey is derived from (see flake.nix).
+  gitEmail =
+    if !(user ? github)
+    then user.email
+    else if user.github ? id
+    then "${toString user.github.id}+${user.github.user}@users.noreply.github.com"
+    else "${user.github.user}@users.noreply.github.com";
 in {
   home = {
     inherit (user) username;
@@ -144,7 +158,8 @@ in {
   # parent attributes. `//` is a shallow merge, so it would silently drop the
   # losing side of any such overlap rather than combining them. mkMerge defers
   # to the module system's own recursive merge, which also keeps mkForce
-  # priorities working (work.nix overrides the git identity that way).
+  # priorities working (a private extraModulePaths module can override this
+  # identity that way, via hm-compat's gitIdentity `force` option).
   programs = lib.mkMerge [
     {
       # ── Shells ────────────────────────────────────────────────────────────────
@@ -245,7 +260,7 @@ in {
       ssh =
         {
           enable = true;
-          includes = ["~/.ssh/config.d/*"]; # work.nix writes stubs here
+          includes = ["~/.ssh/config.d/*"]; # unmanaged: machine-specific stubs live here, hand-written or dropped by an extraModulePaths module
         }
         // compat.sshBlocks {
           "*" =
@@ -297,7 +312,10 @@ in {
             "target/"
           ];
         }
-        (compat.gitIdentity {inherit (user) name email;})
+        (compat.gitIdentity {
+          inherit (user) name;
+          email = gitEmail;
+        })
         (compat.gitConfig {
           init.defaultBranch = "main";
           pull.rebase = false;

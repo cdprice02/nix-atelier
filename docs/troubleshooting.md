@@ -206,22 +206,13 @@ If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-con
 
 ---
 
-## `~/.certs/corporate.pem` missing on work profile
+## SSL errors from curl, AWS CLI, Python requests, or npm behind a TLS-inspecting proxy
 
-**Symptom:** SSL errors from curl, AWS CLI, Python requests, or npm after applying a `work` profile. The activation script also warns:
+**Symptom:** certificate-verification failures from Nix-managed tools specifically (system-packaged tools work fine), typically on a corporate network.
 
-```text
-WARNING: ~/.certs/corporate.pem not found: see docs/bootstrap.md
-```
+**Cause:** `env.nix` points Nix-managed tools at the system CA bundle (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, `REQUESTS_CA_BUNDLE`, all Linux/WSL2 only) because they don't inherit the system trust store the way distro-packaged binaries do. If the proxy's root CA isn't in that bundle yet, Nix-managed tools fail even though everything else on the machine is fine.
 
-**Fix:** Obtain the corporate root CA from your IT team and place it at `~/.certs/corporate.pem`:
-
-```sh
-mkdir -p ~/.certs
-cp /path/to/corporate-root-ca.crt ~/.certs/corporate.pem
-```
-
-Then re-run `home-manager switch` to rebuild the combined bundle. See [bootstrap.md](bootstrap.md) for details.
+**Fix:** Install the CA into the system bundle the normal distro way (e.g. copy it into `/usr/local/share/ca-certificates/` and run `update-ca-certificates`), not into anything this repo manages. See [bootstrap.md](bootstrap.md)'s step 5 for details.
 
 ---
 
@@ -242,18 +233,18 @@ nix run home-manager -- switch --flake ~/.nix-config#<profile> --impure -b bk
 
 # macOS, Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
 
 # macOS, Intel: pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
 ```
 
 After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS: `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:
 
 ```sh
-just switch <profile>   # e.g. just switch work
-just switch             # uses user.nix's `profile` field, else "personal"
+just switch <profile>   # e.g. just switch minimal
+just switch             # uses user.nix's `profile` field, else "full"
 ```
 
 Pass the bare profile name (`just switch work`) on any machine and the right

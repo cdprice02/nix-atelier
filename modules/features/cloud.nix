@@ -19,16 +19,15 @@
         # and "keychain": its compiled-in default: only exists on macOS, so
         # aws-vault errors at runtime on Linux unless a backend is set
         # explicitly. "file" needs no daemon/keyring, so it works identically
-        # on a GUI dev machine and a headless work-server profile.
+        # on a GUI dev machine and a headless minimal-tier machine alike.
       }
       // lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
         AWS_VAULT_BACKEND = "file";
       }
       // lib.optionalAttrs (user.aws.profile or null != null) {
-        # Left unset by default: this module loads on both personal and work
-        # profiles, and a hardcoded default risks accidentally running a
-        # command against the wrong AWS account. Set user.aws.profile in
-        # user.nix to opt in on a given machine.
+        # Left unset by default: a hardcoded default here risks accidentally
+        # running a command against the wrong AWS account. Set
+        # user.aws.profile in user.nix to opt in on a given machine.
         AWS_PROFILE = user.aws.profile;
       };
 

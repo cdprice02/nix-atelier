@@ -1,10 +1,10 @@
-# Default profile: read from user.nix's `profile` field if set, else
-# "personal". Backtick assignment runs once when just parses this file.
-# `grep .` makes the fallback fire on empty output: the trailing `|| echo`
-# guards only the last pipeline stage, so without it a failed `nix eval` (no
-# user.nix, or nix not yet on PATH) would leave `tr` exiting 0 and the default
-# empty. grep exits non-zero on no input, triggering the fallback.
-default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "personal"' 2>/dev/null | tr -d '"' | grep . || echo personal`
+# Default profile: read from user.nix's `profile` field if set, else "full".
+# Backtick assignment runs once when just parses this file. `grep .` makes
+# the fallback fire on empty output: the trailing `|| echo` guards only the
+# last pipeline stage, so without it a failed `nix eval` (no user.nix, or nix
+# not yet on PATH) would leave `tr` exiting 0 and the default empty. grep
+# exits non-zero on no input, triggering the fallback.
+default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "full"' 2>/dev/null | tr -d '"' | grep . || echo full`
 
 # Recipes prefixed with `_` are CI-internal plumbing, hidden from `just
 # --list` by design (just's own private-recipe convention) but still
@@ -19,7 +19,7 @@ default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "pe
 default:
     @just --list
 
-# Resolves a bare profile name (e.g. "personal") to the config for THIS
+# Resolves a bare profile name (e.g. "full") to the config for THIS
 # machine's OS and CPU, so nobody has to know the naming scheme to apply their
 # own config. An explicit name is still honoured -- it is just checked against
 # the machine first, and warned about rather than silently built for the wrong
@@ -41,8 +41,8 @@ switch PROFILE=default_profile:
     esac
 
     if [ "$(uname)" = "Darwin" ]; then
-        # darwinConfigurations: <context>-darwin on Intel,
-        # <context>-darwin-aarch64 on Apple Silicon.
+        # darwinConfigurations: <name>-darwin on Intel,
+        # <name>-darwin-aarch64 on Apple Silicon.
         case "$profile" in
             *-darwin-aarch64)
                 [ "$arch" = aarch64 ] \
@@ -51,7 +51,7 @@ switch PROFILE=default_profile:
                 [ "$arch" = x86_64 ] \
                     || echo "WARNING: $profile is the Intel config, but this Mac is Apple Silicon (did you mean ${profile}-aarch64?)." >&2 ;;
             # A Linux-style name. Appending a darwin suffix would produce
-            # nonsense like personal-aarch64-darwin-aarch64, so refuse.
+            # nonsense like full-aarch64-darwin-aarch64, so refuse.
             *-aarch64)
                 echo "error: '$profile' is a Linux config name; this is macOS." >&2
                 echo "  Use '${profile%-aarch64}-darwin-aarch64' (Apple Silicon) or '${profile%-aarch64}-darwin' (Intel)." >&2
@@ -67,7 +67,7 @@ switch PROFILE=default_profile:
     else
         # homeConfigurations: <profile> is x86_64-linux, <profile>-aarch64 is
         # aarch64-linux. This half previously did no arch handling at all, so
-        # on an ARM machine `just switch personal` resolved to the *x86_64*
+        # on an ARM machine `just switch full` resolved to the *x86_64*
         # config and built for the wrong architecture.
         case "$profile" in
             *-darwin | *-darwin-aarch64)

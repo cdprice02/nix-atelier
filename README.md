@@ -29,8 +29,7 @@ cp ~/.nix-config/user.nix.example ~/.nix-config/user.nix
 $EDITOR ~/.nix-config/user.nix  # fill in username, name, email
 
 # 4. Apply (-b bk backs up any pre-existing ~/.bashrc etc. instead of failing)
-nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk      # work machine
-nix run home-manager -- switch --flake ~/.nix-config#personal --impure -b bk  # personal machine
+nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
 ```
 
 ### macOS
@@ -49,23 +48,25 @@ $EDITOR ~/.nix-config/user.nix
 #    flake config until nix-darwin writes one. Pick the line matching your Mac
 #    (`uname -m`): arm64 -> Apple Silicon, x86_64 -> Intel
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
 ```
 
 Afterwards `just switch` handles both, appending the right suffix automatically.
 
 ## Profiles
 
-See [docs/profiles.md](docs/profiles.md) for the full table. Common ones:
+Every profile is `tier` (`minimal` or `full`) crossed with GUI (on/off) and CPU
+architecture. See [docs/profiles.md](docs/profiles.md) for the full table.
+Common ones:
 
 | Profile | Use for |
 |---------|---------|
-| `work` | Work Linux/WSL2: dev toolchain + work identity + corporate PEM |
-| `personal` | Personal Linux/WSL2: dev toolchain |
-| `personal-minimal` | New machine bootstrap or low-resource machine |
-| `work-darwin-aarch64` | Work macOS, Apple Silicon: dev + GUI |
+| `full` | Linux/WSL2, full dev toolchain |
+| `minimal` | New machine bootstrap or low-resource machine |
+| `full-gui` | Desktop Linux, full dev toolchain + GUI apps |
+| `full-darwin-aarch64` | macOS, Apple Silicon |
 
 On macOS, pick the config matching your CPU: `-aarch64` for Apple Silicon, the
 bare name for Intel. They are not interchangeable; see

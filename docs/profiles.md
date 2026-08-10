@@ -2,48 +2,58 @@
 
 ## Choosing a profile
 
-**New machine?** Start with `*-minimal` to bootstrap quickly: it installs only the base tools needed to get Nix and home-manager working. Once stable, switch to `work` or `personal` for the full dev toolchain.
+Every profile is `tier` (`minimal` or `full`) crossed with `gui` (on or
+off) crossed with CPU architecture. There's no third axis to reason
+about, and nothing to configure beyond that: `full` is every feature this
+repo has, `minimal` is none of them.
 
-**Daily driver (WSL2/Linux)?** Use `work` or `personal`, which include the full dev tier: Rust, Node, Python, AWS, tmux, and Claude Code.
+**New machine?** Start with `minimal` to bootstrap quickly: it installs
+only the base tools needed to get Nix and home-manager working. Once
+stable, switch to `full` for the complete dev toolchain.
 
-**Headless server or CI?** Use `*-server`: stripped-down, no dev toolchain, large tmux scrollback.
+**Daily driver?** Use `full`: Rust, Node, Python, AWS, Kubernetes, tmux,
+Claude Code, and everything else in `modules/features.nix`.
 
-**Desktop Linux?** Use `work-gui` or `personal-gui`: adds Obsidian, Alacritty, and VS Code.
+**Desktop Linux?** Add `-gui`: adds Obsidian, Alacritty, and VS Code.
 
-**macOS?** Use `work-darwin` or `personal-darwin`: GUI is always included on Darwin.
+**macOS?** Use `full-darwin` (Intel) or `full-darwin-aarch64` (Apple
+Silicon): GUI is always included on Darwin, and there is no `minimal`
+Mac config.
 
 ---
 
-Profiles are composed from three axes by `mkProfile` in `flake.nix`. You never manually list modules.
+Profiles are composed from three axes by `mkProfile` in `flake.nix`. You
+never manually list modules.
 
 ```text
-context : personal | work
-tier    : minimal | dev | server
+tier    : minimal | full
 withGui : false | true  (auto-selects gui-linux or gui-darwin)
+system  : x86_64-linux | aarch64-linux | x86_64-darwin | aarch64-darwin
 ```
 
-`tier` expands into a set of named features via `modules/profiles.nix`, each resolved to a module path via `modules/features.nix`. `user.nix` can add extra features beyond a machine's tier via an `extraFeatures` list; see `user.nix.example`.
+`tier` expands into a set of named features: `minimal` is `[]`, `full` is
+every key in `modules/features.nix`, so a new feature joins `full`
+automatically with no list to maintain. `user.nix` can add features
+beyond a machine's tier via `extraFeatures`, or drop specific ones via
+`excludeFeatures` — see `user.nix.example`.
 
 ## Module composition
 
-Hand-maintained, not generated (below the per-profile tables). The one row that doesn't reduce to tier/context/withGui cleanly is `cloud.nix`, included both via the `dev` tier *and* independently via `work.nix`'s own `imports`, which isn't expressed as data anywhere (see `modules/docs-gen.nix`'s own note on this).
+Hand-maintained, not generated (below the per-profile tables).
 
 | Module | Included when |
 |--------|--------------|
 | `base.nix` ("core") | always |
 | `env.nix` | always |
-| `features/shell-tools.nix` | tier = dev or server |
-| `features/lang-rust.nix`, `lang-node.nix`, `lang-python.nix` | tier = dev |
-| `features/cloud.nix` | tier = dev, or context = work (any tier) |
-| `features/claude.nix`, `copilot.nix` | tier = dev |
-| `features/k8s.nix` | tier = dev |
-| `features/tmux.nix` | tier = dev or server |
-| `features/git-tools.nix`, `nix-tools.nix`, `data.nix`, `qmk.nix` | tier = dev |
-| `work.nix` | context = work |
+| every `features/*.nix` | tier = full, or named in `extraFeatures`, minus anything in `excludeFeatures` |
+| `extraModulePaths` entries | always, if set in `user.nix` (private, machine-specific modules) |
 | `gui-linux.nix` | withGui = true, Linux |
 | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
 
-`minimal` gets only `core` + `env`: no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains or `tmux`. It keeps `jq`/`wget`/`git-lfs`/`rsync`/`tree`/`ncdu`/`htop` in `core` itself; bootstrap/scripting/ops utilities, not comfort tools, so "minimal" means lean rather than feature-free.
+`minimal` gets only `core` + `env`: no shell comfort tools, no language
+toolchains, no tmux. It keeps `jq`/`wget`/`git-lfs`/`rsync`/`tree`/`ncdu`/`htop`
+in `core` itself: bootstrap/scripting/ops utilities, not comfort tools, so
+"minimal" means lean rather than feature-free.
 
 ## homeConfigurations (Linux / WSL2)
 
@@ -51,37 +61,35 @@ Each profile is built for both `x86_64-linux` and `aarch64-linux`. The `aarch64`
 
 | Profile | Modules | Use for |
 |---------|---------|---------|
-| `personal` | core + dev-tier features | Personal Linux / WSL2 |
-| `personal-gui` | core + dev-tier features + gui-linux | Personal desktop Linux |
-| `personal-minimal` | core only | Bootstrap or low-resource machine |
-| `personal-server` | core + server-tier features | Personal headless server |
-| `work` | core + dev-tier features + work | Work Linux / WSL2 |
-| `work-gui` | core + dev-tier features + work + gui-linux | Work desktop Linux |
-| `work-minimal` | core + work (cloud only, via work.nix) | Work bootstrap |
-| `work-server` | core + server-tier features + work | Work headless server |
+| `minimal` | core only | Bootstrap or low-resource machine |
+| `minimal-aarch64` | core only | Bootstrap or low-resource machine |
+| `minimal-gui` | core only + gui-linux | Minimal desktop Linux |
+| `minimal-gui-aarch64` | core only + gui-linux | Minimal desktop Linux |
+| `full` | core + every feature | Full dev environment: Linux / WSL2 |
+| `full-aarch64` | core + every feature | Full dev environment: Linux / WSL2 |
+| `full-gui` | core + every feature + gui-linux | Full desktop Linux |
+| `full-gui-aarch64` | core + every feature + gui-linux | Full desktop Linux |
 
 Bootstrap:
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#work --impure -b bk
+nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
 # After first apply, home-manager is on PATH:
-home-manager switch --flake ~/.nix-config#work --impure -b bk
+home-manager switch --flake ~/.nix-config#full --impure -b bk
 ```
 
 ## darwinConfigurations (macOS)
 
-Darwin always includes GUI (`gui-darwin.nix`). Tier is always `dev`.
+Darwin always includes GUI (`gui-darwin.nix`) and is always the `full` tier.
 
 | Profile | Use for |
 |---------|---------|
-| `personal-darwin` | Personal macOS (Intel) |
-| `personal-darwin-aarch64` | Personal macOS (Apple Silicon) |
-| `work-darwin` | Work macOS (Intel) |
-| `work-darwin-aarch64` | Work macOS (Apple Silicon) |
+| `full-darwin` | macOS (Intel) |
+| `full-darwin-aarch64` | macOS (Apple Silicon) |
 
 **Pick by CPU, not preference.** `uname -m` prints `arm64` for Apple
 Silicon, `x86_64` for Intel. The two are not interchangeable: the Intel
-configs build against a pinned nixpkgs 25.05 (nixpkgs-unstable has dropped
-x86_64-darwin), while the Apple Silicon configs ride the same rolling inputs
+config builds against a pinned nixpkgs 25.05 (nixpkgs-unstable has dropped
+x86_64-darwin), while the Apple Silicon config rides the same rolling inputs
 as Linux.
 
 Bootstrap: `darwin-rebuild` does not exist until after the first apply, so
@@ -89,31 +97,33 @@ the first one runs nix-darwin straight from the flake:
 ```sh
 # Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#personal-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
 
 # Intel: pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#personal-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
 ```
 
 Every later apply can just use `just switch`, which appends the right
 suffix for the machine's architecture automatically.
 
-## Adding a new profile
+## Customizing your machine
 
-Add an entry to `modules/profile-list.nix`:
+The framework makes most decisions for you; three escape hatches in
+`user.nix` cover the rest — see `user.nix.example` for the exact syntax:
 
-```nix
-my-profile = { context = "personal"; tier = "dev"; withGui = false; useFor = "..."; };
-```
+- `extraFeatures` — add named features (see `modules/features.nix`) on
+  top of a machine's tier, e.g. `minimal` plus just `tmux`.
+- `excludeFeatures` — drop features regardless of tier, e.g. `full`
+  without `lang-rust`.
+- `extraModulePaths` — absolute paths to private, machine-specific
+  home-manager modules that live outside this repo entirely (identity
+  overrides, extra secrets, anything that shouldn't be public).
 
-Regenerate this file and commit the result; the `docs-drift` check fails
-otherwise, since the table above is generated from that same list:
+Regenerate this file and commit the result after any change that affects
+it (a new feature, a renamed tier); the `docs-drift` check fails
+otherwise, since this table is generated from the same data `flake.nix`
+builds `homeConfigurations` from:
 ```sh
 just docs
-```
-
-Then apply with:
-```sh
-home-manager switch --flake ~/.nix-config#my-profile --impure -b bk
 ```

@@ -24,29 +24,26 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
     env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
-    features.nix               # Feature name -> module path registry
-    profiles.nix               # Tier -> feature-name list (minimal/dev/server)
-    profile-list.nix           # Linux profile name -> {context,tier,withGui,useFor}
+    features.nix               # Feature name -> module path registry; `full` tier is every key in it
     tool-catalog.nix           # Package -> description, for the generated docs/tools.md
     docs-gen.nix               # Generates docs/profiles.md + docs/tools.md
     secrets-sops.nix           # Opt-in sops-nix wiring (user.nix: useSops = true)
     lib/
       hm-compat.nix            # Option-name shims across the two home-manager pins
     features/
-      shell-tools.nix          # tier=dev|server: fonts, zoxide/fzf/direnv, ripgrep/bat/eza/hyperfine/etc.
-      lang-rust.nix            # tier=dev: rust-overlay toolchain + cargo tools
-      lang-node.nix            # tier=dev: node, fnm, bun
-      lang-python.nix          # tier=dev: python3, uv, jupyterlab
-      cloud.nix                # tier=dev, or context=work: AWS tooling
-      claude.nix               # tier=dev: claude-code (native installer), .claude symlink; user.nativeInstallers/configRepos for anything else
-      copilot.nix              # tier=dev: .copilot symlink, sibling of claude.nix
-      k8s.nix                  # tier=dev: kubectl, helm, helmfile
-      tmux.nix                 # tier=dev|server: sole owner of tmux config, historyLimit=50000
-      git-tools.nix            # tier=dev: gh, glab, difftastic, git-filter-repo, pre-commit
-      nix-tools.nix            # tier=dev: nixd, alejandra
-      data.nix                 # tier=dev: duckdb
-      qmk.nix                  # tier=dev: qmk (builds fine on x86_64-darwin; verified directly)
-    work.nix                   # Work identity, corporate PEM cert env vars, SSH stubs, imports cloud.nix
+      shell-tools.nix          # fonts, zoxide/fzf/direnv, ripgrep/bat/eza/hyperfine/etc.
+      lang-rust.nix            # rust-overlay toolchain + cargo tools
+      lang-node.nix            # node, fnm, bun
+      lang-python.nix          # python3, uv, jupyterlab
+      cloud.nix                # AWS tooling
+      claude.nix               # claude-code (native installer), .claude symlink; user.nativeInstallers/configRepos for anything else
+      copilot.nix              # .copilot symlink, sibling of claude.nix
+      k8s.nix                  # kubectl, helm, helmfile
+      tmux.nix                 # sole owner of tmux config, historyLimit=50000
+      git-tools.nix            # gh, glab, difftastic, git-filter-repo, pre-commit
+      nix-tools.nix            # nixd, alejandra
+      data.nix                 # duckdb
+      qmk.nix                  # qmk (builds fine on x86_64-darwin; verified directly)
     gui-linux.nix              # Linux GUI: obsidian, alacritty, vscode
     gui-darwin.nix             # macOS GUI: obsidian, alacritty, vscode, osxkeychain
   system/
@@ -57,7 +54,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       gitalias/                # git submodule (fork of GitAlias/gitalias)
       gitalias.txt             # ORPHANED stale duplicate; see issue #47
     claude/                    # git submodule, symlinked to ~/.claude by Home Manager
-    copilot/                   # git submodule, symlinked to ~/.copilot (personal only)
+    copilot/                   # git submodule, symlinked to ~/.copilot by Home Manager
   docs/                        # profiles.md and tools.md are GENERATED; edit docs-gen.nix
     bootstrap.md               # First-time setup per target
     profiles.md                # Profile reference (generated)
@@ -124,34 +121,31 @@ spelling and breaking the other.
 
 Outputs:
 
-- `homeConfigurations`: standalone home-manager for Linux/WSL2 (16 keys: personal/work × minimal/dev/server × gui × aarch64)
-- `darwinConfigurations`: macOS via nix-darwin + home-manager
+- `homeConfigurations`: standalone home-manager for Linux/WSL2 (8 keys: {minimal,full} × gui × aarch64)
+- `darwinConfigurations`: macOS via nix-darwin + home-manager (2 keys: full-darwin × aarch64; always `full` tier, always GUI)
 - `nixosConfigurations`: not implemented (tracked in issue #5); no output exists yet, needs a `mkNixosConfig` helper and a target machine's `hardware-configuration.nix`
 
 Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix.example` and fill in values. The `user` attrset is built in `flake.nix` from that file; `sshKey` is derived automatically from the email prefix. Requires `--impure` on all `home-manager switch` calls.
 
 ### Profile compositor
 
-`mkProfile { context, tier, withGui, system }` produces the module list for a profile:
+`mkProfile { tier, withGui, system }` produces the module list for a profile:
 
-- `context`: `personal` | `work`
-- `tier`: `minimal` | `dev` | `server`
+- `tier`: `minimal` | `full`, both derived from `modules/features.nix` (`minimal = []`, `full = builtins.attrNames features`) — a new feature joins `full` automatically, no list to maintain
 - `withGui`: bool, auto-selects `gui-linux.nix` or `gui-darwin.nix`
 
-Every profile starts with `base.nix` + `env.nix` + caret. `tier` expands into a
-list of named features via `modules/profiles.nix`, each resolved to a module
-path via `modules/features.nix` (`assert`ed eagerly: an unknown tier or
-feature name fails any `nix eval`/`build`, not just the one profile that
-references it). `user.nix` can layer extra features onto its profile via an
-`extraFeatures` list. Darwin configs always include GUI.
-
-`context` is threaded into `specialArgs` so modules can read it; `work.nix`'s own inclusion in `mkProfile` is currently the only thing gated on it (see the `claude`/`copilot` features, which are context-independent by design).
+Every profile starts with `base.nix` + `env.nix` + caret, then the tier's
+features, then `user.nix`'s `extraFeatures` (added) and `excludeFeatures`
+(subtracted), then any `extraModulePaths` entries (private, machine-specific
+modules outside this repo, imported by absolute path), then GUI, then the
+opt-in sops modules. `homeConfigurations`/`darwinConfigurations` names are
+generated from tier × gui × arch in `flake.nix`, not hand-listed.
 
 ### Secrets
 
 Two tiers:
 
-- **Profile vars** (known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in this way, via `user.nix`'s `aws.profile` field (unset by default, since `cloud.nix` loads on both personal and work profiles and a hardcoded default risks hitting the wrong account).
+- **Profile vars** (known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in this way, via `user.nix`'s `aws.profile` field (unset by default: a hardcoded default risks hitting the wrong account).
 - **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template. Optionally populated via sops-nix instead of a manual copy; opt-in per machine via `user.nix`'s `useSops` field; see `modules/secrets-sops.nix` and `docs/bootstrap.md`.
 
 ### Submodule overrides
@@ -166,8 +160,8 @@ Binary managed by Nix. Extensions and settings via GitHub Settings Sync; nothing
 
 `programs.ssh` in `base.nix` generates `~/.ssh/config`. Key name derived from email prefix (set in `user.nix`). Key generated on first activation if missing.
 
-Work-specific SSH stubs go in `~/.ssh/config.d/work` (written by `work.nix`, included via `Include ~/.ssh/config.d/*`).
+`base.nix` also sets `includes = ["~/.ssh/config.d/*"]` unconditionally, so machine-specific SSH stubs (a work VPN jump host, a private GitLab instance) are unmanaged files dropped there by hand or by an `extraModulePaths` module — never a tracked file in this repo.
 
-### Corporate PEM (work profile only)
+### CA bundle env vars (Linux/WSL2 only)
 
-Place at `~/.certs/corporate.pem`, never committed. See `docs/bootstrap.md` for the copy command.
+`env.nix` points Nix-managed tools (curl, AWS CLI, `requests`, npm) at the system CA bundle via `SSL_CERT_FILE`/`NODE_EXTRA_CA_CERTS`/`REQUESTS_CA_BUNDLE`, since they don't inherit the system trust store the way distro-packaged binaries do. Not corporate-specific: it just points at whatever `/etc/ssl/certs/ca-certificates.crt` already contains, including a corporate root CA if one's been installed there system-wide.

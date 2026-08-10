@@ -65,40 +65,42 @@ common surprise when editing `modules/features/*.nix`. Packages with no realized
 derivation (installed by a vendor script) go in `nonPackageTools` with
 `matches = []`.
 
-### 3. Feature and tier names
+### 3. Unknown feature names
 
-`mkProfile` resolves tier → feature list (`modules/profiles.nix`) → module path
-(`modules/features.nix`), asserted eagerly. An unknown tier or feature name fails
-any `nix eval` or build, not just the profile referencing it.
+`resolveFeature` (in `flake.nix`) looks up every name in `tiers.full`,
+`user.extraFeatures`, and `user.excludeFeatures` against
+`modules/features.nix`, and throws on a typo. Tiers themselves can't typo:
+`minimal = []` and `full = builtins.attrNames features` are derived, not
+hand-listed, so there's no second file that could disagree with the registry.
 
 ## Layout
 
 ```text
 flake.nix              inputs, outputs, mkProfile, the three checks above
 modules/
-  base.nix             always on: shell, git, ssh, submodule overrides
+  base.nix             always on: shell, git, ssh, submodule overrides, noreply git email
   env.nix              always on: PATH / writable-prefix policy
-  features.nix         feature name -> module path registry
-  profiles.nix         tier -> feature list  (minimal | dev | server)
-  profile-list.nix     Linux profile -> {context, tier, withGui}
+  features.nix         feature name -> module path registry; full tier = every key in it
   tool-catalog.nix     package -> description (see drift check)
   features/            shell-tools, lang-{rust,node,python}, cloud, claude, copilot, k8s, tmux, git-tools, nix-tools, data, qmk
-  work.nix             work identity, corporate cert env, SSH stubs
   gui-{linux,darwin}.nix
 system/darwin.nix      macOS settings + Homebrew
 config/                git submodules: claude, copilot, git/gitalias
 ```
 
-`mkProfile { context, tier, withGui, system }` composes:
-`base + env + caret ++ tier features ++ extraFeatures ++ context ++ gui ++ sops`.
+`mkProfile { tier, withGui, system }` composes:
+`base + env + caret ++ tier features ++ extraFeatures (- excludeFeatures) ++ extraModulePaths ++ gui ++ sops`.
 
-`context` (`personal` | `work`) threads through `specialArgs`; `work.nix`'s own
-inclusion is currently the only thing gated on it. `claude` and `copilot` (each
-owning one agent's installer/symlink) are context-independent.
+`tier` is `minimal` or `full`; there is no third axis. Machine-specific,
+non-public config (identity overrides, private SSH stubs) is not a tracked
+file in this repo — it's an absolute path in `user.nix`'s
+`extraModulePaths`, pointing at a private modules repo. `claude` and
+`copilot` (each owning one agent's installer/symlink) are ordinary features
+in `full`, gated on nothing.
 
 ## Adding a package
 
-1. Put it in the right `modules/features/*.nix`, matching tier and context
+1. Put it in the right `modules/features/*.nix` — or a new feature file, registered in `features.nix`, if it doesn't fit an existing one
 2. **Add a `modules/tool-catalog.nix` entry** or eval fails
 3. `just eval-all` (fast), then `just check`
 4. `just docs` if the catalog changed
@@ -121,14 +123,16 @@ home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
 
 `user.nix` is gitignored and never committed; `user.nix.example` is the template.
 Optional keys: `profile`, `extraFeatures`, `excludeFeatures`, `extraModulePaths`,
-`work.{name,email}`, `aws.profile`, `nativeInstallers`, `configRepos`, `useSops`,
+`github.{user,id}`, `aws.profile`, `nativeInstallers`, `configRepos`, `useSops`,
 `submodules`. `sshKey` is derived from the email prefix in flake.nix, not set
-directly.
+directly. `github` feeds the noreply commit email `base.nix` builds (see
+`gitEmail` there); `email` itself stays required regardless, since `sshKey`
+still derives from it.
 
 `submodules` wires a private remote per submodule: `base.nix`'s
 `submoduleOverrides` adds a `private` remote and checks out a local `work` branch
-tracking `private/main`. This is how the work Claude config stays out of the
-public repo.
+tracking `private/main`. This is how a private Claude config overlay stays out
+of the public repo.
 
 ## Gotchas
 
@@ -140,6 +144,6 @@ public repo.
 - **`claude.nix` installs no packages.** It is activation hooks running vendor
   installers, guarded by a path test, so once `~/.local/bin/claude` exists the
   hook never runs again and never upgrades. Use `claude update` out of band.
-- **Homebrew casks in `system/darwin.nix` are darwin-wide and unconditional**,
-  including on work profiles. `onActivation.upgrade = true` means they upgrade on
-  every switch, unlike the native-installer tools.
+- **Homebrew casks in `system/darwin.nix` are darwin-wide and unconditional.**
+  `onActivation.upgrade = true` means they upgrade on every switch, unlike the
+  native-installer tools.

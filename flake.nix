@@ -207,19 +207,19 @@
       then mkPkgsDarwin system
       else mkPkgs system;
 
-    # context and user are threaded into all modules via specialArgs so modules
-    # can gate features (currently just work.nix's own inclusion) on them.
-    mkSpecialArgs = system: context: {inherit system self user context;};
+    # user is threaded into every module via specialArgs.
+    mkSpecialArgs = system: {inherit system self user;};
 
     # ── Feature/tier data model ────────────────────────────────────────────────
-    # features.nix: name -> module path registry. profiles.nix: tier -> list of
-    # feature names. core/env aren't in the registry: they're an always-on
-    # prefix mkProfile adds unconditionally, not a selectable feature.
-    # profileList.nix: Linux profile name -> {context,tier,withGui,useFor};
-    # single-sourced by homeConfigurations below and the generated docs.
+    # features.nix: name -> module path registry. core/env aren't in it: they're
+    # an always-on prefix mkProfile adds unconditionally, not a selectable
+    # feature. Both tiers are derived from that same registry, so a new feature
+    # joins `full` automatically and there is no second list to keep in sync.
     features = import ./modules/features.nix;
-    profiles = import ./modules/profiles.nix;
-    profileList = import ./modules/profile-list.nix;
+    tiers = {
+      minimal = [];
+      full = builtins.attrNames features;
+    };
     toolCatalog = import ./modules/tool-catalog.nix;
     resolveFeature = name:
       features.${
@@ -241,29 +241,6 @@
       then (f.unsupported or [])
       else [];
 
-    # Forces every tier's feature list through resolveFeature so a typo in
-    # profiles.nix fails any nix eval/build/flake check, not just a build of
-    # the one tier that happens to reference it (tier resolution only happens
-    # inside mkProfile, which nothing forces just by evaluating output *names*).
-    profilesValidated =
-      builtins.deepSeq
-      (nixpkgs.lib.mapAttrs (_: map resolveFeature) profiles)
-      true;
-
-    # Same idiom for profileList: every entry's tier must be a real
-    # profiles.nix key, checked eagerly so a typo fails immediately instead
-    # of surfacing as a missing homeConfigurations attribute at build time.
-    profileListValidated =
-      builtins.deepSeq
-      (nixpkgs.lib.mapAttrs (
-          name: axes:
-            if profiles ? ${axes.tier}
-            then axes
-            else throw "profile-list.nix: \"${name}\" has unknown tier \"${axes.tier}\""
-        )
-        profileList)
-      true;
-
     # ── Docs generation (Task 15) ───────────────────────────────────────────
     # Realized package identities (p.pname or p.name) across every already-
     # built home/darwin config: reuses the actual mkProfile composition
@@ -280,8 +257,8 @@
 
     # Bidirectional: every installed package needs a tool-catalog.nix entry
     # (or an explicit exclusion), and every catalog entry needs to actually
-    # correspond to something installed: same "fail eval, don't drift
-    # silently" idiom as profilesValidated/profileListValidated above.
+    # correspond to something installed: fail eval rather than let the two
+    # drift silently.
     catalogedNames = nixpkgs.lib.concatMap (e: e.matches) toolCatalog.entries;
     uncatalogedInstalled = nixpkgs.lib.subtractLists (catalogedNames ++ toolCatalog.infraExclude) installedPackageNames;
     staleCatalogEntries = nixpkgs.lib.subtractLists installedPackageNames catalogedNames;
@@ -297,17 +274,16 @@
     docsGenerated =
       (import ./modules/docs-gen.nix {inherit (nixpkgs) lib;})
       {
-        inherit profiles profileList toolCatalog;
+        inherit tiers toolCatalog;
+        homeConfigNames = builtins.attrNames self.homeConfigurations;
         darwinConfigNames = builtins.attrNames self.darwinConfigurations;
       };
 
     # ── Profile compositor ────────────────────────────────────────────────────
     # Produces the ordered module list for a profile.
-    # context : "personal" | "work"
-    # tier    : "minimal" | "dev" | "server"
+    # tier    : "minimal" | "full"
     # withGui : bool: gui module auto-selected from system
     mkProfile = {
-      context,
       tier,
       withGui,
       system,
@@ -321,7 +297,7 @@
       # warning below for a feature it was never going to use anyway.
       requestedNames =
         nixpkgs.lib.unique
-        ((profiles.${tier} or (throw "unknown tier \"${tier}\"")) ++ (user.extraFeatures or []));
+        ((tiers.${tier} or (throw "unknown tier \"${tier}\"")) ++ (user.extraFeatures or []));
       keptNames = nixpkgs.lib.subtractLists (user.excludeFeatures or []) requestedNames;
 
       supportedOn = name: !(builtins.elem system (featureUnsupported (resolveFeature name)));
@@ -336,11 +312,6 @@
       # it resolve against the real filesystem, the same --impure trick
       # user.nix itself relies on). Empty by default.
       privateMods = map import (user.extraModulePaths or []);
-
-      contextMods =
-        if context == "work"
-        then [./modules/work.nix]
-        else [];
 
       guiMods =
         if !withGui
@@ -370,7 +341,6 @@
       ([./modules/base.nix ./modules/env.nix caret.homeManagerModules.default]
         ++ featureMods
         ++ privateMods
-        ++ contextMods
         ++ guiMods
         ++ sopsMods);
 
@@ -510,7 +480,7 @@
     # The module list nmt evaluates: home-manager's own modules (scrubbed
     # pkgs, check = false so HM's own option-type-mismatch warnings don't fire
     # against placeholder values) plus this repo's own profile, plus a
-    # fixture supplying pkgs/user/context via _module.args -- nmt's own
+    # fixture supplying pkgs/user via _module.args -- nmt's own
     # evalModules call has no specialArgs passthrough, so anything a module
     # destructures as a function argument (pkgs included) has to arrive this
     # way instead. base.nix's own mkForce on home.homeDirectory (keyed off
@@ -526,8 +496,7 @@
         check = false;
       }
       ++ mkProfile {
-        context = "personal";
-        tier = "dev";
+        tier = "full";
         withGui = false;
         inherit system;
       }
@@ -547,7 +516,6 @@
             pkgsPath = abort "pkgsPath is unavailable in the nmt harness: every package must come from the scrubbed pkgs";
             pkgs = nixpkgs.lib.mkForce scrubbedPkgs;
             user = testUser;
-            context = "personal";
           };
           # programs.fish.generateCompletions builds one real runCommand
           # derivation per package in home.packages (reading each package's
@@ -588,38 +556,53 @@
 
     # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
     mkHomeConfig = {
-      context,
       tier,
       withGui,
       system,
-      ...
     }:
-    # asserts force the release-pair and feature/tier-name checks before any
-    # config is built.
+    # assert forces the release-pair check before any config is built. No
+    # feature/tier-name validation is needed here: tiers are derived directly
+    # from features.nix's own attrNames (see the tiers binding above), so
+    # there is no second, hand-maintained list that could disagree with it.
       assert linuxPairOk;
-      assert profilesValidated;
-      assert profileListValidated;
         home-manager.lib.homeManagerConfiguration {
           pkgs = mkPkgs system;
-          extraSpecialArgs = mkSpecialArgs system context;
+          extraSpecialArgs = mkSpecialArgs system;
           modules =
-            (mkProfile {inherit context tier withGui system;})
+            (mkProfile {inherit tier withGui system;})
             ++ [{nixpkgs.config = pkgsConfig;}];
         };
 
-    # Both x86_64 and aarch64 variants for a Linux profile
-    mkLinuxPair = args: {
-      "${args.name}" = mkHomeConfig (args // {system = "x86_64-linux";});
-      "${args.name}-aarch64" = mkHomeConfig (args // {system = "aarch64-linux";});
-    };
+    # Cartesian product of tier x gui x arch: every homeConfigurations name
+    # falls out of this loop, so a new feature (which only changes what
+    # `full` contains) never requires touching this list, and neither does a
+    # new tier.
+    linuxArches = ["x86_64-linux" "aarch64-linux"];
+    mkHomeConfigName = tierName: withGui: arch:
+      tierName
+      + (nixpkgs.lib.optionalString withGui "-gui")
+      + (nixpkgs.lib.optionalString (arch == "aarch64-linux") "-aarch64");
+    homeConfigMatrix = nixpkgs.lib.concatMap (
+      tierName:
+        nixpkgs.lib.concatMap (
+          withGui:
+            map (arch: {
+              name = mkHomeConfigName tierName withGui arch;
+              value = mkHomeConfig {
+                tier = tierName;
+                inherit withGui;
+                system = arch;
+              };
+            })
+            linuxArches
+        ) [false true]
+    ) (builtins.attrNames tiers);
 
     # ── Darwin (nix-darwin + home-manager) ──────────────────────────────────
-    # Darwin always includes GUI: nix-darwin implies a graphical macOS environment.
-    # Linux profiles use withGui to opt in; macOS never runs headless via nix-darwin.
-    mkDarwinConfig = {
-      context,
-      system,
-    }: let
+    # Darwin always includes GUI: nix-darwin implies a graphical macOS
+    # environment, and it's always the `full` tier -- a headless or minimal
+    # Mac isn't a real use case this repo targets.
+    mkDarwinConfig = {system}: let
       # x86_64-darwin rides the pinned 25.05 trio (nixpkgs-darwin +
       # nix-darwin-x86 + home-manager-darwin); aarch64-darwin rides the rolling
       # trio (nixpkgs + nix-darwin + home-manager), same inputs as Linux. Each
@@ -641,10 +624,9 @@
         else linuxPairOk;
     in
       assert pairOk;
-      assert profilesValidated;
         darwinLib.lib.darwinSystem {
           inherit system;
-          specialArgs = mkSpecialArgs system context;
+          specialArgs = mkSpecialArgs system;
           modules = [
             ./system/darwin.nix
             hmModule
@@ -654,11 +636,11 @@
                 useGlobalPkgs = true;
                 useUserPackages = false;
                 backupFileExtension = "bk";
-                extraSpecialArgs = mkSpecialArgs system context;
+                extraSpecialArgs = mkSpecialArgs system;
                 users.${user.username} = {
                   imports = mkProfile {
-                    inherit context system;
-                    tier = "dev";
+                    inherit system;
+                    tier = "full";
                     withGui = true;
                   };
                 };
@@ -671,29 +653,17 @@
     # Bootstrap: nix run home-manager -- switch --flake ~/.nix-config#<name>
     # After first apply: home-manager switch --flake ~/.nix-config#<name>
     #
-    # To add a profile: add an entry to modules/profile-list.nix.
-    homeConfigurations =
-      nixpkgs.lib.concatMapAttrs
-      (name: axes: mkLinuxPair (axes // {inherit name;}))
-      profileList;
+    # Generated from tiers x {gui,no-gui} x {x86_64,aarch64}: adding a tier or
+    # a feature never means adding a name here.
+    homeConfigurations = builtins.listToAttrs homeConfigMatrix;
 
     # ── darwinConfigurations ────────────────────────────────────────────────
     # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-config#<name>
     darwinConfigurations = {
-      "personal-darwin" = mkDarwinConfig {
-        context = "personal";
+      "full-darwin" = mkDarwinConfig {
         system = "x86_64-darwin";
       };
-      "personal-darwin-aarch64" = mkDarwinConfig {
-        context = "personal";
-        system = "aarch64-darwin";
-      };
-      "work-darwin" = mkDarwinConfig {
-        context = "work";
-        system = "x86_64-darwin";
-      };
-      "work-darwin-aarch64" = mkDarwinConfig {
-        context = "work";
+      "full-darwin-aarch64" = mkDarwinConfig {
         system = "aarch64-darwin";
       };
     };

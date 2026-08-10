@@ -1,21 +1,32 @@
 # Copy to user.nix and fill in your values before running home-manager switch.
 # user.nix is gitignored and never committed — each machine has its own copy.
-# sshKey is derived automatically from the personal email prefix.
+# sshKey is derived automatically from the email prefix.
 {
   username = "yourusername";
   name     = "Your Name";
   email    = "you@example.com";
 
-  # Optional: this machine's default profile name (e.g. "personal", "work",
-  # "work-gui"). Lets `just switch` run with no argument on this machine.
+  # Used to build the GitHub noreply commit email (programs.git in base.nix),
+  # so your real address never enters this public repo's commit history.
+  # `id` is optional but recommended: without it, commits still attribute to
+  # your account on GitHub, but as the lower-privacy `user@users.noreply...`
+  # form rather than `id+user@users.noreply...`. Find your id at
+  # https://api.github.com/users/<user>.
+  github = {
+    user = "yourgithubname";
+    id = 12345678;
+  };
+
+  # Optional: this machine's default profile name (e.g. "full", "full-gui",
+  # "minimal"). Lets `just switch` run with no argument on this machine.
   # See docs/profiles.md for the full list. Safe to omit — `just switch`
-  # still defaults to "personal" if this key isn't set.
-  # profile = "personal";
+  # still defaults to "full" if this key isn't set.
+  # profile = "full";
 
   # Optional: extra named features (see modules/features.nix) to layer onto
-  # this machine's profile beyond its tier's defaults — e.g. a personal-gui
-  # machine that also wants Kubernetes tooling without switching tiers.
-  # extraFeatures = ["k8s"];
+  # this machine's profile beyond its tier's defaults — e.g. a `minimal`
+  # bootstrap machine that also wants tmux without switching to `full`.
+  # extraFeatures = ["tmux"];
 
   # Optional: named features to drop, regardless of tier or extraFeatures.
   # Also silences the unsupported-platform warning for a feature this
@@ -23,21 +34,15 @@
   # excludeFeatures = ["lang-rust"];
 
   # Optional: absolute paths to private, machine-specific home-manager
-  # modules outside this repo (e.g. a private modules repo cloned locally).
+  # modules outside this repo (e.g. a private modules repo cloned locally) —
+  # identity overrides, extra SSH stubs, anything that shouldn't be public.
   # Requires --impure, already required for user.nix itself.
   # extraModulePaths = ["/Users/you/.config/nix-private/machines/workstation.nix"];
 
-  # Work git identity — used by modules/work.nix to override base git config.
-  # Only used by work profiles; safe to leave placeholder values if you don't use work contexts.
-  work = {
-    name  = "Your Work Name";
-    email = "you@work.example.com";
-  };
-
   # Optional: default AWS_PROFILE for this machine. Left unset by default —
-  # this repo's cloud feature loads on both personal and work profiles, so a
-  # hardcoded default risks a command silently hitting the wrong account.
-  # Only set this if one profile name is genuinely always correct here.
+  # the cloud feature is available on any profile, so a hardcoded default
+  # risks a command silently hitting the wrong account. Only set this if one
+  # profile name is genuinely always correct on this machine.
   # aws = { profile = "default"; };
 
   # Optional: extra native-installer CLIs (installed the same way claude-code
