@@ -39,9 +39,23 @@ jobs:
   # curl-piped installer the docs use) on a fully-provisioned ubuntu-latest
   # runner (not a bare container) and jumps straight to `nix build
   # .#homeConfigurations.X.activationPackage` (not the docs' own `nix run
-  # home-manager -- switch`). Scoped to minimal only (the docs'
-  # own recommended starting point, fastest to build) — this job is about
-  # the install sequence, not re-running the full profile matrix.
+  # home-manager -- switch`, which actually *runs* each activation script
+  # rather than merely building the package that contains them).
+  #
+  # Switches minimal first, then full, in the same container: `checks`
+  # builds every activation package but never runs one, so this job is the
+  # only thing that does -- and minimal alone (sshKey, submoduleOverrides)
+  # left four feature-owned scripts completely unexercised: awsConfigSkeleton,
+  # claudeCode, and the user-declared nativeInstaller-*/configRepo-* pair.
+  # `full` (tiers.full = builtins.attrNames features) is the cheapest way to
+  # reach the first two with no extra fixture data.
+  # Also proves the realistic upgrade-in-place path (a user who starts
+  # minimal and later switches to full on the same machine), for free: both
+  # sshKey and submoduleOverrides are documented idempotent, so rerunning
+  # them under full costs nothing new to verify. The user-declared
+  # nativeInstaller-*/configRepo-* scripts stay out of scope here -- they
+  # need their own CI-fixture user.nix pointed at real, stable URLs, which
+  # is its own follow-up rather than free with `full`.
   #
   # No macOS equivalent: GitHub Actions has no bare/ephemeral macOS
   # container the way ubuntu:24.04 is for Linux (macos-14 is a persistent
@@ -114,6 +128,15 @@ jobs:
           # clobber them. This is the single most likely first-run failure for
           # a new user, so the sequence under test has to cover it.
           nix run home-manager -- switch --flake .#minimal --impure -b bk
+          # No -b bk here: minimal's own switch already created the one-time
+          # backups on first run, and this activates over that existing
+          # generation rather than starting fresh -- exactly the
+          # already-activated state the sshKey/submoduleOverrides idempotency
+          # guards exist for. Real network calls: claudeCode's installer
+          # (claude.ai/install.sh) actually runs here, same as the Nix
+          # installer curl above -- not stubbed, since the point is proving
+          # the real script, not a mock of it.
+          nix run home-manager -- switch --flake .#full --impure
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh
