@@ -119,9 +119,10 @@ home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
 ## Identity
 
 `user.nix` is gitignored and never committed; `user.nix.example` is the template.
-Optional keys: `profile`, `extraFeatures`, `work.{name,email}`, `aws.profile`,
-`kiroRepo`, `useSops`, `submodules`. `sshKey` is derived from the email prefix in
-flake.nix, not set directly.
+Optional keys: `profile`, `extraFeatures`, `excludeFeatures`, `extraModulePaths`,
+`work.{name,email}`, `aws.profile`, `nativeInstallers`, `configRepos`, `useSops`,
+`submodules`. `sshKey` is derived from the email prefix in flake.nix, not set
+directly.
 
 `submodules` wires a private remote per submodule: `base.nix`'s
 `submoduleOverrides` adds a `private` remote and checks out a local `work` branch

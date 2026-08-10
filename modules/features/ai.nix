@@ -2,7 +2,6 @@
   lib,
   pkgs,
   user,
-  context,
   ...
 }: let
   # Home Manager runs activation with a hermetic PATH -- bash, coreutils,
@@ -75,6 +74,32 @@
       fi
     fi
   '';
+  # Generic counterpart to claudeCode below, for any other native-installer
+  # CLI a machine's user.nix declares. The framework has no opinion on what
+  # these are -- unlike claude-code, there's no default here at all. Keyed by
+  # binary name so two entries can't collide silently.
+  nativeInstallerMods = lib.listToAttrs (map (spec: {
+      name = "nativeInstaller-${spec.binary}";
+      value = lib.hm.dag.entryAfter ["writeBoundary"] (mkNativeInstaller {inherit (spec) binary url;});
+    })
+    (user.nativeInstallers or []));
+
+  # Generic counterpart to the old hardcoded ~/.kiro clone: real,
+  # independently-pushed git clones of private config repos, keyed by the
+  # path under $HOME to clone into. Not submodules of this (public) repo --
+  # a private submodule would break every CI job's `submodules: recursive`
+  # checkout (no credentials for a private repo there), and the URL would
+  # otherwise have to live in this public repo's .gitmodules. Guarded like
+  # the SSH-key/corporate-cert activation hooks: write-once, never re-clones
+  # over local changes.
+  configRepoMods = lib.mapAttrs' (
+    path: url:
+      lib.nameValuePair "configRepo-${path}" (lib.hm.dag.entryAfter ["writeBoundary"] ''
+        if [ ! -d "$HOME/${path}/.git" ]; then
+          $DRY_RUN_CMD ${pkgs.git}/bin/git clone "${url}" "$HOME/${path}"
+        fi
+      '')
+  ) (user.configRepos or {});
 in {
   home.activation =
     {
@@ -82,7 +107,9 @@ in {
       # multiple releases a week and self-updates in place (`claude update`);
       # Nix's rebuild-to-update cycle can't keep pace, and nixpkgs's packaged
       # version lags too. Installs to ~/.local/bin/claude, already on PATH via
-      # env.nix's XDG_BIN_HOME.
+      # env.nix's XDG_BIN_HOME. Unlike nativeInstallerMods below, this one is
+      # not user-declared: every machine with this feature gets Claude Code,
+      # the same way any other feature's packages aren't opt-in per-item.
       claudeCode = lib.hm.dag.entryAfter ["writeBoundary"] (
         mkNativeInstaller {
           binary = "claude";
@@ -90,34 +117,6 @@ in {
         }
       );
     }
-    // lib.optionalAttrs (context == "work") (
-      {
-        # kiro-cli (AWS's agentic CLI): same native-installer rationale as
-        # claude-code above; not in nixpkgs at all (confirmed). Work-only:
-        # gated inside this feature (dev tier, so uv is present for its MCP
-        # servers) rather than in work.nix, which also covers work-minimal/
-        # work-server: neither has uv.
-        kiroCli = lib.hm.dag.entryAfter ["writeBoundary"] (
-          mkNativeInstaller {
-            binary = "kiro-cli";
-            url = "https://cli.kiro.dev/install";
-          }
-        );
-      }
-      // lib.optionalAttrs (user.kiroRepo or null != null) {
-        # ~/.kiro is a real, independently-pushed git clone of a private
-        # work-config repo: not a submodule of this (public) repo. A private
-        # submodule would break every CI job's `submodules: recursive`
-        # checkout (no credentials for a private repo there), and the repo
-        # URL would otherwise have to live in this public repo's .gitmodules.
-        # Cloned directly instead, guarded like the SSH-key/corporate-cert
-        # activation hooks: write-once, never re-clones over local changes.
-        # user.kiroRepo (gitignored user.nix) supplies the URL.
-        kiroConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-          if [ ! -d "$HOME/.kiro/.git" ]; then
-            $DRY_RUN_CMD ${pkgs.git}/bin/git clone "${user.kiroRepo}" "$HOME/.kiro"
-          fi
-        '';
-      }
-    );
+    // nativeInstallerMods
+    // configRepoMods;
 }

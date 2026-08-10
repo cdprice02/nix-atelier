@@ -39,7 +39,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       lang-node.nix            # tier=dev: node, fnm, bun
       lang-python.nix          # tier=dev: python3, uv, jupyterlab
       cloud.nix                # tier=dev, or context=work: AWS tooling
-      ai.nix                   # tier=dev: claude-code (native installer); kiro-cli on work
+      ai.nix                   # tier=dev: claude-code (native installer); user.nativeInstallers/configRepos for anything else
       k8s.nix                  # tier=dev: kubectl, helm, helmfile
       dev-tools.nix            # tier=dev: gh, pre-commit, tmux, qmk
       ops.nix                  # tier=server: rsync, tree, ncdu, htop, tmux
