@@ -221,13 +221,6 @@
       full = builtins.attrNames features;
     };
     toolCatalog = import ./modules/tool-catalog.nix;
-    resolveFeature = name:
-      features.${
-        name
-      }
-      or (throw ''
-        unknown feature "${name}": valid features: ${builtins.concatStringsSep ", " (builtins.attrNames features)}
-      '');
 
     # A features.nix entry is either a bare path or an attrset
     # { module; unsupported; } (see that file's own comment). These two
@@ -283,11 +276,31 @@
     # Produces the ordered module list for a profile.
     # tier    : "minimal" | "full"
     # withGui : bool: gui module auto-selected from system
+    # userData / featuresOverride default to the real top-level `user` /
+    # `features` bindings, so every real call site (home/darwin configs) below
+    # is unaffected. The nmt harness overrides both: userData so its fixture is
+    # genuinely identity-independent (previously it silently read whichever
+    # real user.nix happened to be on the evaluating machine -- harmless today
+    # only because this machine's extraFeatures/excludeFeatures/
+    # extraModulePaths happen to be empty, but a contributor with a private
+    # extraModulePaths entry would have had it evaluated into `nix flake
+    # check`), and featuresOverride so the platform-filtering check
+    # (feature-platform-filtering below) can exercise a synthetic unsupported
+    # feature without adding test-only noise to the real, shipped registry.
     mkProfile = {
       tier,
       withGui,
       system,
+      userData ? user,
+      featuresOverride ? features,
     }: let
+      resolveFeature = name:
+        featuresOverride.${
+          name
+        }
+        or (throw ''
+          unknown feature "${name}": valid features: ${builtins.concatStringsSep ", " (builtins.attrNames featuresOverride)}
+        '');
       # Tier defaults plus user.nix's extraFeatures, deduplicated (a name in
       # both is not an error: the module system already dedupes imports by
       # file, so this has always been silently fine -- unique here just
@@ -297,8 +310,8 @@
       # warning below for a feature it was never going to use anyway.
       requestedNames =
         nixpkgs.lib.unique
-        ((tiers.${tier} or (throw "unknown tier \"${tier}\"")) ++ (user.extraFeatures or []));
-      keptNames = nixpkgs.lib.subtractLists (user.excludeFeatures or []) requestedNames;
+        ((tiers.${tier} or (throw "unknown tier \"${tier}\"")) ++ (userData.extraFeatures or []));
+      keptNames = nixpkgs.lib.subtractLists (userData.excludeFeatures or []) requestedNames;
 
       supportedOn = name: !(builtins.elem system (featureUnsupported (resolveFeature name)));
       usableNames = builtins.filter supportedOn keptNames;
@@ -311,7 +324,7 @@
       # imports inside it resolve against the real filesystem, the same
       # --impure trick user.nix itself relies on. See examples/private-config/
       # for a worked example. Empty by default.
-      privateMods = map import (user.extraModulePaths or []);
+      privateMods = map import (userData.extraModulePaths or []);
 
       guiMods =
         if !withGui
@@ -332,7 +345,7 @@
       # genuinely absent from the module tree, not just unconfigured, for
       # anyone who hasn't opted in.
       sopsMods =
-        if (user.sopsFile or null) != null
+        if (userData.sopsFile or null) != null
         then [sops-nix.homeManagerModules.sops ./modules/secrets-sops.nix]
         else [];
     in
@@ -488,9 +501,23 @@
     # way instead. base.nix's own mkForce on home.homeDirectory (keyed off
     # testUser.username and the target system) supersedes any default nmt
     # would otherwise pick, so no separate override is needed here.
-    mkNmtModules = system: let
+    #
+    # tier/withGui/userData default to the harness's own baseline (full tier,
+    # headless, unmodified testUser) so the existing symlink/tmux/shell/dotfile
+    # tests need no changes; a variant test set (GUI, excludeFeatures,
+    # extraModulePaths) overrides one or more of these to get a different
+    # rendered tree out of the same harness plumbing. userData is layered onto
+    # testUser (// userDataOverrides), not substituted outright, so a variant
+    # only has to state what it's changing.
+    mkNmtModules = {
+      system,
+      tier ? "full",
+      withGui ? false,
+      userDataOverrides ? {},
+    }: let
       realPkgs = pkgsFor system;
       scrubbedPkgs = mkScrubbedPkgs realPkgs;
+      effectiveUser = testUser // userDataOverrides;
     in
       import (hmModulesFor system) {
         lib = hmLibFor system;
@@ -498,9 +525,8 @@
         check = false;
       }
       ++ mkProfile {
-        tier = "full";
-        withGui = false;
-        inherit system;
+        inherit tier withGui system;
+        userData = effectiveUser;
       }
       ++ [
         {
@@ -517,7 +543,7 @@
             # if that assumption ever breaks.
             pkgsPath = abort "pkgsPath is unavailable in the nmt harness: every package must come from the scrubbed pkgs";
             pkgs = nixpkgs.lib.mkForce scrubbedPkgs;
-            user = testUser;
+            user = effectiveUser;
           };
           # programs.fish.generateCompletions builds one real runCommand
           # derivation per package in home.packages (reading each package's
@@ -547,13 +573,29 @@
     # a real runCommandLocal build. Tests live in ./tests/nmt, one file per
     # area, folded together the same way home-manager's own tests/default.nix
     # folds its per-module test directories.
-    mkNmtTests = system:
+    #
+    # Each distinct (tier, withGui, userDataOverrides) combination needs its
+    # own nmt instance, since nmt evaluates one fixed module list per
+    # instance: a test asserting on a GUI-only or excludeFeatures-only
+    # rendered tree can't share the harness's default full/headless instance.
+    # `tests` is an already-imported attrset (not a path): callers below
+    # sometimes merge in a system-conditional subset (e.g. darwin's
+    # keybindings.toml only applies on darwin systems), which is simplest to
+    # decide with a plain Nix `lib.optionalAttrs` at the call site rather than
+    # smuggling system-detection into the bash assertion scripts themselves.
+    mkNmtTests = {
+      system,
+      tier ? "full",
+      withGui ? false,
+      userDataOverrides ? {},
+      tests,
+    }:
       import nmtSrc {
         lib = hmLibFor system;
         pkgs = pkgsFor system;
-        modules = mkNmtModules system;
+        modules = mkNmtModules {inherit system tier withGui userDataOverrides;};
         testedAttrPath = ["home" "activationPackage"];
-        tests = import ./tests/nmt {};
+        inherit tests;
       };
 
     # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
@@ -766,7 +808,75 @@
         # nmt's own `build` attrset already includes an `all` aggregate
         # (build.all), which surfaces here as nmt-all: a single check that
         # depends on every individual nmt test.
-        nmtBuild = (mkNmtTests system).build;
+        nmtBuild =
+          (mkNmtTests {
+            inherit system;
+            tests = import ./tests/nmt {inherit system;};
+          }).build;
+
+        # GUI variant: same harness, withGui = true instead of the default's
+        # false. See tests/nmt/gui.nix and its negative counterpart
+        # tests/nmt/gui-absent.nix (which runs in the default instance above,
+        # no override needed there).
+        guiNmtBuild =
+          (mkNmtTests {
+            inherit system;
+            withGui = true;
+            tests = import ./tests/nmt/gui.nix {
+              inherit system;
+              inherit (nixpkgs) lib;
+            };
+          }).build;
+
+        # Composition variant: excludeFeatures and extraModulePaths together,
+        # proving both actually take effect rather than merely evaluating.
+        # toString on the fixture path resolves it the same way a real
+        # extraModulePaths string entry would (see mkProfile's own comment on
+        # userData/featuresOverride) -- no impurity, since the fixture lives
+        # inside this flake's own source tree.
+        compositionNmtBuild =
+          (mkNmtTests {
+            inherit system;
+            userDataOverrides = {
+              excludeFeatures = ["tmux"];
+              extraModulePaths = [(toString ./tests/nmt/fixtures/private-identity.nix)];
+            };
+            tests = import ./tests/nmt/composition.nix;
+          }).build;
+
+        # Pure eval-level check (not nmt: this is about which modules
+        # mkProfile *selects*, not what a rendered tree contains) that an
+        # `unsupported`-declared feature is actually dropped on its excluded
+        # system and kept everywhere else. Uses featuresOverride rather than
+        # a real features.nix entry: modules/features.nix has no feature
+        # with a genuine `unsupported` list right now (qmk turned out to
+        # build everywhere -- see that file's own comment), and adding a
+        # throwaway one there would pollute the real `full` tier for every
+        # user just to exercise this one code path.
+        platformFilteringFixtureFeatures =
+          features
+          // {
+            fixture-unsupported = {
+              module = ./tests/nmt/fixtures/inert-feature.nix;
+              unsupported = [system];
+            };
+          };
+        platformFilteringOtherSystem =
+          if system == "aarch64-linux"
+          then "x86_64-linux"
+          else "aarch64-linux";
+        platformFilteringModsFor = testSystem:
+          mkProfile {
+            tier = "minimal";
+            withGui = false;
+            system = testSystem;
+            userData = testUser // {extraFeatures = ["fixture-unsupported"];};
+            featuresOverride = platformFilteringFixtureFeatures;
+          };
+        platformFilteringDroppedOnSelf =
+          !(builtins.elem ./tests/nmt/fixtures/inert-feature.nix (platformFilteringModsFor system));
+        platformFilteringKeptOnOther =
+          builtins.elem ./tests/nmt/fixtures/inert-feature.nix (platformFilteringModsFor platformFilteringOtherSystem);
       in
         (nixpkgs.lib.mapAttrs'
           (name: cfg: {
@@ -780,6 +890,18 @@
             value = drv;
           })
           nmtBuild)
+        // (nixpkgs.lib.mapAttrs'
+          (name: drv: {
+            name = "nmt-gui-${name}";
+            value = drv;
+          })
+          guiNmtBuild)
+        // (nixpkgs.lib.mapAttrs'
+          (name: drv: {
+            name = "nmt-composition-${name}";
+            value = drv;
+          })
+          compositionNmtBuild)
         // {
           # assert docsCatalogValid forces the bidirectional catalog check
           # (see above) before this even attempts the diff, so a catalog
@@ -796,6 +918,17 @@
               fi
               touch $out
             '';
+
+          feature-platform-filtering =
+            if platformFilteringDroppedOnSelf && platformFilteringKeptOnOther
+            then pkgs.runCommand "check-feature-platform-filtering" {} "touch $out"
+            else
+              throw ''
+                feature-platform-filtering: a feature declared unsupported on
+                ${system} should be dropped from that system's module list and
+                kept on every other system (droppedOnSelf=${builtins.toJSON platformFilteringDroppedOnSelf}
+                keptOnOther=${builtins.toJSON platformFilteringKeptOnOther}).
+              '';
         }
     );
   };
