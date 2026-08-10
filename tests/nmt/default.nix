@@ -3,7 +3,8 @@
 # per area, folded together the same way home-manager's own tests/default.nix
 # folds its per-module test directories -- add a new area by adding a key
 # here, not by editing the harness in flake.nix.
-_: {
+_:
+{
   activation-package-renders = {
     nmt.description = ''
       Sanity check for the harness itself: the activation package evaluates
@@ -18,3 +19,5 @@ _: {
     '';
   };
 }
+// import ./shell-init.nix
+// import ./dotfile-content.nix
