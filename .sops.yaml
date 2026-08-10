@@ -1,8 +1,16 @@
 # sops encryption config — determines which age recipients a given path
 # gets encrypted for. See modules/secrets-sops.nix for how this is consumed
 # (opt-in only, via user.nix's useSops = true;).
+#
+# The recipient below is a placeholder: nobody holds its private half, so
+# nothing encrypted for it is ever decryptable. That's deliberate -- this
+# public repo's own secrets/secrets.yaml.example exists purely to show the
+# shape, never to hold real ciphertext. Generate your own keypair
+# (`age-keygen`) and replace this recipient with your own public key in
+# your own private config repo; see docs/bootstrap.md's sops section for
+# the exact steps.
 keys:
-  - &owner age16lfhy8r6zfa95r2hk5hfc6jvlaxrxe8m0nqcdcrkxyj8hmxd8czs9djzmk
+  - &owner age1PLACEHOLDER-REPLACE-WITH-YOUR-OWN-AGE-PUBLIC-KEY-EXAMPLE00
 creation_rules:
   - path_regex: ^secrets/[^/]+\.yaml$
     key_groups:

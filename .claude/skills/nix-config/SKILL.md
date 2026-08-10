@@ -123,11 +123,13 @@ home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
 
 `user.nix` is gitignored and never committed; `user.nix.example` is the template.
 Optional keys: `profile`, `extraFeatures`, `excludeFeatures`, `extraModulePaths`,
-`github.{user,id}`, `aws.profile`, `nativeInstallers`, `configRepos`, `useSops`,
-`submodules`. `sshKey` is derived from the email prefix in flake.nix, not set
-directly. `github` feeds the noreply commit email `base.nix` builds (see
-`gitEmail` there); `email` itself stays required regardless, since `sshKey`
-still derives from it.
+`github.{user,id}`, `aws.profile`, `nativeInstallers`, `configRepos`,
+`secrets`, `sopsFile`, `submodules`. `sshKey` is derived from the email
+prefix in flake.nix, not set directly. `github` feeds the noreply commit
+email `base.nix` builds (see `gitEmail` there); `email` itself stays
+required regardless, since `sshKey` still derives from it. sops-nix is
+opt-in per machine, triggered by `sopsFile` being set — no separate
+boolean; see `modules/secrets-sops.nix`.
 
 `submodules` wires a private remote per submodule: `base.nix`'s
 `submoduleOverrides` adds a `private` remote and checks out a local `work` branch

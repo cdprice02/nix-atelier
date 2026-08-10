@@ -29,18 +29,17 @@ What's relevant to report here:
 - A flaw in the activation scripts (`sshKey`, `submoduleOverrides`, the
   native-installer hooks in `features/claude.nix`) that could leak a secret,
   overwrite unrelated files, or run with unintended privilege.
-- A sops/age misconfiguration that could expose `secrets/secrets.yaml`'s
-  plaintext values to an unintended recipient.
+- A flaw in `modules/secrets-sops.nix` that could expose a decrypted secret
+  to an unintended recipient, or resolve to the wrong `sopsFile`.
 
 What's out of scope, by design rather than oversight:
 
-- `user.nix`, `~/.certs/corporate.pem`, and `~/.config/secrets/env` are
-  gitignored and never committed; they hold real identity and secrets values
-  on a machine but are not part of this repository's history.
-- `secrets/secrets.yaml` is committed, but every value in it is encrypted with
-  [sops](https://github.com/getsops/sops) to the recipient declared in
-  `.sops.yaml`. Its presence in git history is expected; being unable to
-  decrypt it without the corresponding age key is the point.
+- `user.nix` and `~/.config/secrets/env` are gitignored and never committed;
+  they hold real identity and secrets values on a machine but are not part
+  of this repository's history. The same is true of any real, private
+  `secrets.yaml` a fork of this framework points `sopsFile` at — this repo's
+  own `secrets/secrets.yaml.example` and `.sops.yaml` are placeholder-only
+  and carry no real ciphertext or real recipient.
 - `gitleaks` (`.github/workflows/security.yml`) already scans every push and
   PR for accidentally committed plaintext secrets. A finding there is CI
   failing loudly, not something to report privately.

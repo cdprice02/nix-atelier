@@ -60,13 +60,21 @@
   #   ".kiro" = "git@github.com:youruser/your-private-kiro-config.git";
   # };
 
-  # Optional: use sops-nix (secrets/secrets.yaml) instead of manually
-  # copying secrets.env.example to ~/.config/secrets/env. Off by default —
-  # requires your own age keypair (see .sops.yaml for the recipient this
-  # repo's secrets/secrets.yaml is currently encrypted for) with the private
-  # half placed manually at ~/.config/sops/age/keys.txt (see
+  # Optional: use sops-nix instead of manually copying secrets.env.example to
+  # ~/.config/secrets/env. Off unless sopsFile is set below — there's no
+  # separate on/off flag, since a set sopsFile already says everything one
+  # would. `secrets` is the list of names to decrypt; sopsFile is an
+  # absolute path to your own secrets.yaml (never this repo's own
+  # secrets/secrets.yaml.example, which is encrypted for nobody). Both are
+  # per-machine settings deliberately: if a token genuinely differs between
+  # two of your machines, point each one's sopsFile at its own file with its
+  # own value under the same key name, rather than sharing one file.
+  #
+  # Requires your own age keypair (`age-keygen`) with the private half
+  # placed manually at ~/.config/sops/age/keys.txt (see
   # modules/secrets-sops.nix and docs/bootstrap.md for the exact steps).
-  # useSops = true;
+  # secrets = ["GITHUB_PERSONAL_ACCESS_TOKEN" "MY_SERVICE_PAT"];
+  # sopsFile = "/Users/you/.config/nix-private/secrets/secrets.yaml";
 
   # Optional: private remote overrides for config/ submodules.
   # For each key matching a submodule name, home-manager activation will add a
