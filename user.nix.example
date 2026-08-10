@@ -40,10 +40,20 @@
   # Only set this if one profile name is genuinely always correct here.
   # aws = { profile = "default"; };
 
-  # Optional: private Kiro CLI config repo, cloned to ~/.kiro on work
-  # profiles. Not a submodule of this repo (it's private, work-specific
-  # content) — kept here so the URL never touches this public repo.
-  # kiroRepo = "git@github.com:youruser/your-private-kiro-config.git";
+  # Optional: extra native-installer CLIs (installed the same way claude-code
+  # is: a vendor curl-piped install script, for a tool that isn't in nixpkgs
+  # or updates too fast for Nix's rebuild cycle to track). The framework has
+  # no opinion on what these are — unlike claude-code, there's no default.
+  # nativeInstallers = [
+  #   { binary = "kiro-cli"; url = "https://cli.kiro.dev/install"; }
+  # ];
+
+  # Optional: private config repos to clone, keyed by the path under $HOME to
+  # clone into. Not submodules of this repo (they're private, machine-
+  # specific content) — kept here so the URL never touches this public repo.
+  # configRepos = {
+  #   ".kiro" = "git@github.com:youruser/your-private-kiro-config.git";
+  # };
 
   # Optional: use sops-nix (secrets/secrets.yaml) instead of manually
   # copying secrets.env.example to ~/.config/secrets/env. Off by default —
