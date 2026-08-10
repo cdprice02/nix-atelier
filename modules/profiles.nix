@@ -3,6 +3,6 @@
 # separate, always-on prefix mkProfile adds unconditionally.
 {
   minimal = [];
-  dev = ["shell-tools" "lang-rust" "lang-node" "lang-python" "cloud" "ai" "k8s" "dev-tools"];
-  server = ["shell-tools" "ops"];
+  dev = ["shell-tools" "lang-rust" "lang-node" "lang-python" "cloud" "ai" "k8s" "tmux" "git-tools" "nix-tools" "data" "qmk"];
+  server = ["shell-tools" "tmux"];
 }

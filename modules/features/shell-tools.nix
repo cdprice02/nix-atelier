@@ -45,6 +45,7 @@ in {
     lazygit
     btop
     fastfetch
+    hyperfine
   ];
 
   programs = {
