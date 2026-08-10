@@ -71,6 +71,18 @@ System info display for terminal screenshots. Actively maintained replacement fo
 ### hyperfine
 Command-line benchmarking tool: statistically sound timing with warmup runs and outlier detection. [github.com/sharkdp/hyperfine](https://github.com/sharkdp/hyperfine)
 
+### rsync
+Fast incremental file transfer/sync over SSH or locally. [rsync.samba.org](https://rsync.samba.org)
+
+### tree
+Recursive directory listing as an indented tree. [oldmanprogrammer.net/source.php?dir=projects/tree](http://mama.indstate.edu/users/ice/tree/)
+
+### ncdu
+Interactive disk-usage analyzer: navigate directories by size, delete from within the TUI. [dev.yorhel.nl/ncdu](https://dev.yorhel.nl/ncdu)
+
+### htop
+Interactive process viewer: an ncurses `top` replacement. [htop.dev](https://htop.dev)
+
 ---
 
 ## Editor
@@ -235,30 +247,14 @@ Lets rbw prompt for the master password from the terminal (cross-platform; macOS
 ## Shell Multiplexing
 
 ### tmux
-Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. On `*-server` profiles, tmux-resurrect and tmux-continuum are also installed, so long-lived server sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other. [github.com/tmux/tmux](https://github.com/tmux/tmux)
-
----
-
-## Server Tools
-
-### rsync
-Fast incremental file transfer/sync over SSH or locally. [rsync.samba.org](https://rsync.samba.org)
-
-### tree
-Recursive directory listing as an indented tree. [oldmanprogrammer.net/source.php?dir=projects/tree](http://mama.indstate.edu/users/ice/tree/)
-
-### ncdu
-Interactive disk-usage analyzer: navigate directories by size, delete from within the TUI. [dev.yorhel.nl/ncdu](https://dev.yorhel.nl/ncdu)
-
-### htop
-Interactive process viewer: an ncurses `top` replacement. [htop.dev](https://htop.dev)
+Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. tmux-resurrect and tmux-continuum are also installed, so sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other. [github.com/tmux/tmux](https://github.com/tmux/tmux)
 
 ---
 
 ## Firmware
 
 ### qmk
-QMK firmware CLI: compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only; unavailable on x86_64-darwin (its `gcc-arm-embedded` dependency has no build for that platform). [qmk.fm](https://qmk.fm)
+QMK firmware CLI: compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only. [qmk.fm](https://qmk.fm)
 
 ---
 

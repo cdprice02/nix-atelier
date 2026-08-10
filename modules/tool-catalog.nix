@@ -141,6 +141,34 @@
       description = "Command-line benchmarking tool: statistically sound timing with warmup runs and outlier detection.";
       link = "[github.com/sharkdp/hyperfine](https://github.com/sharkdp/hyperfine)";
     }
+    {
+      key = "rsync";
+      matches = ["rsync"];
+      category = "CLI Utilities";
+      description = "Fast incremental file transfer/sync over SSH or locally.";
+      link = "[rsync.samba.org](https://rsync.samba.org)";
+    }
+    {
+      key = "tree";
+      matches = ["tree"];
+      category = "CLI Utilities";
+      description = "Recursive directory listing as an indented tree.";
+      link = "[oldmanprogrammer.net/source.php?dir=projects/tree](http://mama.indstate.edu/users/ice/tree/)";
+    }
+    {
+      key = "ncdu";
+      matches = ["ncdu"];
+      category = "CLI Utilities";
+      description = "Interactive disk-usage analyzer: navigate directories by size, delete from within the TUI.";
+      link = "[dev.yorhel.nl/ncdu](https://dev.yorhel.nl/ncdu)";
+    }
+    {
+      key = "htop";
+      matches = ["htop"];
+      category = "CLI Utilities";
+      description = "Interactive process viewer: an ncurses `top` replacement.";
+      link = "[htop.dev](https://htop.dev)";
+    }
 
     # ── Editor ─────────────────────────────────────────────────────────────
     {
@@ -239,36 +267,6 @@
       category = "Fonts";
       description = "Fira Code patched with Nerd Font glyphs (icons, powerline symbols) for terminal UIs that use them.";
       link = "[nerdfonts.com](https://www.nerdfonts.com)";
-    }
-
-    # ── Server Tools ───────────────────────────────────────────────────────
-    {
-      key = "rsync";
-      matches = ["rsync"];
-      category = "Server Tools";
-      description = "Fast incremental file transfer/sync over SSH or locally.";
-      link = "[rsync.samba.org](https://rsync.samba.org)";
-    }
-    {
-      key = "tree";
-      matches = ["tree"];
-      category = "Server Tools";
-      description = "Recursive directory listing as an indented tree.";
-      link = "[oldmanprogrammer.net/source.php?dir=projects/tree](http://mama.indstate.edu/users/ice/tree/)";
-    }
-    {
-      key = "ncdu";
-      matches = ["ncdu"];
-      category = "Server Tools";
-      description = "Interactive disk-usage analyzer: navigate directories by size, delete from within the TUI.";
-      link = "[dev.yorhel.nl/ncdu](https://dev.yorhel.nl/ncdu)";
-    }
-    {
-      key = "htop";
-      matches = ["htop"];
-      category = "Server Tools";
-      description = "Interactive process viewer: an ncurses `top` replacement.";
-      link = "[htop.dev](https://htop.dev)";
     }
 
     # ── Rust ───────────────────────────────────────────────────────────────
@@ -491,7 +489,7 @@
       key = "tmux";
       matches = ["tmux"];
       category = "Shell Multiplexing";
-      description = "Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. On `*-server` profiles, tmux-resurrect and tmux-continuum are also installed, so long-lived server sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other.";
+      description = "Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. tmux-resurrect and tmux-continuum are also installed, so sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other.";
       link = "[github.com/tmux/tmux](https://github.com/tmux/tmux)";
     }
 
@@ -500,7 +498,7 @@
       key = "qmk";
       matches = ["qmk"];
       category = "Firmware";
-      description = "QMK firmware CLI: compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only; unavailable on x86_64-darwin (its `gcc-arm-embedded` dependency has no build for that platform).";
+      description = "QMK firmware CLI: compile and flash custom mechanical keyboard firmware (`qmk compile`, `qmk flash`). Dev profiles only.";
       link = "[qmk.fm](https://qmk.fm)";
     }
 

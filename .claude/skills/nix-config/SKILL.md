@@ -82,7 +82,7 @@ modules/
   profiles.nix         tier -> feature list  (minimal | dev | server)
   profile-list.nix     Linux profile -> {context, tier, withGui}
   tool-catalog.nix     package -> description (see drift check)
-  features/            shell-tools, lang-{rust,node,python}, cloud, ai, k8s, dev-tools, ops
+  features/            shell-tools, lang-{rust,node,python}, cloud, ai, k8s, tmux, git-tools, nix-tools, data, qmk
   work.nix             work identity, corporate cert env, SSH stubs
   gui-{linux,darwin}.nix
 system/darwin.nix      macOS settings + Homebrew

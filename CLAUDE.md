@@ -31,18 +31,20 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
     docs-gen.nix               # Generates docs/profiles.md + docs/tools.md
     secrets-sops.nix           # Opt-in sops-nix wiring (user.nix: useSops = true)
     lib/
-      tmux-base.nix            # Shared tmux config for dev-tools.nix and ops.nix
       hm-compat.nix            # Option-name shims across the two home-manager pins
     features/
-      shell-tools.nix          # tier=dev|server: fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.
+      shell-tools.nix          # tier=dev|server: fonts, zoxide/fzf/direnv, ripgrep/bat/eza/hyperfine/etc.
       lang-rust.nix            # tier=dev: rust-overlay toolchain + cargo tools
       lang-node.nix            # tier=dev: node, fnm, bun
       lang-python.nix          # tier=dev: python3, uv, jupyterlab
       cloud.nix                # tier=dev, or context=work: AWS tooling
       ai.nix                   # tier=dev: claude-code (native installer); user.nativeInstallers/configRepos for anything else
       k8s.nix                  # tier=dev: kubectl, helm, helmfile
-      dev-tools.nix            # tier=dev: gh, pre-commit, tmux, qmk
-      ops.nix                  # tier=server: rsync, tree, ncdu, htop, tmux
+      tmux.nix                 # tier=dev|server: sole owner of tmux config, historyLimit=50000
+      git-tools.nix            # tier=dev: gh, glab, difftastic, git-filter-repo, pre-commit
+      nix-tools.nix            # tier=dev: nixd, alejandra
+      data.nix                 # tier=dev: duckdb
+      qmk.nix                  # tier=dev: qmk (builds fine on x86_64-darwin; verified directly)
     work.nix                   # Work identity, corporate PEM cert env vars, SSH stubs, imports cloud.nix
     gui-linux.nix              # Linux GUI: obsidian, alacritty, vscode
     gui-darwin.nix             # macOS GUI: obsidian, alacritty, vscode, osxkeychain

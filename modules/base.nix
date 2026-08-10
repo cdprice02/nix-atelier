@@ -61,14 +61,20 @@ in {
       # just: task runner / discoverability layer (`just --list` shows all commands)
       just
 
-      # CLI essentials with no comfort-tool equivalent (genuine bootstrap/
-      # scripting value, not "nicer than something already available");
-      # everything else (fonts, ripgrep/fd/bat/eza/lazygit/btop/fastfetch,
-      # zoxide/fzf/direnv) lives in the shell-tools feature instead, which
-      # `minimal` doesn't pull in.
+      # base is what any machine wants; shell-tools is the interactive
+      # comfort layer. These have genuine bootstrap/scripting/ops value
+      # independent of an interactive session -- a headless `minimal`
+      # machine wants them exactly as much as a daily driver does. The
+      # nicer-but-optional layer (fonts, ripgrep/fd/bat/eza/lazygit/btop/
+      # fastfetch, zoxide/fzf/direnv) lives in the shell-tools feature
+      # instead, which `minimal` doesn't pull in.
       jq
       git-lfs
       wget
+      rsync
+      tree
+      ncdu
+      htop
 
       # Secrets: sops/age for the opt-in sops-nix secrets management
       # (modules/secrets-sops.nix; the age private key itself is placed

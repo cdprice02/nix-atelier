@@ -15,6 +15,16 @@
   cloud = ./features/cloud.nix;
   ai = ./features/ai.nix;
   k8s = ./features/k8s.nix;
-  dev-tools = ./features/dev-tools.nix;
-  ops = ./features/ops.nix;
+  tmux = ./features/tmux.nix;
+  git-tools = ./features/git-tools.nix;
+  nix-tools = ./features/nix-tools.nix;
+  data = ./features/data.nix;
+  # qmk builds fine on x86_64-darwin under the pinned nixpkgs-25.05-darwin
+  # input (verified directly: `nix build .#darwinConfigurations.personal-darwin.pkgs.qmk`
+  # succeeds on this repo's own x86_64-darwin machine) -- no `unsupported`
+  # entry here. tool-catalog.nix previously claimed otherwise; that claim
+  # was checked against `meta.available` only, which doesn't account for a
+  # transitively broken dependency and also doesn't match this repo's own
+  # CI, which has built qmk into the x86_64-darwin dev tier all along.
+  qmk = ./features/qmk.nix;
 }

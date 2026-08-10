@@ -34,7 +34,7 @@
   # master: programs.git.extraConfig -> programs.git.settings
   # Both take the same gitIniType attrset, so only the attribute name moves.
   # Returns a fragment to merge into `programs.git`, letting several modules
-  # each contribute their own slice (base + dev-tools + gui-*) exactly as they
+  # each contribute their own slice (base + git-tools + gui-*) exactly as they
   # did with extraConfig.
   gitConfig = cfg:
     if hasGitSettings

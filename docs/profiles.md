@@ -37,13 +37,13 @@ Hand-maintained, not generated (below the per-profile tables). The one row that 
 | `features/cloud.nix` | tier = dev, or context = work (any tier) |
 | `features/ai.nix` | tier = dev |
 | `features/k8s.nix` | tier = dev |
-| `features/dev-tools.nix` | tier = dev |
-| `features/ops.nix` | tier = server |
+| `features/tmux.nix` | tier = dev or server |
+| `features/git-tools.nix`, `nix-tools.nix`, `data.nix`, `qmk.nix` | tier = dev |
 | `work.nix` | context = work |
 | `gui-linux.nix` | withGui = true, Linux |
 | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
 
-`minimal` gets only `core` + `env`: no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains. It keeps `jq`/`wget`/`git-lfs` in `core` itself; bootstrap/scripting utilities, not comfort tools, so "minimal" means lean rather than feature-free.
+`minimal` gets only `core` + `env`: no `shell-tools` (fonts, zoxide/fzf/direnv, ripgrep/bat/eza/etc.) and none of `dev`'s language toolchains or `tmux`. It keeps `jq`/`wget`/`git-lfs`/`rsync`/`tree`/`ncdu`/`htop` in `core` itself; bootstrap/scripting/ops utilities, not comfort tools, so "minimal" means lean rather than feature-free.
 
 ## homeConfigurations (Linux / WSL2)
 
