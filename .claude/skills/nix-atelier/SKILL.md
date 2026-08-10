@@ -1,11 +1,11 @@
 ---
-name: nix-config
+name: nix-atelier
 description: Work on the personal Nix configuration repo (nix-darwin on macOS, standalone Home Manager on Linux/WSL2/HPC). Use when adding or removing a package, creating or editing a feature module or profile, changing flake inputs, touching the tool catalog, or debugging an eval failure or failed switch. Covers the just interface, the input-pairing invariant, the tool-catalog drift check, the profile compositor, and why --impure is required.
 ---
 
-# nix-config
+# nix-atelier
 
-Personal Nix config at `~/.nix-config`. macOS via nix-darwin (Intel and Apple
+Personal Nix config at `~/.nix-atelier`. macOS via nix-darwin (Intel and Apple
 Silicon), any Linux/WSL2/HPC via standalone Home Manager. **Nix is the only
 path: there are no fallback scripts.** NixOS is not supported: `system/nixos.nix`
 exists but no flake output references it.
@@ -114,9 +114,9 @@ Doing it by hand:
 
 ```bash
 # macOS
-sudo darwin-rebuild switch --flake ~/.nix-config#<config> --impure
+sudo darwin-rebuild switch --flake ~/.nix-atelier#<config> --impure
 # Linux / WSL2: -b bk is required on first apply or HM refuses to overwrite
-home-manager switch --flake ~/.nix-config#<profile> --impure -b bk
+home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk
 ```
 
 ## Identity

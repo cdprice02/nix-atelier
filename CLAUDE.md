@@ -75,9 +75,9 @@ Prefer `just`: it is the sole interface and handles OS/arch dispatch.
 | Task | Command |
 |------|---------|
 | Apply config (any OS) | `just switch [profile]` |
-| Apply config (Mac, explicit) | `sudo darwin-rebuild switch --flake ~/.nix-config#<config> --impure` |
-| Apply config (Linux/WSL, explicit) | `home-manager switch --flake ~/.nix-config#<profile> --impure -b bk` |
-| First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-config#<config> --impure` |
+| Apply config (Mac, explicit) | `sudo darwin-rebuild switch --flake ~/.nix-atelier#<config> --impure` |
+| Apply config (Linux/WSL, explicit) | `home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk` |
+| First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-atelier#<config> --impure` |
 | Update flake inputs | `just update` |
 | Validate | `just check` (lints + `nix flake check`) |
 | Regenerate docs | `just docs` |

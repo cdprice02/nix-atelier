@@ -72,9 +72,9 @@ Each profile is built for both `x86_64-linux` and `aarch64-linux`. The `aarch64`
 
 Bootstrap:
 ```sh
-nix run home-manager -- switch --flake ~/.nix-config#full --impure -b bk
+nix run home-manager -- switch --flake ~/.nix-atelier#full --impure -b bk
 # After first apply, home-manager is on PATH:
-home-manager switch --flake ~/.nix-config#full --impure -b bk
+home-manager switch --flake ~/.nix-atelier#full --impure -b bk
 ```
 
 ## darwinConfigurations (macOS)
@@ -97,11 +97,11 @@ the first one runs nix-darwin straight from the flake:
 ```sh
 # Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-config#full-darwin-aarch64 --impure
+  run nix-darwin -- switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
 
 # Intel: pinned nix-darwin release, matching this repo's 25.05 pin
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-config#full-darwin --impure
+  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
 ```
 
 Every later apply can just use `just switch`, which appends the right

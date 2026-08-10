@@ -3,7 +3,7 @@
 A worked, generic example of the pattern the framework expects for
 machine-specific, non-public data: identity overrides, packages too niche
 for a shared feature, and real secrets. None of it belongs in the public
-`nix-config` repo, and none of it is a Nix module the framework imports on
+`nix-atelier` repo, and none of it is a Nix module the framework imports on
 its own — every file here is wired in explicitly, per machine, from that
 machine's own `user.nix`.
 
@@ -37,7 +37,7 @@ special shape required beyond being a valid module. Each demonstrates one
   is set in *that machine's own* `user.nix`, not here; this file only adds
   the one extra package that machine's job needs.
 
-## Wiring it into nix-config
+## Wiring it into nix-atelier
 
 In the target machine's `user.nix`:
 

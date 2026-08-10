@@ -27,9 +27,9 @@ If you're unsure whether something is framework or personal preference, open an 
 1. Fork this repo
 2. Copy the identity template: `cp user.nix.example user.nix`
 3. Fill in `user.nix` with your username, name, and email
-4. Apply: `nix run home-manager -- switch --flake ~/.nix-config#personal --impure`
+4. Apply: `nix run home-manager -- switch --flake ~/.nix-atelier#full --impure`
 
-See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checklist and [docs/profiles.md](docs/profiles.md) for how to add or customize profiles.
+See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checklist and [docs/profiles.md](docs/profiles.md) for the tier/gui/arch axes and the `extraFeatures`/`excludeFeatures`/`extraModulePaths` customization hooks.
 
 ---
 
@@ -44,7 +44,7 @@ just lint-all                 # alejandra, statix, deadnix, markdownlint
 pre-commit run --all-files    # trailing whitespace, secrets scan (+ the two lints above)
 ```
 
-`just --list` only shows the everyday recipes; a few CI-internal ones (profile listing, per-profile build, individual lints) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux personal`, `just --show _build-linux`.
+`just --list` only shows the everyday recipes; a few CI-internal ones (profile listing, per-profile build, individual lints) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux full`, `just --show _build-linux`.
 
 CI runs these same recipes (see `.github/workflows/check.yml`) plus full builds for every profile, but full builds only run on push to `main` or manual dispatch, not on every PR (see `check.yml`'s comments for why). So a green `just eval-all` + `just lint-all` locally is close to, but not identical to, full CI coverage.
 

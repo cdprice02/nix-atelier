@@ -79,7 +79,7 @@ jobs:
           chown -R ciuser:ciuser "$GITHUB_WORKSPACE"
 
       # Mirrors docs/bootstrap.md's WSL2 steps 1, 3 (via
-      # NIX_CONFIG_USER_FILE instead of a literal ~/.nix-config clone path,
+      # NIX_CONFIG_USER_FILE instead of a literal ~/.nix-atelier clone path,
       # since the repo's already checked out at $GITHUB_WORKSPACE — see
       # flake.nix's NIX_CONFIG_USER_FILE override), and 7. Steps 2
       # (clone — actions/checkout stands in, the documented git@github.com

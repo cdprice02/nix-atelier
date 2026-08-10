@@ -106,7 +106,7 @@ in {
   home.file.".claude" = {
     source =
       config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/.nix-config/config/claude";
+      "${config.home.homeDirectory}/.nix-atelier/config/claude";
   };
 
   home.activation =
