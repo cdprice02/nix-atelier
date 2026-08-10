@@ -276,6 +276,9 @@ Loads/unloads environment variables based on `.envrc` files when entering a dire
 ### claude-code
 Installed via its official native installer (curl-piped script), not npm or nixpkgs: ships multiple releases a week and self-updates in place, which nixpkgs packaging and Nix's rebuild cycle can't keep pace with. [claude.com/claude-code](https://claude.com/claude-code)
 
+### GitHub Copilot CLI
+Config symlinked from a git submodule (`config/copilot`), not a Nix package: the `copilot` feature just points `~/.copilot` at it. [github.com/github/copilot-cli](https://github.com/github/copilot-cli)
+
 ---
 
 ## GUI (gui-linux / gui-darwin profiles only)

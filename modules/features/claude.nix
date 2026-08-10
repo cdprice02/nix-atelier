@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   user,
@@ -19,8 +20,7 @@
   #      install path directly instead.
   #
   # A failed download warns rather than aborting: a transient network problem
-  # should not take down an otherwise-complete `switch`, the same way
-  # work.nix's corporate-cert step warns when its PEM is missing.
+  # should not take down an otherwise-complete `switch`.
   # PATH handed to the vendor installer. Nix-provided tools come first so the
   # download itself is deterministic; the system paths follow because these
   # scripts reasonably expect a normal environment. claude's installer needs
@@ -51,8 +51,7 @@
   # exits 0 would be indistinguishable from a successful install.
   #
   # A failure warns rather than aborting, so a transient network problem
-  # cannot take down an otherwise-complete switch -- the same way work.nix
-  # warns about a missing corporate PEM.
+  # cannot take down an otherwise-complete switch.
   mkNativeInstaller = {
     binary,
     url,
@@ -90,7 +89,7 @@
   # a private submodule would break every CI job's `submodules: recursive`
   # checkout (no credentials for a private repo there), and the URL would
   # otherwise have to live in this public repo's .gitmodules. Guarded like
-  # the SSH-key/corporate-cert activation hooks: write-once, never re-clones
+  # the SSH-key activation hook in base.nix: write-once, never re-clones
   # over local changes.
   configRepoMods = lib.mapAttrs' (
     path: url:
@@ -101,6 +100,15 @@
       '')
   ) (user.configRepos or {});
 in {
+  # Submodule under config/ symlinked into HOME so tools find it at the
+  # expected path. mkOutOfStoreSymlink keeps it live-editable (not copied
+  # into the Nix store), which is required for a git-managed tool config.
+  home.file.".claude" = {
+    source =
+      config.lib.file.mkOutOfStoreSymlink
+      "${config.home.homeDirectory}/.nix-config/config/claude";
+  };
+
   home.activation =
     {
       # claude-code via its own native installer, not npm or nixpkgs: it ships

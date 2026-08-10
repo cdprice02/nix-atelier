@@ -208,7 +208,7 @@
       else mkPkgs system;
 
     # context and user are threaded into all modules via specialArgs so modules
-    # can gate features (work.nix inclusion, copilot symlink, CLAUDE_PROFILE) on them.
+    # can gate features (currently just work.nix's own inclusion) on them.
     mkSpecialArgs = system: context: {inherit system self user context;};
 
     # ── Feature/tier data model ────────────────────────────────────────────────

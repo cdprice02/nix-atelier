@@ -38,7 +38,8 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       lang-node.nix            # tier=dev: node, fnm, bun
       lang-python.nix          # tier=dev: python3, uv, jupyterlab
       cloud.nix                # tier=dev, or context=work: AWS tooling
-      ai.nix                   # tier=dev: claude-code (native installer); user.nativeInstallers/configRepos for anything else
+      claude.nix               # tier=dev: claude-code (native installer), .claude symlink; user.nativeInstallers/configRepos for anything else
+      copilot.nix              # tier=dev: .copilot symlink, sibling of claude.nix
       k8s.nix                  # tier=dev: kubectl, helm, helmfile
       tmux.nix                 # tier=dev|server: sole owner of tmux config, historyLimit=50000
       git-tools.nix            # tier=dev: gh, glab, difftastic, git-filter-repo, pre-commit
@@ -144,13 +145,13 @@ feature name fails any `nix eval`/`build`, not just the one profile that
 references it). `user.nix` can layer extra features onto its profile via an
 `extraFeatures` list. Darwin configs always include GUI.
 
-`context` is threaded into `specialArgs` so modules can read it. `base.nix` uses it to set `CLAUDE_PROFILE` via `home.sessionVariables` and to gate the Copilot symlink (personal only).
+`context` is threaded into `specialArgs` so modules can read it; `work.nix`'s own inclusion in `mkProfile` is currently the only thing gated on it (see the `claude`/`copilot` features, which are context-independent by design).
 
 ### Secrets
 
 Two tiers:
 
-- **Profile vars** (`CLAUDE_PROFILE`, known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in the same way, via `user.nix`'s `aws.profile` field (unset by default, since `cloud.nix` loads on both personal and work profiles and a hardcoded default risks hitting the wrong account).
+- **Profile vars** (known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in this way, via `user.nix`'s `aws.profile` field (unset by default, since `cloud.nix` loads on both personal and work profiles and a hardcoded default risks hitting the wrong account).
 - **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template. Optionally populated via sops-nix instead of a manual copy; opt-in per machine via `user.nix`'s `useSops` field; see `modules/secrets-sops.nix` and `docs/bootstrap.md`.
 
 ### Submodule overrides
