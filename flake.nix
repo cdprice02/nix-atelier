@@ -229,6 +229,18 @@
         unknown feature "${name}": valid features: ${builtins.concatStringsSep ", " (builtins.attrNames features)}
       '');
 
+    # A features.nix entry is either a bare path or an attrset
+    # { module; unsupported; } (see that file's own comment). These two
+    # accessors are the only place that shape distinction is unwrapped.
+    featureModule = f:
+      if builtins.isAttrs f
+      then f.module
+      else f;
+    featureUnsupported = f:
+      if builtins.isAttrs f
+      then (f.unsupported or [])
+      else [];
+
     # Forces every tier's feature list through resolveFeature so a typo in
     # profiles.nix fails any nix eval/build/flake check, not just a build of
     # the one tier that happens to reference it (tier resolution only happens
@@ -300,14 +312,30 @@
       withGui,
       system,
     }: let
-      tierMods = map resolveFeature (profiles.${tier} or (throw "unknown tier \"${tier}\""));
+      # Tier defaults plus user.nix's extraFeatures, deduplicated (a name in
+      # both is not an error: the module system already dedupes imports by
+      # file, so this has always been silently fine -- unique here just
+      # avoids resolving the same name twice). excludeFeatures is the
+      # inverse escape hatch: names to drop regardless of where they came
+      # from, and also how a machine silences the unsupported-platform
+      # warning below for a feature it was never going to use anyway.
+      requestedNames =
+        nixpkgs.lib.unique
+        ((profiles.${tier} or (throw "unknown tier \"${tier}\"")) ++ (user.extraFeatures or []));
+      keptNames = nixpkgs.lib.subtractLists (user.excludeFeatures or []) requestedNames;
 
-      # Escape hatch: user.nix may declare extraFeatures = [ "k8s" ... ] to
-      # layer extra named features onto whichever profile this machine
-      # builds, beyond its tier's defaults. Unused by every profile defined
-      # below; user is already in scope here the same way work.nix's
-      # user.work.name/email are, so no signature threading needed.
-      extraMods = map resolveFeature (user.extraFeatures or []);
+      supportedOn = name: !(builtins.elem system (featureUnsupported (resolveFeature name)));
+      usableNames = builtins.filter supportedOn keptNames;
+      skippedNames = builtins.filter (n: !(supportedOn n)) keptNames;
+
+      featureMods = map (n: featureModule (resolveFeature n)) usableNames;
+
+      # Absolute paths to private, machine-specific modules outside this
+      # repo (see the mechanism note in the nix-atelier plan: a string
+      # absolute path imports to a real module, and relative imports inside
+      # it resolve against the real filesystem, the same --impure trick
+      # user.nix itself relies on). Empty by default.
+      privateMods = map import (user.extraModulePaths or []);
 
       contextMods =
         if context == "work"
@@ -335,12 +363,16 @@
         then [sops-nix.homeManagerModules.sops ./modules/secrets-sops.nix]
         else [];
     in
-      [./modules/base.nix ./modules/env.nix caret.homeManagerModules.default]
-      ++ tierMods
-      ++ extraMods
-      ++ contextMods
-      ++ guiMods
-      ++ sopsMods;
+      nixpkgs.lib.warnIf (skippedNames != []) ''
+        Skipping features unsupported on ${system}: ${nixpkgs.lib.concatStringsSep ", " skippedNames}.
+        Add them to excludeFeatures in user.nix to silence this.
+      ''
+      ([./modules/base.nix ./modules/env.nix caret.homeManagerModules.default]
+        ++ featureMods
+        ++ privateMods
+        ++ contextMods
+        ++ guiMods
+        ++ sopsMods);
 
     # ── Test harness (nmt) ───────────────────────────────────────────────────
     # nmt (home-manager's own module test framework) evaluates a home-manager

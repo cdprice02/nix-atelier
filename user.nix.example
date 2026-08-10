@@ -17,6 +17,16 @@
   # machine that also wants Kubernetes tooling without switching tiers.
   # extraFeatures = ["k8s"];
 
+  # Optional: named features to drop, regardless of tier or extraFeatures.
+  # Also silences the unsupported-platform warning for a feature this
+  # machine was never going to use anyway.
+  # excludeFeatures = ["lang-rust"];
+
+  # Optional: absolute paths to private, machine-specific home-manager
+  # modules outside this repo (e.g. a private modules repo cloned locally).
+  # Requires --impure, already required for user.nix itself.
+  # extraModulePaths = ["/Users/you/.config/nix-private/machines/workstation.nix"];
+
   # Work git identity — used by modules/work.nix to override base git config.
   # Only used by work profiles; safe to leave placeholder values if you don't use work contexts.
   work = {
