@@ -16,8 +16,8 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
   justfile                     # Task runner, the sole interface (`just --list`)
   user.nix.example             # Identity template (tracked); copy to user.nix
   user.nix                     # Local identity (gitignored); never committed
-  .sops.yaml                   # sops age recipients (opt-in secrets, see below)
-  secrets/secrets.yaml         # sops-encrypted secrets (opt-in via user.nix)
+  .sops.yaml                   # Placeholder-recipient example; real one lives in your private repo
+  secrets/secrets.yaml.example # Placeholder-only; real secrets.yaml lives in your private repo
   secrets.env.example          # Template for the manual ~/.config/secrets/env
   statix.toml                  # statix lint config (one rule disabled; see issue #46)
   .markdownlintignore          # Single source for what markdownlint skips
@@ -27,7 +27,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
     features.nix               # Feature name -> module path registry; `full` tier is every key in it
     tool-catalog.nix           # Package -> description, for the generated docs/tools.md
     docs-gen.nix               # Generates docs/profiles.md + docs/tools.md
-    secrets-sops.nix           # Opt-in sops-nix wiring (user.nix: useSops = true)
+    secrets-sops.nix           # Opt-in sops-nix wiring, triggered by user.nix: sopsFile = "..."
     lib/
       hm-compat.nix            # Option-name shims across the two home-manager pins
     features/
@@ -146,7 +146,7 @@ generated from tier × gui × arch in `flake.nix`, not hand-listed.
 Two tiers:
 
 - **Profile vars** (known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in this way, via `user.nix`'s `aws.profile` field (unset by default: a hardcoded default risks hitting the wrong account).
-- **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the template. Optionally populated via sops-nix instead of a manual copy; opt-in per machine via `user.nix`'s `useSops` field; see `modules/secrets-sops.nix` and `docs/bootstrap.md`.
+- **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the manual-copy template. Optionally populated via sops-nix instead: set `user.nix`'s `secrets` (a list of names) and `sopsFile` (an absolute path to your own, private secrets.yaml — never this repo's own `secrets/secrets.yaml.example`, which is encrypted for a placeholder recipient nobody holds). `sopsFile`'s presence is the on/off switch, no separate flag. Both are per-machine, so a token that genuinely differs by machine gets its own file per machine rather than one shared file. See `modules/secrets-sops.nix` and `docs/bootstrap.md`.
 
 ### Submodule overrides
 

@@ -71,33 +71,40 @@ $EDITOR ~/.config/secrets/env
 
 This file is sourced by every shell session. It is gitignored and never committed.
 
-**Optional: sops-nix instead of the manual copy above.** Off by default: only
-worth it if you want secrets encrypted in git rather than living purely as an
-unmanaged local file. Set `useSops = true;` in `user.nix`, then before your
-first `switch` with it enabled:
+**Optional: sops-nix instead of the manual copy above.** Off unless
+`user.nix`'s `sopsFile` is set — there's no separate on/off flag. Only worth
+it if you want secrets encrypted in git rather than living purely as an
+unmanaged local file. This repo's own `secrets/secrets.yaml.example` is not
+something you point `sopsFile` at directly: it's encrypted for a placeholder
+recipient nobody holds the private half of, so it exists purely to show the
+shape. Your real file belongs in your own private config repo instead
+(e.g. alongside `extraModulePaths` modules), never here.
 
 ```sh
+# 1. Generate your own age keypair
+age-keygen -o ~/.config/sops/age/keys.txt   # prints your public key
 mkdir -p ~/.config/sops/age && chmod 700 ~/.config/sops/age
-# write your own age private key here (see .sops.yaml for which public key
-# secrets/secrets.yaml is currently encrypted for)
-$EDITOR ~/.config/sops/age/keys.txt
 chmod 600 ~/.config/sops/age/keys.txt
+
+# 2. In your own private repo: create .sops.yaml with your public key as the
+#    recipient (see this repo's own .sops.yaml for the shape), then:
+sops secrets.yaml   # opens $EDITOR on a new file; save to encrypt
 ```
 
-If you're forking this repo: `secrets/secrets.yaml` is encrypted for the
-original author's age key, and sops has no way to re-key a file for a new
-recipient without first decrypting it with an existing one: you can't
-"re-encrypt for your key" without a key you don't have. Instead, generate
-your own keypair with `age-keygen`, replace the recipient in `.sops.yaml`
-with your own public key, delete `secrets/secrets.yaml`, and recreate it
-with `sops secrets/secrets.yaml` (opens your `$EDITOR` on an empty file;
-use `secrets.env.example`'s var names as a guide, save to encrypt).
+In `user.nix`:
 
-`home-manager switch` then renders the same vars straight to
-`~/.config/secrets/env` from `secrets/secrets.yaml`: the manual copy/fill
-step above becomes unnecessary. To edit the encrypted values later:
-`sops secrets/secrets.yaml` (opens your `$EDITOR` with the decrypted
-plaintext; saving re-encrypts automatically).
+```nix
+secrets  = ["GITHUB_PERSONAL_ACCESS_TOKEN" "MY_SERVICE_PAT"];  # whatever names you used above
+sopsFile = "/absolute/path/to/your-private-repo/secrets.yaml";
+```
+
+`home-manager switch` then renders those vars straight to
+`~/.config/secrets/env` from your `sopsFile`: the manual copy/fill step
+above becomes unnecessary. To edit the encrypted values later: `sops
+secrets.yaml` in your private repo (opens `$EDITOR` with the decrypted
+plaintext; saving re-encrypts automatically). If a token genuinely differs
+between two of your machines, give each machine's `user.nix` its own
+`sopsFile` pointing at a separate encrypted file, rather than sharing one.
 
 ### 5. Corporate or self-signed CA certificate (if applicable)
 
