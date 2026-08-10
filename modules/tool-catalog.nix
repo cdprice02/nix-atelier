@@ -568,6 +568,12 @@
       description = "Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as a git submodule fork, wired in via `programs.git.includes`: not a Nix package.";
       link = "[github.com/GitAlias/gitalias](https://github.com/GitAlias/gitalias)";
     }
+    {
+      key = "GitHub Copilot CLI";
+      category = "AI";
+      description = "Config symlinked from a git submodule (`config/copilot`), not a Nix package: the `copilot` feature just points `~/.copilot` at it.";
+      link = "[github.com/github/copilot-cli](https://github.com/github/copilot-cli)";
+    }
   ];
 
   # Nix/home-manager plumbing that's expected to appear in every closure and

@@ -76,13 +76,13 @@ any `nix eval` or build, not just the profile referencing it.
 ```text
 flake.nix              inputs, outputs, mkProfile, the three checks above
 modules/
-  base.nix             always on: shell, git, ssh, CLAUDE_PROFILE, submodule overrides
+  base.nix             always on: shell, git, ssh, submodule overrides
   env.nix              always on: PATH / writable-prefix policy
   features.nix         feature name -> module path registry
   profiles.nix         tier -> feature list  (minimal | dev | server)
   profile-list.nix     Linux profile -> {context, tier, withGui}
   tool-catalog.nix     package -> description (see drift check)
-  features/            shell-tools, lang-{rust,node,python}, cloud, ai, k8s, tmux, git-tools, nix-tools, data, qmk
+  features/            shell-tools, lang-{rust,node,python}, cloud, claude, copilot, k8s, tmux, git-tools, nix-tools, data, qmk
   work.nix             work identity, corporate cert env, SSH stubs
   gui-{linux,darwin}.nix
 system/darwin.nix      macOS settings + Homebrew
@@ -92,8 +92,9 @@ config/                git submodules: claude, copilot, git/gitalias
 `mkProfile { context, tier, withGui, system }` composes:
 `base + env + caret ++ tier features ++ extraFeatures ++ context ++ gui ++ sops`.
 
-`context` (`personal` | `work`) threads through `specialArgs`; `base.nix` uses it
-to set `CLAUDE_PROFILE` and gate the Copilot symlink.
+`context` (`personal` | `work`) threads through `specialArgs`; `work.nix`'s own
+inclusion is currently the only thing gated on it. `claude` and `copilot` (each
+owning one agent's installer/symlink) are context-independent.
 
 ## Adding a package
 
@@ -136,7 +137,7 @@ public repo.
   one spelling and breaking the other target. Follow that pattern.
 - **`config/` submodules are live paths**, not store copies. That is why
   `--impure` is needed and why `mkOutOfStoreSymlink` is used for `~/.claude`.
-- **`ai.nix` installs no packages.** It is activation hooks running vendor
+- **`claude.nix` installs no packages.** It is activation hooks running vendor
   installers, guarded by a path test, so once `~/.local/bin/claude` exists the
   hook never runs again and never upgrades. Use `claude update` out of band.
 - **Homebrew casks in `system/darwin.nix` are darwin-wide and unconditional**,

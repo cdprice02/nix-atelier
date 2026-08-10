@@ -26,10 +26,9 @@ What's relevant to report here:
   code beyond what's already inherent to Nix (arbitrary flake evaluation is a
   known, accepted risk of using flakes at all; this is about anything beyond
   that baseline).
-- A flaw in the activation scripts (`sshKey`, `submoduleOverrides`,
-  `mergeCorporateCerts`, the native-installer hooks in `features/ai.nix`) that
-  could leak a secret, overwrite unrelated files, or run with unintended
-  privilege.
+- A flaw in the activation scripts (`sshKey`, `submoduleOverrides`, the
+  native-installer hooks in `features/claude.nix`) that could leak a secret,
+  overwrite unrelated files, or run with unintended privilege.
 - A sops/age misconfiguration that could expose `secrets/secrets.yaml`'s
   plaintext values to an unintended recipient.
 

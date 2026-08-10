@@ -13,7 +13,8 @@
   lang-node = ./features/lang-node.nix;
   lang-python = ./features/lang-python.nix;
   cloud = ./features/cloud.nix;
-  ai = ./features/ai.nix;
+  claude = ./features/claude.nix;
+  copilot = ./features/copilot.nix;
   k8s = ./features/k8s.nix;
   tmux = ./features/tmux.nix;
   git-tools = ./features/git-tools.nix;

@@ -35,7 +35,7 @@ Hand-maintained, not generated (below the per-profile tables). The one row that 
 | `features/shell-tools.nix` | tier = dev or server |
 | `features/lang-rust.nix`, `lang-node.nix`, `lang-python.nix` | tier = dev |
 | `features/cloud.nix` | tier = dev, or context = work (any tier) |
-| `features/ai.nix` | tier = dev |
+| `features/claude.nix`, `copilot.nix` | tier = dev |
 | `features/k8s.nix` | tier = dev |
 | `features/tmux.nix` | tier = dev or server |
 | `features/git-tools.nix`, `nix-tools.nix`, `data.nix`, `qmk.nix` | tier = dev |

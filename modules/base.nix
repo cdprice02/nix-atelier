@@ -4,7 +4,6 @@
   pkgs,
   lib,
   user,
-  context,
   ...
 }: let
   homeDir = config.home.homeDirectory;
@@ -44,12 +43,6 @@ in {
       then "/Users/${user.username}"
       else "/home/${user.username}"
     );
-
-    sessionVariables = {
-      # EDITOR is set by programs.vim.defaultEditor below, not here: avoid
-      # declaring it twice.
-      CLAUDE_PROFILE = context;
-    };
 
     # Runtime-tool PATH and writable install prefixes (cargo/npm/uv/bun/pixi)
     # live in modules/env.nix, imported alongside this module for every profile.
@@ -135,22 +128,6 @@ in {
         in
           lib.concatStrings (lib.mapAttrsToList mkOverride submodules)
       );
-    };
-
-    # Submodules under config/ are symlinked into HOME so tools find them at the
-    # expected paths. mkOutOfStoreSymlink keeps them live-editable (not copied
-    # into the Nix store), which is required for git-managed tool configs.
-    file = {
-      ".claude" = {
-        source =
-          config.lib.file.mkOutOfStoreSymlink
-          "${config.home.homeDirectory}/.nix-config/config/claude";
-      };
-      ".copilot" = lib.mkIf (context == "personal") {
-        source =
-          config.lib.file.mkOutOfStoreSymlink
-          "${config.home.homeDirectory}/.nix-config/config/copilot";
-      };
     };
 
     # stateVersion gates Home Manager's migration behavior (default file
