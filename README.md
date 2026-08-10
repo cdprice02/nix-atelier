@@ -90,4 +90,5 @@ just --list        # everything else
 | [docs/profiles.md](docs/profiles.md) | Every profile and how they compose |
 | [docs/tools.md](docs/tools.md) | What each profile installs |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common first-boot failures |
+| [examples/private-config/](examples/private-config/) | Worked example: identity overrides, private packages, secrets |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Forking, local validation, PR standards |

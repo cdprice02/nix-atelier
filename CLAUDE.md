@@ -60,6 +60,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
     profiles.md                # Profile reference (generated)
     tools.md                   # Tool reference (generated)
     troubleshooting.md         # Common first-boot failures
+  examples/private-config/     # Worked example: identity override, private packages, secrets -- copy out, don't run in place
   .github/workflows/
     check.yml                  # eval-all, flake-check, 4 lints, build matrices
     bootstrap-smoke-test.yml   # Documented bootstrap, from scratch, in a container

@@ -1,0 +1,13 @@
+# Example only. In a real private companion repo this would be your own
+# real .sops.yaml, carrying your own real age public key(s) as recipients.
+#
+# The placeholder below is not a real key -- nobody holds its private
+# half, so nothing encrypted for it would ever be decryptable. Generate
+# your own keypair with `age-keygen` and replace it.
+keys:
+  - &owner age1PLACEHOLDER-REPLACE-WITH-YOUR-OWN-AGE-PUBLIC-KEY-EXAMPLE00
+creation_rules:
+  - path_regex: ^secrets/[^/]+\.yaml$
+    key_groups:
+      - age:
+          - *owner

@@ -6,7 +6,7 @@ Two kinds of contributions make sense here, and it helps to know the difference 
 
 ### Fork for personal preferences
 
-Tool choices, dotfile content, prompt theming, personal modules, your own username: these belong in your fork. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted here, but forks are actively encouraged. See [docs/profiles.md](docs/profiles.md) for how to add your own profiles without touching shared code.
+Tool choices, dotfile content, prompt theming, personal modules, your own username: these belong in your fork. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted here, but forks are actively encouraged. See [docs/profiles.md](docs/profiles.md) for the `extraFeatures`/`excludeFeatures`/`extraModulePaths` escape hatches, and [examples/private-config/](examples/private-config/) for a worked example of machine-specific customization living entirely outside this repo.
 
 ### PRs welcome for framework improvements
 
