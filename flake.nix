@@ -392,22 +392,49 @@
     # interpolated paths stay real absolute paths automatically -- no
     # separate exception list needed for that class of failure at all.
 
-    # shell-tools.nix's mkInit genuinely *executes* fzf/zoxide/direnv at build
-    # time (pkgs.runCommand "${cmd} > $out", capturing their static shell-init
-    # output), rather than merely referencing their path in rendered text.
-    # These three must stay real regardless of installedPackageNames
-    # membership, or that runCommand's builder itself becomes unrunnable
-    # (fake path, exit 127) -- the same failure class as the buildPackages
-    # cases above, but caused by this repo's own modules rather than Home
-    # Manager's.
-    executedAtBuildTime = ["fzf" "zoxide" "direnv"];
+    # Packages that must stay real regardless of installedPackageNames
+    # membership, for two distinct reasons, both found by actually trying to
+    # build the smoke test rather than assumed up front -- the failure mode
+    # is identical either way: a real derivation ends up depending on the
+    # fake "@name@" placeholder as one of its own build inputs, and the
+    # builder can't run at all (not "package missing" -- literally "build
+    # input @jq-1.7.1@ does not exist").
+    #
+    #  - fzf/zoxide/direnv: shell-tools.nix's mkInit genuinely *executes*
+    #    these at build time (pkgs.runCommand "${cmd} > $out", capturing
+    #    their static shell-init output), not merely referencing their path
+    #    in rendered text.
+    #  - Everything else here: also something this repo installs, but also
+    #    something Home Manager's own internal derivations (fish config
+    #    rendering, session-vars generation, gettext-based message
+    #    formatting) or nixpkgs' own darwin bootstrap (apple-sdk's build
+    #    needs real jq) depend on as a genuine build input, independent of
+    #    anything in this repo's own modules. Unlike programs.fish's
+    #    generateCompletions or manual.manpages above, there is no "just
+    #    disable it" option for either of these, so the fix is keeping the
+    #    tool real rather than scrubbing something nixpkgs itself needs.
+    mustStayReal = [
+      "fzf"
+      "zoxide"
+      "direnv"
+      "jq"
+      "coreutils"
+      "findutils"
+      "gnugrep"
+      "gnused"
+      "gettext"
+      "bash"
+      "fish"
+      "babelfish"
+      "lndir"
+    ];
     mkScrubbedPkgs = realPkgs: let
       overlay = _final: super:
         nixpkgs.lib.mapAttrs (
           name: value:
             if
               builtins.elem name installedPackageNames
-              && !(builtins.elem name executedAtBuildTime)
+              && !(builtins.elem name mustStayReal)
               && nixpkgs.lib.isDerivation value
             then scrubDerivation name value
             else value
@@ -485,6 +512,16 @@
           # entire premise of a scrub-based, build-free harness. Off here
           # only; the real profile still ships real completions.
           programs.fish.generateCompletions = false;
+          # manual.manpages.enable (on by default) builds an options.json and
+          # a full manpage from the whole option tree, using python3 as a
+          # real build input -- python3 is also something this repo installs
+          # (lang-python.nix), so mkScrubbedPkgs scrubs it, and the manual
+          # build then fails on a fake build input. Matches home-manager's
+          # own test suite (tests/default.nix), whose comment is the reason
+          # to disable this rather than add another scrub exception: "Avoid
+          # including documentation since this will cause unnecessary
+          # rebuilds of the tests."
+          manual.manpages.enable = false;
         }
       ];
 
