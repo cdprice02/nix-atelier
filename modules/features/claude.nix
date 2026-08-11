@@ -9,7 +9,7 @@ let
   # Home Manager runs activation with a hermetic PATH -- bash, coreutils,
   # diffutils, findutils, gettext, gnugrep, gnused, jq, ncurses and nix, and
   # nothing else. Neither /usr/bin nor any of env.nix's writable bin dirs are on
-  # it. Two consequences this helper exists to handle:
+  # it. Three consequences this file has to handle:
   #
   #   1. `curl` must be an absolute store path. A bare `curl` is not found even
   #      on macOS, where /usr/bin/curl exists, and activation dies with exit
@@ -19,9 +19,12 @@ let
   #      the install target (~/.local/bin) is never on that PATH -- the check
   #      would fail every time and reinstall on every single switch. Test the
   #      install path directly instead.
+  #   3. Fixing the invocation alone isn't enough: the downloaded script below
+  #      runs as a child process and inherits this same PATH, so it fails its
+  #      own dependency probe ("Either curl or wget is required but neither is
+  #      installed") unless the child is launched with a usable PATH too, not
+  #      just an absolute curl.
   #
-  # A failed download warns rather than aborting: a transient network problem
-  # should not take down an otherwise-complete `switch`.
   # PATH handed to the vendor installer. Nix-provided tools come first so the
   # download itself is deterministic; the system paths follow because these
   # scripts reasonably expect a normal environment. claude's installer needs
@@ -39,21 +42,6 @@ let
     ]
   }:/usr/bin:/bin";
 
-  # Home Manager runs activation with a hermetic PATH -- bash, coreutils,
-  # diffutils, findutils, gettext, gnugrep, gnused, jq, ncurses, nix, and
-  # nothing else. Neither /usr/bin nor env.nix's writable bin dirs are on it.
-  # Three separate consequences, each of which broke a real switch:
-  #
-  #   1. A bare `curl` is not found even on macOS, where /usr/bin/curl exists,
-  #      and activation dies with exit 127. Hence the store path below.
-  #   2. `command -v <binary>` cannot be the "already installed?" guard,
-  #      because the install target ~/.local/bin is never on that PATH -- the
-  #      check failed every time and reinstalled on every switch.
-  #   3. Fixing the invocation is not enough: the downloaded script runs as a
-  #      child and inherits the same PATH, so it fails its own dependency
-  #      probe ("Either curl or wget is required but neither is installed").
-  #      The child needs a usable PATH, not just an absolute curl.
-  #
   # pipefail matters here specifically: without it `curl ... | bash` reports
   # only bash's status, so a failed download piping nothing into a shell that
   # exits 0 would be indistinguishable from a successful install.

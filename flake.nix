@@ -619,29 +619,12 @@
       # ── checks ───────────────────────────────────────────────────────────────
       # The Nix-specific verification: nmt's assertion-level checks (rendered
       # content, GUI/headless, excludeFeatures/extraModulePaths composability,
-      # per-platform feature filtering), plus generated-docs drift. Uniform
-      # across every system in `allSystems` -- no per-platform gap, because
-      # nothing in here builds a real profile closure. That used to not be true:
-      # this output previously also carried `activation-*` (a real build of
-      # every Linux homeConfiguration, since darwin's closures live in
-      # `darwinConfigurations` and were never included here), which meant it
-      # could only meaningfully run on a Linux CI runner -- `nix flake check` on
-      # this machine skipped straight to `docs-drift` and nothing else. Removed
-      # once CI's own `build-linux` job started covering the same 4 x86_64-linux
-      # profiles under a better name (`build-linux (full)` vs. `activation-full`):
-      # keeping both was pure duplication, not extra coverage. `build-linux`/
-      # `build-darwin` remain the only things that build a real closure; this
-      # output is what makes that unnecessary for everyday `just check` and CI's
-      # per-PR gate, on every system, not just Linux.
-      #
-      # Also carries `formatting` (treefmt.nix's own check, see the
-      # treefmt-nix input's comment): this output used to deliberately exclude
-      # lints, because running four separate tools here duplicated four
-      # standalone `lint-*` CI jobs doing the same thing -- every PR ran
-      # alejandra/statix/deadnix/markdownlint twice. treefmt collapses all four
-      # into one invocation, so that duplication concern doesn't apply anymore;
-      # `check.yml`'s old `lint-*` jobs are gone, and `flake-check`'s existing
-      # per-system matrix is what actually runs `formatting` on every PR now.
+      # per-platform feature filtering), generated-docs drift, and formatting
+      # (treefmt.nix). Uniform across every system in `allSystems` -- no
+      # per-platform gap, because nothing in here builds a real profile
+      # closure; `build-linux`/`build-darwin` are the only things that do.
+      # This is what makes a real closure build unnecessary for everyday
+      # `just check` and CI's per-PR gate, on every system, not just Linux.
       checks = nixpkgs.lib.genAttrs allSystems (
         system:
         let
