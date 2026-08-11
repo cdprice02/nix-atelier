@@ -49,7 +49,7 @@ cp ~/.nix-atelier/user.nix.example ~/.nix-atelier/user.nix
 $EDITOR ~/.nix-atelier/user.nix
 ```
 
-`user.nix` is gitignored and never committed. Each machine has its own copy. Set `username`, `name`, `email`, and `github`. If you have a private overlay for any submodule (e.g. a private Claude config), add it to the `submodules` block:
+`user.nix` is gitignored and never committed. Each machine has its own copy. Set `username`, `name`, `email`, and `github`. **`username` must match your actual `$USER`**: home-manager refuses to activate otherwise. If you have a private overlay for any submodule (e.g. a private Claude config), add it to the `submodules` block:
 
 ```nix
 submodules = {
@@ -72,7 +72,7 @@ $EDITOR ~/.config/secrets/env
 This file is sourced by every shell session. It is gitignored and never committed.
 
 **Optional: sops-nix instead of the manual copy above.** Off unless
-`user.nix`'s `sopsFile` is set — there's no separate on/off flag. Only worth
+`user.nix`'s `sopsFile` is set; there's no separate on/off flag. Only worth
 it if you want secrets encrypted in git rather than living purely as an
 unmanaged local file. This repo's own `secrets/secrets.yaml.example` is not
 something you point `sopsFile` at directly: it's encrypted for a placeholder
@@ -82,12 +82,13 @@ shape. Your real file belongs in your own private config repo instead
 
 ```sh
 # 1. Generate your own age keypair
-age-keygen -o ~/.config/sops/age/keys.txt   # prints your public key
 mkdir -p ~/.config/sops/age && chmod 700 ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt   # prints your public key
 chmod 600 ~/.config/sops/age/keys.txt
 
 # 2. In your own private repo: create .sops.yaml with your public key as the
-#    recipient (see this repo's own .sops.yaml for the shape), then:
+#    recipient (see examples/private-config/.sops.yaml.example for the shape,
+#    or this repo's own .sops.yaml), then:
 sops secrets.yaml   # opens $EDITOR on a new file; save to encrypt
 ```
 
@@ -114,7 +115,7 @@ binaries don't inherit the system trust store automatically the way
 distro-packaged ones do. If your network sits behind a TLS-inspecting proxy,
 install the corporate root CA into that system bundle the normal distro way
 (e.g. `update-ca-certificates` after copying it into
-`/usr/local/share/ca-certificates/`) — nothing in this repo needs to know
+`/usr/local/share/ca-certificates/`), and nothing in this repo needs to know
 about it separately.
 
 ### 6. Set default shell to zsh (optional, one-time)

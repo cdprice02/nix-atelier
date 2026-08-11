@@ -93,14 +93,14 @@ config/                git submodules: claude, copilot, git/gitalias
 
 `tier` is `minimal` or `full`; there is no third axis. Machine-specific,
 non-public config (identity overrides, private SSH stubs) is not a tracked
-file in this repo — it's an absolute path in `user.nix`'s
+file in this repo: it's an absolute path in `user.nix`'s
 `extraModulePaths`, pointing at a private modules repo. `claude` and
 `copilot` (each owning one agent's installer/symlink) are ordinary features
 in `full`, gated on nothing.
 
 ## Adding a package
 
-1. Put it in the right `modules/features/*.nix` — or a new feature file, registered in `features.nix`, if it doesn't fit an existing one
+1. Put it in the right `modules/features/*.nix`, or a new feature file registered in `features.nix` if it doesn't fit an existing one
 2. **Add a `modules/tool-catalog.nix` entry** or eval fails
 3. `just eval-all` (fast), then `just check`
 4. `just docs` if the catalog changed
@@ -128,7 +128,7 @@ Optional keys: `profile`, `extraFeatures`, `excludeFeatures`, `extraModulePaths`
 prefix in flake.nix, not set directly. `github` feeds the noreply commit
 email `base.nix` builds (see `gitEmail` there); `email` itself stays
 required regardless, since `sshKey` still derives from it. sops-nix is
-opt-in per machine, triggered by `sopsFile` being set — no separate
+opt-in per machine, triggered by `sopsFile` being set, with no separate
 boolean; see `modules/secrets-sops.nix`.
 
 `submodules` wires a private remote per submodule: `base.nix`'s

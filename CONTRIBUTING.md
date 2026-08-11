@@ -41,8 +41,10 @@ Before opening a PR, run:
 just eval-all                 # fast: every profile's drvPath, no building
 just check                    # fuller: nix flake check --impure, formatting included
 nix fmt                       # or `just fmt`: auto-fixes (nixfmt-rfc-style, statix, deadnix, mdformat)
-pre-commit run --all-files    # trailing whitespace, secrets scan, treefmt
+just precommit                # trailing whitespace, secrets scan, treefmt
 ```
+
+`just eval-all` shells out to `jq`; have it installed (or run it inside `nix develop`, which provides it).
 
 `just --list` only shows the everyday recipes; a few CI-internal ones (profile listing, per-profile build) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux full`, `just --show _build-linux`.
 

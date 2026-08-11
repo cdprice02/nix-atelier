@@ -37,7 +37,7 @@ What's out of scope, by design rather than oversight:
 - `user.nix` and `~/.config/secrets/env` are gitignored and never committed;
   they hold real identity and secrets values on a machine but are not part
   of this repository's history. The same is true of any real, private
-  `secrets.yaml` a fork of this framework points `sopsFile` at — this repo's
+  `secrets.yaml` a fork of this framework points `sopsFile` at; this repo's
   own `secrets/secrets.yaml.example` and `.sops.yaml` are placeholder-only
   and carry no real ciphertext or real recipient.
 - `gitleaks` (`.github/workflows/security.yml`) already scans every push and
