@@ -148,17 +148,21 @@ nix run home-manager -- switch --flake ~/.nix-atelier#full --impure -b bk
 > file to `<name>.bk` instead of failing. `just switch` passes it for you on
 > every subsequent apply.
 
-After first apply, `home-manager` and `just` are on PATH:
+After first apply, `home-manager`, `just`, and `nh` are on PATH:
 
 ```sh
 # subsequent applies
-just switch full    # or: home-manager switch --flake ~/.nix-atelier#full --impure
-just switch minimal # or: home-manager switch --flake ~/.nix-atelier#minimal --impure
+just switch full    # or: nh home switch -c full . -- --impure
+just switch minimal # or: nh home switch -c minimal . -- --impure
 just switch         # uses user.nix's `profile` field if set, else "full"
                     # (the -aarch64 suffix is added automatically on ARM)
 
 just --list  # shows all available commands
 ```
+
+`just switch` applies via `nh`, which prints a package/closure diff before
+activating. Trailing args pass through: `just switch full -n` shows the diff
+without activating, `just switch full -a` pauses for confirmation first.
 
 ### 8. SSH key
 
@@ -268,10 +272,11 @@ sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
 ```
 
-After that first apply, `darwin-rebuild` is on PATH and every later apply is just:
+After that first apply, `darwin-rebuild` and `nh` are on PATH and every later apply is just:
 
 ```sh
 just switch          # detects OS and architecture, appends the right suffix
+                     # applies via nh, printing a diff before activating
 # or, explicitly:
 sudo darwin-rebuild switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
 ```

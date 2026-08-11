@@ -240,7 +240,7 @@ sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
 ```
 
-After the first apply, `just` and `home-manager` are on PATH and you can use the short form on either OS: `just switch` detects the platform itself and calls `home-manager switch` or `darwin-rebuild switch` accordingly:
+After the first apply, `just`, `home-manager`, and `nh` are on PATH and you can use the short form on either OS: `just switch` detects the platform itself and applies via `nh home switch` or `nh darwin switch` accordingly:
 
 ```sh
 just switch <profile>   # e.g. just switch minimal

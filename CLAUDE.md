@@ -62,7 +62,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
     troubleshooting.md         # Common first-boot failures
   examples/private-config/     # Worked example: identity override, private packages, secrets -- copy out, don't run in place
   .github/workflows/
-    check.yml                  # eval-all, flake-check, 4 lints, build matrices
+    check.yml                  # get-profiles, flake-check matrix (incl. formatting), eval-all, build matrices
     bootstrap-smoke-test.yml   # Documented bootstrap, from scratch, in a container
     security.yml               # gitleaks
     update-flake-lock.yml      # Weekly atomic `just update` PR
@@ -86,6 +86,13 @@ Prefer `just`: it is the sole interface and handles OS/arch dispatch.
 `-b bk` is required on a Linux first apply, or Home Manager refuses to overwrite
 the distro's `~/.bashrc`/`~/.profile`. NixOS has no entry here because there is
 no `nixosConfigurations` output to apply.
+
+`just switch` applies via `nh` (`nh darwin switch`/`nh home switch`), which
+prints a package/closure diff before activating and self-elevates internally
+when root is needed (no leading `sudo`). Non-interactive by default; trailing
+args pass through to nh, e.g. `just switch full -n` for a dry-run diff with
+no activation, or `just switch full -a` to pause for confirmation. The
+"explicit" rows above call the underlying tools directly, bypassing nh.
 
 ## Architecture
 

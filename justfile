@@ -24,9 +24,17 @@ default:
 # own config. An explicit name is still honoured -- it is just checked against
 # the machine first, and warned about rather than silently built for the wrong
 # platform, which is what a mismatched name used to do.
+#
+# Applies via `nh` rather than calling darwin-rebuild/home-manager directly:
+# nh prints a package/closure-size diff (build vs. running system) before
+# activating, so a switch that's about to swap a toolchain or drop a package
+# is visible up front instead of discovered after. Runs non-interactively by
+# default; trailing args pass straight through to nh, so `just switch full -a`
+# pauses for confirmation before activating, and `just switch full -n` shows
+# the diff without activating anything.
 [group('machine')]
 [doc('Apply configuration for this machine (auto-detects OS and CPU)')]
-switch PROFILE=default_profile:
+switch PROFILE=default_profile *NH_ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
     profile="{{ PROFILE }}"
@@ -63,7 +71,10 @@ switch PROFILE=default_profile:
                     profile="${profile}-darwin"
                 fi ;;
         esac
-        sudo darwin-rebuild switch --flake .#"$profile" --impure
+        # No leading `sudo`: nh self-elevates internally when activation needs
+        # root (respects $SUDO_ASKPASS), rather than requiring the whole build
+        # to run as root the way a bare `sudo darwin-rebuild switch` did.
+        nh darwin switch {{ NH_ARGS }} -H "$profile" . -- --impure
     else
         # homeConfigurations: <profile> is x86_64-linux, <profile>-aarch64 is
         # aarch64-linux. This half previously did no arch handling at all, so
@@ -82,7 +93,7 @@ switch PROFILE=default_profile:
                     profile="${profile}-aarch64"
                 fi ;;
         esac
-        home-manager switch --flake .#"$profile" --impure -b bk
+        nh home switch {{ NH_ARGS }} -c "$profile" -b bk . -- --impure
     fi
 
 # `just rebuild` is a pure alias for `switch`, kept only so muscle memory from

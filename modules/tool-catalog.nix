@@ -528,6 +528,13 @@
       link = "[github.com/casey/just](https://github.com/casey/just)";
     }
     {
+      key = "nh";
+      matches = [ "nh" ];
+      category = "Environment Management";
+      description = "Wraps darwin-rebuild/home-manager for `just switch`, printing a package/closure diff before activating.";
+      link = "[github.com/nix-community/nh](https://github.com/nix-community/nh)";
+    }
+    {
       key = "direnv";
       matches = [ "direnv" ];
       category = "Environment Management";

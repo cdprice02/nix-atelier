@@ -266,6 +266,9 @@ Manages the entire user environment declaratively via Nix. The tool that applies
 ### just
 Task runner / discoverability layer for this repo's own commands (`just --list` shows all of them). [github.com/casey/just](https://github.com/casey/just)
 
+### nh
+Wraps darwin-rebuild/home-manager for `just switch`, printing a package/closure diff before activating. [github.com/nix-community/nh](https://github.com/nix-community/nh)
+
 ### direnv
 Loads/unloads environment variables based on `.envrc` files when entering a directory. Integrates with Nix via `nix-direnv`. [direnv.net](https://direnv.net)
 
