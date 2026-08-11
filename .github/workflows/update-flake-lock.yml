@@ -22,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@v31.11.0
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
-      # `just update` (nix flake update, no args) — atomically re-resolves
+      # `just update` (nix flake update, no args): atomically re-resolves
       # every input together, the same command a human would run. Never a
       # single input: see justfile's own comment on why, and CLAUDE.md's
       # "Input pairing invariant" for what breaks if inputs desync.
@@ -35,22 +35,22 @@ jobs:
       # A PAT, not the default GITHUB_TOKEN. GitHub deliberately does not raise
       # workflow-triggering events for anything done with GITHUB_TOKEN ("events
       # triggered by the GITHUB_TOKEN will not create a new workflow run"), so
-      # a PR opened with it gets *zero* checks — no CI, and in particular no
+      # a PR opened with it gets *zero* checks: no CI, and in particular no
       # flake-check, which is the one thing that would catch a broken input
       # resolution. That silently made this workflow's whole "full CI gates
       # this before merge" premise false.
       #
       # Falls back to GITHUB_TOKEN when the secret is absent, so the workflow
-      # still functions in a fork that hasn't set one up — it just produces a
+      # still functions in a fork that hasn't set one up; it just produces a
       # PR without checks, which the body below states outright rather than
       # claiming coverage it doesn't have.
-      - uses: peter-evans/create-pull-request@v8
+      - uses: peter-evans/create-pull-request@v8.1.1
         with:
           token: ${{ secrets.FLAKE_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: "chore: update flake.lock"
           title: "chore: update flake.lock"
           body: |
-            Automated weekly `nix flake update` — re-resolves all inputs together.
+            Automated weekly `nix flake update`, re-resolving all inputs together.
 
             If CI checks appear on this PR, they are the same gate as any other
             change, including `flake-check`'s release-pairing assert; a failure
@@ -60,7 +60,7 @@ jobs:
             **If no checks appear at all**, this repo has no `FLAKE_UPDATE_TOKEN`
             secret and the PR was opened with the default `GITHUB_TOKEN`, which
             cannot trigger workflows. Do not merge on the assumption it was
-            tested — push any commit to this branch, or close and reopen the PR,
+            tested; push any commit to this branch, or close and reopen the PR,
             to make CI run first.
           branch: update-flake-lock
           delete-branch: true

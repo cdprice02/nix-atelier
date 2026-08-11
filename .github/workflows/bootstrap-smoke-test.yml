@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   # Proves the literal command sequence docs/bootstrap.md's WSL2/Linux
-  # section tells a new user to type still works, starting from nothing —
+  # section tells a new user to type still works, starting from nothing:
   # different from check.yml's build-linux, which already proves every
   # profile builds, but does so via cachix/install-nix-action (not the
   # curl-piped installer the docs use) on a fully-provisioned ubuntu-latest
@@ -59,7 +59,7 @@ jobs:
   #
   # No macOS equivalent: GitHub Actions has no bare/ephemeral macOS
   # container the way ubuntu:24.04 is for Linux (macos-14 is a persistent
-  # pre-provisioned VM) — check.yml's build-darwin already covers macOS
+  # pre-provisioned VM). check.yml's build-darwin already covers macOS
   # build correctness, which is the part that *is* testable that way.
   bootstrap-smoke-test:
     runs-on: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
       image: ubuntu:24.04
     steps:
       # actions/checkout needs real git for submodule support (its
-      # tarball-download fallback doesn't fetch submodules) — bare
+      # tarball-download fallback doesn't fetch submodules), and bare
       # ubuntu:24.04 has neither git nor curl, so this has to run first.
       # xz-utils is for the Nix installer, not checkout: it ships its binary
       # tarball as .xz and aborts with "you do not have 'xz' installed" before
@@ -80,7 +80,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             git curl ca-certificates sudo xz-utils
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
 
@@ -112,11 +112,10 @@ jobs:
 
       # Mirrors docs/bootstrap.md's WSL2 steps 1, 3 (via
       # NIX_CONFIG_USER_FILE instead of a literal ~/.nix-atelier clone path,
-      # since the repo's already checked out at $GITHUB_WORKSPACE — see
-      # flake.nix's NIX_CONFIG_USER_FILE override), and 7. Steps 2
-      # (clone — actions/checkout stands in, the documented git@github.com
-      # SSH remote can't authenticate in CI without a deploy key), 4-6,
-      # 8-9 aren't exercised: they're either not relevant to a
+      # since the repo's already checked out at $GITHUB_WORKSPACE: see
+      # flake.nix's NIX_CONFIG_USER_FILE override), and 7. Step 2 (clone) is
+      # covered by actions/checkout above rather than run here directly.
+      # Steps 4-6, 8-9 aren't exercised: they're either not relevant to a
       # minimal bootstrap (secrets, corporate CA, default shell)
       # or don't affect whether the bootstrap sequence itself still works
       # (SSH key, pre-commit).
@@ -131,7 +130,7 @@ jobs:
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           cp user.nix.example user.nix
           # docs/bootstrap.md step 3 is "copy the example, then fill in
-          # username/name/email" — copying alone skips the second half, and
+          # username/name/email": copying alone skips the second half, and
           # home-manager refuses to activate when home.username doesn't match
           # $USER ("USER is ciuser, expected yourusername"). Substituting the
           # real account name performs the documented edit, so the sequence

@@ -1,13 +1,22 @@
 # github-actions only, not the nix ecosystem: Dependabot's nix support opens
 # one PR per outdated flake input, with no concept of this repo's
-# release-pairing invariant (nixpkgs and home-manager must move together —
+# release-pairing invariant (nixpkgs and home-manager must move together;
 # see CLAUDE.md's "Input pairing invariant", enforced by checkReleasePair in
 # flake.nix). flake.lock updates go through the atomic
 # update-flake-lock.yml workflow instead (calls `just update`, same as a
-# human would run — re-resolves every input together in one pass).
+# human would run, which re-resolves every input together in one pass).
+#
+# Actions are pinned to full release versions (not major-tag floats), so a
+# routine patch bump is a real, mergeable diff Dependabot can propose.
+# Grouped into one PR a month rather than one per action per week, since a
+# stream of individual patch-bump PRs is more noise than signal here.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      actions:
+        patterns:
+          - "*"
