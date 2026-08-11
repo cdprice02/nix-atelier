@@ -67,7 +67,13 @@ in
       pkgs.home-manager
 
       # just: task runner / discoverability layer (`just --list` shows all commands)
+      # nh: what `just switch` calls (see justfile) instead of raw
+      # darwin-rebuild/home-manager -- needs to be on every profile's PATH
+      # before the first nh-based switch runs, same bootstrap requirement as
+      # just itself, so it lives here rather than in a feature that could be
+      # excluded.
       just
+      nh
 
       # base is what any machine wants; shell-tools is the interactive
       # comfort layer. These have genuine bootstrap/scripting/ops value

@@ -87,6 +87,13 @@ Prefer `just`: it is the sole interface and handles OS/arch dispatch.
 the distro's `~/.bashrc`/`~/.profile`. NixOS has no entry here because there is
 no `nixosConfigurations` output to apply.
 
+`just switch` applies via `nh` (`nh darwin switch`/`nh home switch`), which
+prints a package/closure diff before activating and self-elevates internally
+when root is needed (no leading `sudo`). Non-interactive by default; trailing
+args pass through to nh, e.g. `just switch full -n` for a dry-run diff with
+no activation, or `just switch full -a` to pause for confirmation. The
+"explicit" rows above call the underlying tools directly, bypassing nh.
+
 ## Architecture
 
 ### `flake.nix`
