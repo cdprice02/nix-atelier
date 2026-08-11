@@ -28,6 +28,29 @@
   };
   programs.statix.enable = true;
   programs.deadnix.enable = true;
+  # Scoped to .github/workflows/*.yml by the module's own default includes
+  # (also .gitea/.forgejo, neither present here). Nothing else in the repo
+  # looks like a workflow file, so no override needed.
+  programs.actionlint.enable = true;
+  # Default includes (*.yaml, *.yml) cover every tracked YAML in the repo,
+  # not just workflows: the ISSUE_TEMPLATE forms, dependabot.yml,
+  # .pre-commit-config.yaml, .sops.yaml. All plain, ordinary YAML with
+  # nothing workflow-specific about it, so there's no reason to scope this
+  # one down to .github/workflows the way actionlint necessarily is.
+  programs.yamllint = {
+    enable = true;
+    # Checked directly: yamllint's stock "default" ruleset flags 80-char
+    # line-length as a hard error across every workflow file (this repo's
+    # prose comments routinely run longer, same as .nix and .md), plus
+    # "truthy value" on every workflow's own `on:` key, a GitHub Actions
+    # idiom, not a mistake. Both are real friction, not a real bug. yamllint
+    # ships "relaxed" as its own answer to exactly this: keeps genuine
+    # correctness rules (duplicate keys, trailing whitespace, missing final
+    # newline) at error level, downgrades style-only rules to non-blocking
+    # warnings, and disables document-start/truthy/comments-indentation
+    # outright rather than a bespoke ruleset assembled by hand here.
+    settings.extends = "relaxed";
+  };
   # markdownlint has no treefmt-nix equivalent (checked: its markdown
   # options are mdformat/prettier/rumdl/remarkjs). mdformat is treefmt-nix's
   # own canonical markdown formatter and needed no extra packaging, unlike
