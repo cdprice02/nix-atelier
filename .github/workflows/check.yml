@@ -15,12 +15,11 @@ permissions:
 
 jobs:
   # ── Evaluate the flake and output profile name lists for downstream matrices ──
-  # Runs on every PR too now, not just push/dispatch: build-linux-x86_64 below
-  # needs its list there as well. build-linux-aarch64/build-darwin still only
-  # consume it at the push/dispatch gate, but there's no value in a third
-  # `if:` variant just to skip 69s of eval work those jobs weren't going to
-  # use anyway.
+  # Feeds build-linux-x86_64/build-linux-aarch64/build-darwin below, all three
+  # of which only run at the push/dispatch gate, so this stays gated the same
+  # way rather than paying its eval cost on every PR for no consumer there.
   get-profiles:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -28,11 +27,11 @@ jobs:
       linux-aarch64: ${{ steps.list.outputs.linux-aarch64 }}
       darwin:        ${{ steps.list.outputs.darwin }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
+      - uses: cachix/install-nix-action@v31.11.0
+      - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-eval-
@@ -94,21 +93,21 @@ jobs:
             needsQemu: false
             extraPlatforms: "x86_64-darwin"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
       - if: matrix.needsQemu
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@v4.2.0
         with:
           platforms: arm64
       - if: matrix.extraPlatforms != ''
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@v31.11.0
         with:
           extra_nix_config: |
             extra-platforms = ${{ matrix.extraPlatforms }}
       - if: matrix.extraPlatforms == ''
-        uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
+        uses: cachix/install-nix-action@v31.11.0
+      - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-checks-${{ matrix.system }}-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-checks-${{ matrix.system }}-
@@ -123,7 +122,7 @@ jobs:
         run: nix eval --file user.nix.example
 
   # ── Fast: eval every profile's derivation path without building ──────────────
-  # Runs on every push/PR — catches type errors, missing options, and
+  # Runs on every push/PR: catches type errors, missing options, and
   # assertion failures in seconds. Not redundant with the nmt-based
   # flake-check matrix above: nmt reconstructs a module list by calling
   # mkProfile directly, never through the real mkHomeConfig/mkDarwinConfig
@@ -138,11 +137,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
+      - uses: cachix/install-nix-action@v31.11.0
+      - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-eval-
@@ -151,12 +150,12 @@ jobs:
       - run: nix shell nixpkgs#just -c just eval-all
 
   # ── Full activation-package build, native x86_64 Linux profiles ──────────────
-  # Split from the aarch64 half below specifically so this half can run on
-  # every PR: these 4 builds measured 116-159s each on a recent main run --
-  # cheap, direct proof the common case actually builds, not just evaluates
-  # (which eval-all and flake-check's nmt checks already cover more cheaply
-  # but without a real build).
+  # Gated to push-to-main + manual dispatch, same as build-linux-aarch64 and
+  # build-darwin below: none of the three is a required check, and eval-all
+  # plus flake-check's nmt checks already give every PR real coverage without
+  # a full build. Real build coverage stays at the merge gate.
   build-linux-x86_64:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -165,11 +164,11 @@ jobs:
       matrix:
         profile: ${{ fromJSON(needs.get-profiles.outputs.linux-x86_64) }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
+      - uses: cachix/install-nix-action@v31.11.0
+      - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-build-
@@ -179,16 +178,13 @@ jobs:
 
   # ── Full activation-package build, QEMU-emulated aarch64 Linux profiles ──────
   # Gated to push-to-main + manual dispatch, not every PR: this is where the
-  # real wall-clock cost in this whole workflow lives -- full-gui-aarch64
-  # alone measured 17.4 min under emulation on a recent main run. This repo
-  # has no tagged-release process to gate on (personal config, not a
-  # versioned library), so "important gate" = merge to main (the point you'd
-  # actually pull and apply this config for real). Every PR still gets full
-  # eval coverage (eval-all), assertion-level content coverage for this exact
-  # arch (flake-check's aarch64-linux nmt entry), and a real x86_64 build
-  # (build-linux-x86_64 above) -- this job is specifically the aarch64-under-
-  # QEMU backstop, not the only thing standing between a PR and a broken
-  # build.
+  # real wall-clock cost in this whole workflow lives, with full-gui-aarch64
+  # alone measuring 17.4 min under emulation on a recent main run. Real build
+  # coverage stays at the merge gate; every PR still gets full eval coverage
+  # (eval-all) and assertion-level content coverage for this exact arch
+  # (flake-check's aarch64-linux nmt entry), so this job is specifically the
+  # aarch64-under-QEMU backstop, not the only thing standing between a PR and
+  # a broken build.
   build-linux-aarch64:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
@@ -199,17 +195,17 @@ jobs:
       matrix:
         profile: ${{ fromJSON(needs.get-profiles.outputs.linux-aarch64) }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-qemu-action@v4.2.0
         with:
           platforms: arm64
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@v31.11.0
         with:
           extra_nix_config: |
             extra-platforms = aarch64-linux
-      - uses: nix-community/cache-nix-action@v7
+      - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-build-
@@ -219,13 +215,13 @@ jobs:
 
   # ── Full system build for every Darwin profile ────────────────────────────────
   # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built
-  # via Rosetta 2 using extra-platforms = x86_64-darwin — same pattern as QEMU
+  # via Rosetta 2 using extra-platforms = x86_64-darwin, same pattern as QEMU
   # for aarch64-linux. macos-13 (Intel) runners are deprecated and unavailable.
   # Gated to push-to-main + manual dispatch, same reasoning as
   # build-linux-aarch64 above: real build coverage stays at the merge gate,
   # while flake-check's darwin nmt entries (both arches) give every PR
-  # assertion-level coverage of the two darwin systems -- including, for the
-  # first time, modules/lib/hm-compat.nix's x86_64-darwin/25.05-pin shim.
+  # assertion-level coverage of the two darwin systems, including
+  # modules/lib/hm-compat.nix's x86_64-darwin/25.05-pin shim.
   build-darwin:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
@@ -236,14 +232,14 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.get-profiles.outputs.darwin) }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@v31.11.0
         with:
           extra_nix_config: |
             extra-platforms = x86_64-darwin
-      - uses: nix-community/cache-nix-action@v7
+      - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-macos-build-
