@@ -9,8 +9,8 @@
 
 ## Checklist
 
-- [ ] `just check` passes (runs `just lint-all` then `nix flake check --impure`)
-- [ ] `pre-commit run --all-files` clean (trailing whitespace, secrets scan, alejandra, markdownlint)
+- [ ] `just check` passes (runs `nix flake check --impure`, including the treefmt formatting check)
+- [ ] `pre-commit run --all-files` clean (trailing whitespace, secrets scan, treefmt)
 - [ ] This is a framework improvement, not a personal preference (see [CONTRIBUTING.md](../CONTRIBUTING.md))
 - [ ] Docs updated if the change affects bootstrap, profile selection, or module composition
 
