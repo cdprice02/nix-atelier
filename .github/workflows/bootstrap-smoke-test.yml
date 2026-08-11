@@ -30,6 +30,10 @@ concurrency:
 
 permissions:
   contents: read
+  # cache-nix-action's purge (#112) needs this scope to delete old cache
+  # generations via the Actions API. See check.yml's identical block for the
+  # same reasoning: fork PRs get a read-only token regardless.
+  actions: write
 
 jobs:
   # Proves the literal command sequence docs/bootstrap.md's WSL2/Linux
@@ -100,6 +104,15 @@ jobs:
           primary-key: nix-bootstrap-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-bootstrap-
           gc-max-store-size-linux: 2147483648
+          # This is the cache #112 found fully evicted: small and refreshed
+          # less often than the build/eval caches, so it's first collateral
+          # damage from their bloat under GitHub's single global 10 GB LRU,
+          # not a problem of its own. Pruned the same way regardless, so it
+          # doesn't start accumulating generations as this job's usage grows.
+          purge: true
+          purge-prefixes: nix-bootstrap-
+          purge-created: 0
+          purge-primary-key: never
 
       # Nix's single-user installer (the one docs/bootstrap.md's WSL2
       # section uses, `--no-daemon`) refuses to run as root; GH Actions
