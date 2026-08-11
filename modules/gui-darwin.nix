@@ -6,13 +6,11 @@
 }:
 let
   compat = import ./lib/hm-compat.nix { inherit lib options; };
-  guiBase = import ./lib/gui-base.nix;
+  guiBase = import ./lib/gui-base.nix { inherit pkgs; };
 in
 {
   home = {
-    packages = with pkgs; [
-      obsidian
-    ];
+    inherit (guiBase) packages;
 
     # Home Manager installs GUI apps (obsidian above, plus alacritty/vscode
     # below via their own programs.* modules) as symlinks under
@@ -84,22 +82,20 @@ in
   programs = {
     alacritty = {
       enable = true;
-      # Home Manager resolves this against pkgs.alacritty-theme (hardcoded
-      # in the module, not itself configurable) and imports it automatically.
-      theme = "rose_pine";
+      inherit (guiBase.alacritty) theme;
       settings = {
         window = {
           opacity = guiBase.alacritty.windowOpacity;
           decorations = "buttonless";
           option_as_alt = "Both";
         };
-        inherit (guiBase.alacritty) font;
+        inherit (guiBase.alacritty) font colors;
         general.import = [
           "~/.config/alacritty/keybindings.toml"
         ];
       };
     };
-    vscode.enable = true;
+    vscode.enable = guiBase.vscodeEnable;
     git = compat.gitConfig (
       guiBase.git
       // {
