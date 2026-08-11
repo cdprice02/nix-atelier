@@ -12,6 +12,12 @@ concurrency:
 
 permissions:
   contents: read
+  # cache-nix-action's purge (#112, every job below) deletes old cache
+  # generations via the Actions API, which needs this scope explicitly --
+  # confirmed against the action's own README, not assumed. A fork PR's
+  # GITHUB_TOKEN is capped to read-only by GitHub regardless of what a
+  # workflow requests, so this only takes effect for same-repo runs.
+  actions: write
 
 jobs:
   # ── Evaluate the flake and output profile name lists for downstream matrices ──
@@ -36,6 +42,25 @@ jobs:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-eval-
           gc-max-store-size-linux: 2147483648
+          # Keeps only the newest generation of this prefix: without this,
+          # every commit's hash-keyed cache accumulates until GitHub's global
+          # 10 GB LRU evicts something, and what it evicts isn't necessarily
+          # this cache -- see #112. purge-primary-key: never protects the
+          # generation this same job just saved from its own purge pass.
+          #
+          # This prefix is still shared with eval-all's identical block below
+          # (unlike nix-linux-build-*, which got split by architecture in the
+          # same pass -- see build-linux-x86_64's comment): both jobs run
+          # concurrently with no needs: between them, so one job's purge can
+          # in principle beat the other's restore to the punch and cost that
+          # run a cache miss it would otherwise have had. Accepted rather
+          # than split: unlike the build pair, both jobs run the same
+          # architecture and do pure `nix eval`, so there's no wrong-content
+          # risk, only an occasional slower eval-all run.
+          purge: true
+          purge-prefixes: nix-linux-eval-
+          purge-created: 0
+          purge-primary-key: never
       - id: list
         run: |
           mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
@@ -118,6 +143,12 @@ jobs:
           restore-prefixes-first-match: nix-checks-${{ matrix.system }}-
           gc-max-store-size-linux: 2147483648
           gc-max-store-size-macos: 2147483648
+          # Per-system prefix, so this only prunes this matrix entry's own
+          # old generations, never another system's (#112).
+          purge: true
+          purge-prefixes: nix-checks-${{ matrix.system }}-
+          purge-created: 0
+          purge-primary-key: never
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       # `flake-check` runs `checks.formatting` (treefmt.nix: nixfmt-rfc-style +
       # statix + deadnix + mdformat) as part of `nix flake check`, once per
@@ -168,6 +199,12 @@ jobs:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-eval-
           gc-max-store-size-linux: 2147483648
+          # See get-profiles' identical block above: same prefix, same
+          # generation-pruning reasoning (#112).
+          purge: true
+          purge-prefixes: nix-linux-eval-
+          purge-created: 0
+          purge-primary-key: never
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just eval-all
 
@@ -192,9 +229,25 @@ jobs:
       - uses: cachix/install-nix-action@v31.11.0
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
-          primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-prefixes-first-match: nix-linux-build-
+          # Arch-scoped, not shared with build-linux-aarch64 below: this key
+          # used to be identical across both jobs (nix-linux-build-<hash>,
+          # no arch in it), which isn't the same kind of sharing #74 chose
+          # for eval/build caches -- that was about profiles within one
+          # target system overlapping heavily in Nix's content-addressed
+          # store, not two different target systems. Because these two jobs
+          # ran in parallel under the same key, whichever job's save landed
+          # first silently won it, so the other job's own architecture never
+          # actually persisted; adding purge (#112) on the old shared key
+          # would also have raced restore against a sibling job's purge for
+          # no good reason once that was noticed. Splitting by arch removes
+          # both problems: each job now owns its key outright.
+          primary-key: nix-linux-build-x86_64-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-linux-build-x86_64-
           gc-max-store-size-linux: 4294967296
+          purge: true
+          purge-prefixes: nix-linux-build-x86_64-
+          purge-created: 0
+          purge-primary-key: never
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
@@ -229,9 +282,15 @@ jobs:
             extra-platforms = aarch64-linux
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
-          primary-key: nix-linux-build-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-prefixes-first-match: nix-linux-build-
+          # Arch-scoped, mirroring build-linux-x86_64 above: see that job's
+          # comment for why this no longer shares a key with it (#112).
+          primary-key: nix-linux-build-aarch64-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-linux-build-aarch64-
           gc-max-store-size-linux: 4294967296
+          purge: true
+          purge-prefixes: nix-linux-build-aarch64-
+          purge-created: 0
+          purge-primary-key: never
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
@@ -266,6 +325,13 @@ jobs:
           primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-macos-build-
           gc-max-store-size-macos: 4294967296
+          # The single biggest contributor to the quota pressure in #112:
+          # two full generations of this cache alone measured ~4.7 GB before
+          # this. Same generation-pruning reasoning as the other caches here.
+          purge: true
+          purge-prefixes: nix-macos-build-
+          purge-created: 0
+          purge-primary-key: never
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-darwin ${{ matrix.config }}
 
