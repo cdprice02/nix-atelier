@@ -6,32 +6,25 @@
 }:
 let
   compat = import ./lib/hm-compat.nix { inherit lib options; };
-  guiBase = import ./lib/gui-base.nix;
+  guiBase = import ./lib/gui-base.nix { inherit pkgs; };
 in
 {
-  home.packages = with pkgs; [
-    obsidian
-  ];
+  home.packages = guiBase.packages;
 
   programs = {
     alacritty = {
       enable = true;
+      inherit (guiBase.alacritty) theme;
       settings = {
         window = {
           opacity = guiBase.alacritty.windowOpacity;
           decorations = "none";
         };
-        inherit (guiBase.alacritty) font;
-        colors = {
-          primary = {
-            background = "#1e1e1e";
-            foreground = "#d4d4d4";
-          };
-        };
+        inherit (guiBase.alacritty) font colors;
       };
     };
 
-    vscode.enable = true;
+    vscode.enable = guiBase.vscodeEnable;
 
     # credential.helper for Linux GUI machines
     git = compat.gitConfig (
