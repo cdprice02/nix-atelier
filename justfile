@@ -157,13 +157,10 @@ sync-work:
 # explicitly per matrix entry instead (see .github/workflows/check.yml),
 # using QEMU/Rosetta the same way build-linux/build-darwin do.
 #
-# This is now the whole local validation story, formatting included: `checks`
-# carries `formatting` (treefmt: nixfmt-rfc-style + statix + deadnix +
-# mdformat, see treefmt.nix), so a green `just check` already covers it --
-# there's no separate `lint-all` recipe anymore (there used to be, back when
-# lints lived outside `checks` specifically to avoid running four separate
-# tools twice per PR; treefmt collapsed that into one tool, so the reason for
-# keeping them apart went away with it).
+# The whole local validation story, formatting included: `checks` carries
+# `formatting` (treefmt: nixfmt-rfc-style + statix + deadnix + actionlint +
+# yamllint + mdformat, see treefmt.nix), so a green `just check` already
+# covers it -- no separate lint recipe needed.
 [group('check')]
 [doc('Full local validation (builds profiles for this system)')]
 check: flake-check

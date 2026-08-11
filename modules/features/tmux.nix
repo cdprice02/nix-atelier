@@ -1,8 +1,7 @@
 # Sole owner of tmux configuration: no other feature may set a tmux option.
-# Previously two features (dev-tools.nix, ops.nix) each shipped their own
-# tmux config with different historyLimit values, which is a hard eval
-# error the instant both are in the same profile -- an int option can't
-# have two definitions at once. One feature, one value, fixes that
+# Two features setting conflicting values (e.g. different historyLimit) is a
+# hard eval error the instant both are in the same profile -- an int option
+# can't have two definitions at once. One feature, one value, enforces that
 # structurally rather than by convention.
 { pkgs, ... }:
 {
