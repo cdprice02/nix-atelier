@@ -30,9 +30,11 @@
   lib,
   user,
   ...
-}: let
-  secretNames = user.secrets or [];
-in {
+}:
+let
+  secretNames = user.secrets or [ ];
+in
+{
   sops = {
     age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
 
@@ -59,7 +61,7 @@ in {
         extraModulePaths modules) -- see docs/bootstrap.md.
       '');
 
-    secrets = lib.genAttrs secretNames (_: {});
+    secrets = lib.genAttrs secretNames (_: { });
 
     # Renders straight to the same path envLocalInit (base.nix) already
     # sources on every shell: nothing downstream needs to change to pick
@@ -67,12 +69,9 @@ in {
     templates."secrets-env" = {
       path = "${config.home.homeDirectory}/.config/secrets/env";
       mode = "0400";
-      content =
-        lib.concatMapStrings
-        (name: ''
-          export ${name}="${config.sops.placeholder.${name}}"
-        '')
-        secretNames;
+      content = lib.concatMapStrings (name: ''
+        export ${name}="${config.sops.placeholder.${name}}"
+      '') secretNames;
     };
   };
 }

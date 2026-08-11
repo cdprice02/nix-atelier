@@ -3,10 +3,12 @@
   lib,
   options,
   ...
-}: let
-  compat = import ./lib/hm-compat.nix {inherit lib options;};
+}:
+let
+  compat = import ./lib/hm-compat.nix { inherit lib options; };
   guiBase = import ./lib/gui-base.nix;
-in {
+in
+{
   home = {
     packages = with pkgs; [
       obsidian
@@ -31,7 +33,7 @@ in {
     # Wipes and regenerates the alias directory every switch rather than
     # diffing individual files: cheap (a handful of tiny alias files), and
     # it means a removed app's stale alias cannot linger.
-    activation.spotlightAliases = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    activation.spotlightAliases = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       srcDir="$HOME/Applications/Home Manager Apps"
       destDir="$HOME/Applications/Home Manager Trampolines"
       if [ -d "$srcDir" ]; then
@@ -98,9 +100,11 @@ in {
       };
     };
     vscode.enable = true;
-    git = compat.gitConfig (guiBase.git
+    git = compat.gitConfig (
+      guiBase.git
       // {
         credential.helper = lib.mkForce "osxkeychain";
-      });
+      }
+    );
   };
 }

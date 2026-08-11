@@ -46,8 +46,7 @@ extraModulePaths = ["/absolute/path/to/your-private-repo/machines/workstation.ni
 ```
 
 `extraModulePaths` takes a list — a machine can layer in more than one file
-if it genuinely needs to. Requires `--impure`, which every `home-manager
-switch` / `darwin-rebuild switch` already needs for `user.nix` itself.
+if it genuinely needs to. Requires `--impure`, which every `home-manager switch` / `darwin-rebuild switch` already needs for `user.nix` itself.
 
 ## Secrets
 

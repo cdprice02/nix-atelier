@@ -20,7 +20,7 @@ Improvements to the *framework itself* benefit every adopter and are welcome:
 
 If you're unsure whether something is framework or personal preference, open an issue first.
 
----
+______________________________________________________________________
 
 ## Adapting for your own setup
 
@@ -31,7 +31,7 @@ If you're unsure whether something is framework or personal preference, open an 
 
 See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checklist and [docs/profiles.md](docs/profiles.md) for the tier/gui/arch axes and the `extraFeatures`/`excludeFeatures`/`extraModulePaths` customization hooks.
 
----
+______________________________________________________________________
 
 ## Local validation
 
@@ -39,20 +39,20 @@ Before opening a PR, run:
 
 ```sh
 just eval-all                 # fast: every profile's drvPath, no building
-just check                    # fuller: nix flake check --impure
-just lint-all                 # alejandra, statix, deadnix, markdownlint
-pre-commit run --all-files    # trailing whitespace, secrets scan (+ the two lints above)
+just check                    # fuller: nix flake check --impure, formatting included
+nix fmt                       # or `just fmt`: auto-fixes (nixfmt-rfc-style, statix, deadnix, mdformat)
+pre-commit run --all-files    # trailing whitespace, secrets scan, treefmt
 ```
 
-`just --list` only shows the everyday recipes; a few CI-internal ones (profile listing, per-profile build, individual lints) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux full`, `just --show _build-linux`.
+`just --list` only shows the everyday recipes; a few CI-internal ones (profile listing, per-profile build) are prefixed `_` and hidden from the default list by design, but still runnable and inspectable: `just _build-linux full`, `just --show _build-linux`.
 
-CI runs these same recipes (see `.github/workflows/check.yml`) plus full builds for every profile, but full builds only run on push to `main` or manual dispatch, not on every PR (see `check.yml`'s comments for why). So a green `just eval-all` + `just lint-all` locally is close to, but not identical to, full CI coverage.
+CI runs these same recipes (see `.github/workflows/check.yml`) plus full builds for every profile, but full builds only run on push to `main` or manual dispatch, not on every PR (see `check.yml`'s comments for why). So a green `just eval-all` + `just check` locally is close to, but not identical to, full CI coverage.
 
 ## Verifying large refactors
 
 For a change that's supposed to be behavior-preserving (a mechanism reorganization, not a functional change), `nix eval`'s output is a stronger check than "does it still build": capture every profile's `drvPath` before the change (`just eval-all` prints them), make the change, capture again, and diff. Any profile whose `drvPath` changed needs an explanation: either it's a real, intended behavior change, or the refactor wasn't actually behavior-preserving. This isn't a blanket CI gate (ordinary commits are *supposed* to change `drvPath`s), just a manual technique worth reaching for on big refactors specifically. A disposable `git worktree add <tmp-dir> <pre-change-commit>` is safer than `git stash` for getting a clean baseline when there's a lot of already-pending uncommitted work.
 
----
+______________________________________________________________________
 
 ## PR standards
 
@@ -61,14 +61,14 @@ For a change that's supposed to be behavior-preserving (a mechanism reorganizati
 - All CI checks green before requesting review
 - Update docs if the change affects bootstrap, profile selection, or module composition
 
----
+______________________________________________________________________
 
 ## Repository secrets
 
 Only one, and only for the weekly `flake.lock` automation:
 
-| Secret | Why |
-|--------|-----|
+| Secret               | Why                                                                                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `FLAKE_UPDATE_TOKEN` | Fine-grained PAT, this repo only, **Contents: read/write** + **Pull requests: read/write**. Used by `.github/workflows/update-flake-lock.yml`. |
 
 GitHub does not raise workflow-triggering events for actions taken with the

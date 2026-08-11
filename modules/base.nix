@@ -5,14 +5,15 @@
   lib,
   user,
   ...
-}: let
+}:
+let
   homeDir = config.home.homeDirectory;
 
   # Emits whichever option spelling the evaluating home-manager has: the
   # rolling input (Linux/WSL2 + aarch64-darwin) tracks HM master, which has
   # renamed several of the options set below; x86_64-darwin is pinned to HM
   # 25.05, which predates those renames. See modules/lib/hm-compat.nix.
-  compat = import ./lib/hm-compat.nix {inherit lib options;};
+  compat = import ./lib/hm-compat.nix { inherit lib options; };
 
   # Both paths are tried: single-user Nix (common on WSL2/macOS standalone) sources
   # ~/.nix-profile/...; multi-user Nix daemon sources /nix/var/nix/profiles/...
@@ -42,20 +43,20 @@
   # the nmt test fixture). user.email itself stays required regardless: it's
   # still where sshKey is derived from (see flake.nix).
   gitEmail =
-    if !(user ? github)
-    then user.email
-    else if user.github ? id
-    then "${toString user.github.id}+${user.github.user}@users.noreply.github.com"
-    else "${user.github.user}@users.noreply.github.com";
-in {
+    if !(user ? github) then
+      user.email
+    else if user.github ? id then
+      "${toString user.github.id}+${user.github.user}@users.noreply.github.com"
+    else
+      "${user.github.user}@users.noreply.github.com";
+in
+{
   home = {
     inherit (user) username;
     # mkForce overrides HM's default homeDirectory derivation, which is unreliable
     # on WSL2 and non-standard Linux setups where /home may not match expectations.
     homeDirectory = lib.mkForce (
-      if pkgs.stdenv.isDarwin
-      then "/Users/${user.username}"
-      else "/home/${user.username}"
+      if pkgs.stdenv.isDarwin then "/Users/${user.username}" else "/home/${user.username}"
     );
 
     # Runtime-tool PATH and writable install prefixes (cargo/npm/uv/bun/pixi)
@@ -100,7 +101,7 @@ in {
 
     activation = {
       # entryAfter writeBoundary: ~/.ssh must exist (written by HM) before ssh-keygen runs.
-      sshKey = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      sshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ ! -f "$HOME/.ssh/${user.sshKey}" ]; then
           $DRY_RUN_CMD mkdir -p "$HOME/.ssh"
           $DRY_RUN_CMD chmod 700 "$HOME/.ssh"
@@ -117,9 +118,9 @@ in {
       # Idempotent: skips if the remote already exists.
       # entryAfter writeBoundary: submodule dirs must be cloned before we can add remotes.
       # user.submodules = { claude = "git@github.com:you/private-claude.git"; };
-      submoduleOverrides = lib.hm.dag.entryAfter ["writeBoundary"] (
+      submoduleOverrides = lib.hm.dag.entryAfter [ "writeBoundary" ] (
         let
-          submodules = user.submodules or {};
+          submodules = user.submodules or { };
           git = "${pkgs.git}/bin/git";
           mkOverride = name: url: ''
             _sm_dir="$HOME/.nix-atelier/config/${name}"
@@ -140,7 +141,7 @@ in {
             fi
           '';
         in
-          lib.concatStrings (lib.mapAttrsToList mkOverride submodules)
+        lib.concatStrings (lib.mapAttrsToList mkOverride submodules)
       );
     };
 
@@ -190,17 +191,15 @@ in {
         # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on
         # PATH before any other module's tool-integration init hooks run.
         envExtra = nixProfileInit;
-        initContent =
-          envLocalInit
-          + ''
-            # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
-            # xterm-style sequences on macOS; Linux terminals send the same sequences.
-            bindkey '^[[1;3D' backward-word
-            bindkey '^[[1;3C' forward-word
-            # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
-            bindkey '^[[H' beginning-of-line
-            bindkey '^[[F' end-of-line
-          '';
+        initContent = envLocalInit + ''
+          # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
+          # xterm-style sequences on macOS; Linux terminals send the same sequences.
+          bindkey '^[[1;3D' backward-word
+          bindkey '^[[1;3C' forward-word
+          # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
+          bindkey '^[[H' beginning-of-line
+          bindkey '^[[F' end-of-line
+        '';
       };
 
       bash = {
@@ -257,26 +256,24 @@ in {
       # what HM master's `programs.ssh.settings` takes; hm-compat converts them
       # back to 25.05's typed `matchBlocks` shape on the pinned darwin pair.
       # Booleans render as yes/no under both.
-      ssh =
-        {
-          enable = true;
-          includes = ["~/.ssh/config.d/*"]; # unmanaged: machine-specific stubs live here, hand-written or dropped by an extraModulePaths module
+      ssh = {
+        enable = true;
+        includes = [ "~/.ssh/config.d/*" ]; # unmanaged: machine-specific stubs live here, hand-written or dropped by an extraModulePaths module
+      }
+      // compat.sshBlocks {
+        "*" = {
+          IdentityFile = "~/.ssh/${user.sshKey}";
+          AddKeysToAgent = "yes";
         }
-        // compat.sshBlocks {
-          "*" =
-            {
-              IdentityFile = "~/.ssh/${user.sshKey}";
-              AddKeysToAgent = "yes";
-            }
-            // lib.optionalAttrs pkgs.stdenv.isDarwin {
-              UseKeychain = "yes";
-            };
-          "github.com" = {
-            User = "git";
-            IdentitiesOnly = true;
-          };
-        }
-        // compat.sshDefaultConfigOff;
+        // lib.optionalAttrs pkgs.stdenv.isDarwin {
+          UseKeychain = "yes";
+        };
+        "github.com" = {
+          User = "git";
+          IdentitiesOnly = true;
+        };
+      }
+      // compat.sshDefaultConfigOff;
 
       # ── Git ───────────────────────────────────────────────────────────────────
 
@@ -287,7 +284,7 @@ in {
           includes = [
             # self doesn't include submodule contents in the Nix store; use live path instead.
             # Safe because --impure is already required for user.nix.
-            {path = "${homeDir}/.nix-atelier/config/git/gitalias/gitalias.txt";}
+            { path = "${homeDir}/.nix-atelier/config/git/gitalias/gitalias.txt"; }
           ];
 
           ignores = [

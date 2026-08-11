@@ -2,7 +2,8 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   # Capture a tool's shell init once at build time so the shell sources a
   # static file instead of spawning the tool on every startup. Store-path
   # interpolation (not builtins.readFile) means no import-from-derivation, so
@@ -10,27 +11,32 @@
   # is realized, on its own system. Deterministic inits only (zoxide/fzf/direnv
   # emit the same script every run). fnm is excluded: its `env` output embeds
   # a per-session multishell dir, so it must run per shell (see lang-node.nix).
-  mkInit = name: cmd: pkgs.runCommand "hm-shell-init-${name}" {} "${cmd} > $out";
-  toolInit = shell: fzfFlag: let
-    src = tool: cmd: "source ${mkInit "${tool}-${shell}" cmd}";
-    fzfSrc = src "fzf" "${pkgs.fzf}/bin/fzf ${fzfFlag}";
-    # fzf's zsh init toggles the `zle` option; only source it when zle is
-    # available, matching home-manager's own guard: otherwise zsh warns
-    # "can't change option: zle" in interactive-but-non-zle contexts.
-    fzf =
-      if shell == "zsh"
-      then ''
-        if [[ $options[zle] = on ]]; then
-          ${fzfSrc}
-        fi
-      ''
-      else fzfSrc;
-  in ''
-    ${src "zoxide" "${pkgs.zoxide}/bin/zoxide init ${shell}"}
-    ${src "direnv" "${pkgs.direnv}/bin/direnv hook ${shell}"}
-    ${fzf}
-  '';
-in {
+  mkInit = name: cmd: pkgs.runCommand "hm-shell-init-${name}" { } "${cmd} > $out";
+  toolInit =
+    shell: fzfFlag:
+    let
+      src = tool: cmd: "source ${mkInit "${tool}-${shell}" cmd}";
+      fzfSrc = src "fzf" "${pkgs.fzf}/bin/fzf ${fzfFlag}";
+      # fzf's zsh init toggles the `zle` option; only source it when zle is
+      # available, matching home-manager's own guard: otherwise zsh warns
+      # "can't change option: zle" in interactive-but-non-zle contexts.
+      fzf =
+        if shell == "zsh" then
+          ''
+            if [[ $options[zle] = on ]]; then
+              ${fzfSrc}
+            fi
+          ''
+        else
+          fzfSrc;
+    in
+    ''
+      ${src "zoxide" "${pkgs.zoxide}/bin/zoxide init ${shell}"}
+      ${src "direnv" "${pkgs.direnv}/bin/direnv hook ${shell}"}
+      ${fzf}
+    '';
+in
+{
   home.packages = with pkgs; [
     # Fonts: terminal rendering, not needed on a headless box
     fira-code

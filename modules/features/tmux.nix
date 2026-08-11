@@ -4,7 +4,8 @@
 # error the instant both are in the same profile -- an int option can't
 # have two definitions at once. One feature, one value, fixes that
 # structurally rather than by convention.
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   programs.tmux = {
     enable = true;
     keyMode = "vi";

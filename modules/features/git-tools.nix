@@ -3,9 +3,11 @@
   pkgs,
   options,
   ...
-}: let
-  compat = import ../lib/hm-compat.nix {inherit lib options;};
-in {
+}:
+let
+  compat = import ../lib/hm-compat.nix { inherit lib options; };
+in
+{
   home.packages = with pkgs; [
     gh
     glab

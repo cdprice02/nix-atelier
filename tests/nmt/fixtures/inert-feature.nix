@@ -3,4 +3,4 @@
 # not a lambda -- paths support ==, functions don't) to confirm mkProfile
 # actually drops a feature declared unsupported on a given system rather
 # than keeping it.
-_: {}
+_: { }

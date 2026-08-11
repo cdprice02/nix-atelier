@@ -10,9 +10,13 @@
   options,
   pkgs,
   ...
-}: let
-  compat = import (builtins.getEnv "HOME" + "/.nix-atelier/modules/lib/hm-compat.nix") {inherit lib options;};
-in {
+}:
+let
+  compat = import (builtins.getEnv "HOME" + "/.nix-atelier/modules/lib/hm-compat.nix") {
+    inherit lib options;
+  };
+in
+{
   # force = true is required: base.nix sets its own identity at a real
   # priority (compat.gitIdentity), not mkDefault, so an equal-priority
   # override without force would conflict rather than win.

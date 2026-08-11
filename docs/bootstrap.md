@@ -2,7 +2,7 @@
 
 First-time setup checklist per target machine.
 
----
+______________________________________________________________________
 
 ## WSL2 (Linux, single-user Nix)
 
@@ -100,8 +100,7 @@ sopsFile = "/absolute/path/to/your-private-repo/secrets.yaml";
 
 `home-manager switch` then renders those vars straight to
 `~/.config/secrets/env` from your `sopsFile`: the manual copy/fill step
-above becomes unnecessary. To edit the encrypted values later: `sops
-secrets.yaml` in your private repo (opens `$EDITOR` with the decrypted
+above becomes unnecessary. To edit the encrypted values later: `sops secrets.yaml` in your private repo (opens `$EDITOR` with the decrypted
 plaintext; saving re-encrypts automatically). If a token genuinely differs
 between two of your machines, give each machine's `user.nix` its own
 `sopsFile` pointing at a separate encrypted file, rather than sharing one.
@@ -144,8 +143,7 @@ nix run home-manager -- switch --flake ~/.nix-atelier#full --impure -b bk
 >
 > **`-b bk` is required on the first switch** of any machine that already has
 > shell dotfiles. Home Manager refuses to overwrite an existing `~/.bashrc`,
-> `~/.profile`, `~/.zshrc` etc. and aborts with `Existing file '...' would be
-> clobbered`. Nearly every distro (and WSL2) ships those from `/etc/skel`, so
+> `~/.profile`, `~/.zshrc` etc. and aborts with `Existing file '...' would be clobbered`. Nearly every distro (and WSL2) ships those from `/etc/skel`, so
 > this is the normal case, not the exception. `-b bk` renames each conflicting
 > file to `<name>.bk` instead of failing. `just switch` passes it for you on
 > every subsequent apply.
@@ -189,10 +187,10 @@ just precommit
 ```
 
 (`just precommit` wraps `pre-commit run --all-files` in `nix develop`: the
-alejandra and markdownlint hooks resolve against the devShell's PATH, so a bare
-`pre-commit run` outside it uses the wrong tool versions or fails to find them.)
+treefmt hook resolves against the devShell's PATH, so a bare
+`pre-commit run` outside it uses the wrong tool version or fails to find it.)
 
----
+______________________________________________________________________
 
 ## macOS (nix-darwin)
 
@@ -242,10 +240,10 @@ section's step 5). Skip straight to Apply below.
 
 macOS has two configs, one per CPU, and **they are not interchangeable**:
 
-| Your Mac | Config |
-|----------|--------|
+| Your Mac                     | Config                |
+| ---------------------------- | --------------------- |
 | Apple Silicon (M1/M2/M3/M4…) | `full-darwin-aarch64` |
-| Intel | `full-darwin` |
+| Intel                        | `full-darwin`         |
 
 Check with `uname -m`: `arm64` means Apple Silicon, `x86_64` means Intel.
 
@@ -307,10 +305,10 @@ just precommit
 ```
 
 (`just precommit` wraps `pre-commit run --all-files` in `nix develop`: the
-alejandra and markdownlint hooks resolve against the devShell's PATH, so a bare
-`pre-commit run` outside it uses the wrong tool versions or fails to find them.)
+treefmt hook resolves against the devShell's PATH, so a bare
+`pre-commit run` outside it uses the wrong tool version or fails to find it.)
 
----
+______________________________________________________________________
 
 ## NixOS
 

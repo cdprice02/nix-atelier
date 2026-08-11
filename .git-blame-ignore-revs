@@ -1,0 +1,9 @@
+# Commits listed here are skipped by `git blame` (git blame
+# --ignore-revs-file .git-blame-ignore-revs, or configure once with
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs`) -- mass
+# reformats that touch nearly every line-range in the repo without changing
+# any actual logic, which would otherwise bury the real last-meaningful-change
+# commit for every line they touch.
+
+# style: reformat with treefmt (nixfmt-rfc-style + mdformat) -- #54
+43f263066cda2be2da6336bb25dd42faf3a423da

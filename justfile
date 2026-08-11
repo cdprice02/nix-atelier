@@ -146,22 +146,22 @@ sync-work:
 # explicitly per matrix entry instead (see .github/workflows/check.yml),
 # using QEMU/Rosetta the same way build-linux/build-darwin do.
 #
-# Runs lint-all explicitly because the lints deliberately live outside the
-# flake's `checks` output (see flake.nix's comment there: they were being run
-# twice per PR). Keeping them here means a green `just check` still covers
-# formatting and lint, and covers the working tree rather than the last commit.
+# This is now the whole local validation story, formatting included: `checks`
+# carries `formatting` (treefmt: nixfmt-rfc-style + statix + deadnix +
+# mdformat, see treefmt.nix), so a green `just check` already covers it --
+# there's no separate `lint-all` recipe anymore (there used to be, back when
+# lints lived outside `checks` specifically to avoid running four separate
+# tools twice per PR; treefmt collapsed that into one tool, so the reason for
+# keeping them apart went away with it).
 [group('check')]
-[doc('Full local validation (builds profiles for this system + lints)')]
-check: lint-all flake-check
+[doc('Full local validation (builds profiles for this system)')]
+check: flake-check
 
-# Split out of `check` so CI's flake-check job can run just this half: it
-# already gets the four lints from its own dedicated lint-* jobs, and calling
-# `just check` there ran every lint twice per PR. `just check` above still
-# runs both for local use. `system` defaults to whatever's actually running
-# this, so local use (`just flake-check`, no args) is unchanged; CI's matrix
-# passes each entry's target system explicitly.
+# `system` defaults to whatever's actually running this, so local use
+# (`just flake-check`, no args) is unchanged; CI's matrix passes each entry's
+# target system explicitly.
 [group('check')]
-[doc("nix flake check only, no lints; CI's flake-check job uses this")]
+[doc("nix flake check only; CI's flake-check job uses this per system")]
 flake-check system=`nix eval --impure --raw --expr 'builtins.currentSystem'`:
     nix flake check --impure --system {{ system }}
 
@@ -183,16 +183,12 @@ eval-all:
     total=$(( ${#linux[@]} + ${#darwin[@]} ))
     echo "All $total profiles evaluated cleanly."
 
-[group('check')]
-[doc('Run all lints (alejandra, statix, deadnix, markdownlint)')]
-lint-all: _lint-alejandra _lint-statix _lint-deadnix _lint-markdownlint
-
-# Wraps the run in `nix develop` because .pre-commit-config.yaml's alejandra
-# and markdownlint hooks use `language: system`; they resolve to whatever is
-# on PATH, which is only correct inside the devShell. Running `pre-commit run`
-# bare either picks up a different version of those tools or fails to find
-# them, and the docs told users to do exactly that (CONTRIBUTING.md,
-# docs/bootstrap.md steps 9 and 8) without mentioning the devShell.
+# Wraps the run in `nix develop` because .pre-commit-config.yaml's treefmt
+# hook uses `language: system`; it resolves to whatever is on PATH, which is
+# only correct inside the devShell. Running `pre-commit run` bare either picks
+# up a different version of the tool or fails to find it, and the docs told
+# users to do exactly that (CONTRIBUTING.md, docs/bootstrap.md steps 9 and 8)
+# without mentioning the devShell.
 [group('check')]
 [doc('Run every pre-commit hook over all files, inside the devShell')]
 precommit:
@@ -201,9 +197,11 @@ precommit:
 # Thin wrapper over `nix fmt` on purpose: it exists so formatting is
 # discoverable from `just --list` alongside every other everyday command,
 # rather than being the one task you have to already know a different entry
-# point for. `nix fmt` resolves to the `formatter` output (alejandra).
+# point for. `nix fmt` resolves to the `formatter` output (treefmt: nixfmt-
+# rfc-style + statix + deadnix + mdformat, see treefmt.nix) -- auto-fixes,
+# not just reformats: statix/deadnix apply real fixes, not only whitespace.
 [group('generate')]
-[doc('Format all Nix files with alejandra')]
+[doc('Format everything (nixfmt-rfc-style, statix, deadnix, mdformat)')]
 fmt:
     nix fmt
 
@@ -247,26 +245,3 @@ _build-linux PROFILE:
 [private]
 _build-darwin PROFILE:
     nix build .#darwinConfigurations.{{ PROFILE }}.system --impure
-
-[private]
-_lint-alejandra:
-    nix shell nixpkgs#alejandra -c alejandra --check .
-
-[private]
-_lint-statix:
-    nix shell nixpkgs#statix -c statix check
-
-[private]
-_lint-deadnix:
-    nix shell nixpkgs#deadnix -c deadnix --fail .
-
-# Lints exactly the Markdown this repo tracks, derived from git rather than a
-# hand-listed set of paths (which previously lived here, in flake.nix and in
-# .pre-commit-config.yaml in three different syntaxes, and had already drifted:
-# CODE_OF_CONDUCT.md and .github/pull_request_template.md were in none of
-# them). `git ls-files` also naturally excludes untracked local scratch files,
-# which a bare '**/*.md' glob would pick up. Submodule content under config/ is
-# excluded via .markdownlintignore.
-[private]
-_lint-markdownlint:
-    git ls-files -z '*.md' | xargs -0 nix shell nixpkgs#markdownlint-cli -c markdownlint

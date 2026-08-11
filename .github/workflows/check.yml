@@ -251,57 +251,10 @@ jobs:
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-darwin ${{ matrix.config }}
 
-  # ── Lint: each tool is a separate job so failures are individually named ──────
-  # All lint jobs share one cache key — they all pull from the same nixpkgs
-  # revision, so their store content overlaps almost entirely.
-  lint-alejandra:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-linux-lint-
-          gc-max-store-size-linux: 1073741824
-      - run: nix shell nixpkgs#just -c just _lint-alejandra
-
-  lint-statix:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-linux-lint-
-          gc-max-store-size-linux: 1073741824
-      - run: nix shell nixpkgs#just -c just _lint-statix
-
-  lint-deadnix:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-linux-lint-
-          gc-max-store-size-linux: 1073741824
-      - run: nix shell nixpkgs#just -c just _lint-deadnix
-
-  lint-markdownlint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-linux-lint-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-linux-lint-
-          gc-max-store-size-linux: 1073741824
-      - run: nix shell nixpkgs#just -c just _lint-markdownlint
+  # Formerly 4 separate lint-* jobs here (alejandra, statix, deadnix,
+  # markdownlint), each a named red check on its own tool. Removed: treefmt
+  # (see treefmt.nix) collapsed all four into flake.nix's `formatting` check,
+  # which the flake-check matrix above already runs on every system, on every
+  # PR. Losing the per-tool job name is real (a `formatting` failure means
+  # opening the log to see which tool flagged what, not reading the check
+  # name) -- traded deliberately for one tool instead of four, see #54.

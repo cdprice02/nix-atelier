@@ -1,3 +1,4 @@
-{pkgs, ...}: {
-  home.packages = [pkgs.duckdb];
+{ pkgs, ... }:
+{
+  home.packages = [ pkgs.duckdb ];
 }

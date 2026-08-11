@@ -20,7 +20,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
   secrets/secrets.yaml.example # Placeholder-only; real secrets.yaml lives in your private repo
   secrets.env.example          # Template for the manual ~/.config/secrets/env
   statix.toml                  # statix lint config (one rule disabled; see issue #46)
-  .markdownlintignore          # Single source for what markdownlint skips
+  treefmt.nix                  # nix fmt / CI formatting config: nixfmt-rfc-style, statix, deadnix, mdformat
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
     env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
@@ -41,7 +41,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       k8s.nix                  # kubectl, helm, helmfile
       tmux.nix                 # sole owner of tmux config, historyLimit=50000
       git-tools.nix            # gh, glab, difftastic, git-filter-repo, pre-commit
-      nix-tools.nix            # nixd, alejandra
+      nix-tools.nix            # nixd, nixfmt-rfc-style
       data.nix                 # duckdb
       qmk.nix                  # qmk (builds fine on x86_64-darwin; verified directly)
     gui-linux.nix              # Linux GUI: obsidian, alacritty, vscode
@@ -72,15 +72,15 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
 
 Prefer `just`: it is the sole interface and handles OS/arch dispatch.
 
-| Task | Command |
-|------|---------|
-| Apply config (any OS) | `just switch [profile]` |
-| Apply config (Mac, explicit) | `sudo darwin-rebuild switch --flake ~/.nix-atelier#<config> --impure` |
-| Apply config (Linux/WSL, explicit) | `home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk` |
+| Task                                           | Command                                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| Apply config (any OS)                          | `just switch [profile]`                                                      |
+| Apply config (Mac, explicit)                   | `sudo darwin-rebuild switch --flake ~/.nix-atelier#<config> --impure`        |
+| Apply config (Linux/WSL, explicit)             | `home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk`        |
 | First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-atelier#<config> --impure` |
-| Update flake inputs | `just update` |
-| Validate | `just check` (lints + `nix flake check`) |
-| Regenerate docs | `just docs` |
+| Update flake inputs                            | `just update`                                                                |
+| Validate                                       | `just check` (lints + `nix flake check`)                                     |
+| Regenerate docs                                | `just docs`                                                                  |
 
 `--impure` is required on every apply (`user.nix` is read via `builtins.getEnv`).
 `-b bk` is required on a Linux first apply, or Home Manager refuses to overwrite
@@ -99,11 +99,11 @@ Home Manager's modules (and nix-darwin) are coupled to their nixpkgs release,
 so every home-manager / nix-darwin input must be release-matched to its
 nixpkgs input. Two independent pairs:
 
-| Target | nixpkgs | home-manager | nix-darwin | Tracks |
-|--------|---------|--------------|------------|--------|
-| Linux/WSL2 | `nixpkgs` | `home-manager` | none | rolling (`nixpkgs-unstable` + HM master) |
-| aarch64-darwin | `nixpkgs` | `home-manager` | `nix-darwin` | rolling (same as Linux, + nix-darwin master) |
-| x86_64-darwin | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` | pinned (`25.05` across all three) |
+| Target         | nixpkgs          | home-manager          | nix-darwin       | Tracks                                       |
+| -------------- | ---------------- | --------------------- | ---------------- | -------------------------------------------- |
+| Linux/WSL2     | `nixpkgs`        | `home-manager`        | none             | rolling (`nixpkgs-unstable` + HM master)     |
+| aarch64-darwin | `nixpkgs`        | `home-manager`        | `nix-darwin`     | rolling (same as Linux, + nix-darwin master) |
+| x86_64-darwin  | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` | pinned (`25.05` across all three)            |
 
 Only x86_64-darwin is pinned: an Intel 2018 MacBook Pro capped at macOS 13,
 and 25.05 is the last release supporting both. `checkReleasePair` in
