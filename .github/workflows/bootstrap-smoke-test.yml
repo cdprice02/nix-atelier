@@ -120,6 +120,14 @@ jobs:
       # or don't affect whether the bootstrap sequence itself still works
       # (SSH key, pre-commit).
       - name: Run the documented bootstrap sequence
+        env:
+          # nix run home-manager -- switch resolves the home-manager
+          # flakeref against the GitHub API. Unauthenticated, that's a
+          # per-IP rate limit shared by every runner on the range, and it
+          # trips intermittently with no code change involved (see the
+          # issue this fixes). GITHUB_TOKEN authenticates the same lookups
+          # under this job's own quota instead.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cat > /tmp/bootstrap-test.sh <<'SCRIPT'
           set -euo pipefail
@@ -128,6 +136,7 @@ jobs:
           . ~/.nix-profile/etc/profile.d/nix.sh
           mkdir -p ~/.config/nix
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+          echo "access-tokens = github.com=$GITHUB_TOKEN" >> ~/.config/nix/nix.conf
           cp user.nix.example user.nix
           # docs/bootstrap.md step 3 is "copy the example, then fill in
           # username/name/email": copying alone skips the second half, and
@@ -157,4 +166,4 @@ jobs:
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh
-          su - ciuser -c "GITHUB_WORKSPACE='$GITHUB_WORKSPACE' /tmp/bootstrap-test.sh"
+          su - ciuser -c "GITHUB_WORKSPACE='$GITHUB_WORKSPACE' GITHUB_TOKEN='$GITHUB_TOKEN' /tmp/bootstrap-test.sh"
