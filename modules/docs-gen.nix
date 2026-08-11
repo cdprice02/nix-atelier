@@ -153,7 +153,7 @@ let
       every key in `modules/features.nix`, so a new feature joins `full`
       automatically with no list to maintain. `user.nix` can add features
       beyond a machine's tier via `extraFeatures`, or drop specific ones via
-      `excludeFeatures` — see `user.nix.example`.
+      `excludeFeatures`: see `user.nix.example`.
 
       ## Module composition
 
@@ -218,13 +218,13 @@ let
       ## Customizing your machine
 
       The framework makes most decisions for you; three escape hatches in
-      `user.nix` cover the rest — see `user.nix.example` for the exact syntax:
+      `user.nix` cover the rest; see `user.nix.example` for the exact syntax:
 
-      - `extraFeatures` — add named features (see `modules/features.nix`) on
+      - `extraFeatures`: add named features (see `modules/features.nix`) on
         top of a machine's tier, e.g. `minimal` plus just `tmux`.
-      - `excludeFeatures` — drop features regardless of tier, e.g. `full`
+      - `excludeFeatures`: drop features regardless of tier, e.g. `full`
         without `lang-rust`.
-      - `extraModulePaths` — absolute paths to private, machine-specific
+      - `extraModulePaths`: absolute paths to private, machine-specific
         home-manager modules that live outside this repo entirely (identity
         overrides, extra secrets, anything that shouldn't be public).
 

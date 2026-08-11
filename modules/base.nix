@@ -36,7 +36,7 @@ let
   '';
 
   # Commits use the GitHub noreply address so the real email never enters
-  # public commit history — this repo, and any fork of it, is public.
+  # public commit history: this repo, and any fork of it, is public.
   # GitHub attributes commits from either noreply form to the account, so
   # this costs nothing and is strictly better than a real address by default.
   # Falls back to user.email when user.nix has no github block at all (e.g.

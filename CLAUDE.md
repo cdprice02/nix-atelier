@@ -19,7 +19,6 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
   .sops.yaml                   # Placeholder-recipient example; real one lives in your private repo
   secrets/secrets.yaml.example # Placeholder-only; real secrets.yaml lives in your private repo
   secrets.env.example          # Template for the manual ~/.config/secrets/env
-  statix.toml                  # statix lint config (one rule disabled; see issue #46)
   treefmt.nix                  # nix fmt / CI formatting config: nixfmt-rfc-style, statix, deadnix, mdformat
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling
@@ -52,7 +51,6 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
   config/
     git/
       gitalias/                # git submodule (fork of GitAlias/gitalias)
-      gitalias.txt             # ORPHANED stale duplicate; see issue #47
     claude/                    # git submodule, symlinked to ~/.claude by Home Manager
     copilot/                   # git submodule, symlinked to ~/.copilot by Home Manager
   docs/                        # profiles.md and tools.md are GENERATED; edit docs-gen.nix
@@ -60,6 +58,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
     profiles.md                # Profile reference (generated)
     tools.md                   # Tool reference (generated)
     troubleshooting.md         # Common first-boot failures
+  tests/nmt/                   # nmt module tests; wired into `checks` via flake.nix
   examples/private-config/     # Worked example: identity override, private packages, secrets -- copy out, don't run in place
   .github/workflows/
     check.yml                  # get-profiles, flake-check matrix (incl. formatting), eval-all, build matrices
@@ -79,7 +78,7 @@ Prefer `just`: it is the sole interface and handles OS/arch dispatch.
 | Apply config (Linux/WSL, explicit)             | `home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk`        |
 | First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-atelier#<config> --impure` |
 | Update flake inputs                            | `just update`                                                                |
-| Validate                                       | `just check` (lints + `nix flake check`)                                     |
+| Validate                                       | `just check` (`nix flake check --impure`, includes formatting/lints)         |
 | Regenerate docs                                | `just docs`                                                                  |
 
 `--impure` is required on every apply (`user.nix` is read via `builtins.getEnv`).
@@ -139,7 +138,7 @@ Identity is loaded from `user.nix` (gitignored, never committed). Copy `user.nix
 
 `mkProfile { tier, withGui, system }` produces the module list for a profile:
 
-- `tier`: `minimal` | `full`, both derived from `modules/features.nix` (`minimal = []`, `full = builtins.attrNames features`) — a new feature joins `full` automatically, no list to maintain
+- `tier`: `minimal` | `full`, both derived from `modules/features.nix` (`minimal = []`, `full = builtins.attrNames features`), so a new feature joins `full` automatically with no list to maintain
 - `withGui`: bool, auto-selects `gui-linux.nix` or `gui-darwin.nix`
 
 Every profile starts with `base.nix` + `env.nix` + caret, then the tier's
@@ -154,7 +153,7 @@ generated from tier × gui × arch in `flake.nix`, not hand-listed.
 Two tiers:
 
 - **Profile vars** (known at build time): set via `home.sessionVariables` in Nix. `AWS_PROFILE` is opt-in this way, via `user.nix`'s `aws.profile` field (unset by default: a hardcoded default risks hitting the wrong account).
-- **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the manual-copy template. Optionally populated via sops-nix instead: set `user.nix`'s `secrets` (a list of names) and `sopsFile` (an absolute path to your own, private secrets.yaml — never this repo's own `secrets/secrets.yaml.example`, which is encrypted for a placeholder recipient nobody holds). `sopsFile`'s presence is the on/off switch, no separate flag. Both are per-machine, so a token that genuinely differs by machine gets its own file per machine rather than one shared file. See `modules/secrets-sops.nix` and `docs/bootstrap.md`.
+- **API keys**: stored in `~/.config/secrets/env` (gitignored, never committed). Shell init sources this file on every session. See `secrets.env.example` at the repo root for the manual-copy template. Optionally populated via sops-nix instead: set `user.nix`'s `secrets` (a list of names) and `sopsFile` (an absolute path to your own, private secrets.yaml, never this repo's own `secrets/secrets.yaml.example`, which is encrypted for a placeholder recipient nobody holds). `sopsFile`'s presence is the on/off switch, no separate flag. Both are per-machine, so a token that genuinely differs by machine gets its own file per machine rather than one shared file. See `modules/secrets-sops.nix` and `docs/bootstrap.md`.
 
 ### Submodule overrides
 
@@ -168,7 +167,7 @@ Binary managed by Nix. Extensions and settings via GitHub Settings Sync; nothing
 
 `programs.ssh` in `base.nix` generates `~/.ssh/config`. Key name derived from email prefix (set in `user.nix`). Key generated on first activation if missing.
 
-`base.nix` also sets `includes = ["~/.ssh/config.d/*"]` unconditionally, so machine-specific SSH stubs (a work VPN jump host, a private GitLab instance) are unmanaged files dropped there by hand or by an `extraModulePaths` module — never a tracked file in this repo.
+`base.nix` also sets `includes = ["~/.ssh/config.d/*"]` unconditionally, so machine-specific SSH stubs (a work VPN jump host, a private GitLab instance) are unmanaged files dropped there by hand or by an `extraModulePaths` module, never a tracked file in this repo.
 
 ### CA bundle env vars (Linux/WSL2 only)
 

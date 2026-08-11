@@ -1,6 +1,6 @@
-# sops encryption config — determines which age recipients a given path
+# sops encryption config: determines which age recipients a given path
 # gets encrypted for. See modules/secrets-sops.nix for how this is consumed
-# (opt-in only, via user.nix's useSops = true;).
+# (opt-in only, triggered by user.nix's sopsFile being set).
 #
 # The recipient below is a placeholder: nobody holds its private half, so
 # nothing encrypted for it is ever decryptable. That's deliberate -- this

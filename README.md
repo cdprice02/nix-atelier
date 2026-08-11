@@ -5,7 +5,7 @@
 
 A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay): macOS (Intel and Apple Silicon) and any Linux/WSL2, same modules, one command. Fork it, fill in `user.nix`, and get a full dev environment on any machine. NixOS support is planned but not implemented; see [issue #5](https://github.com/cdprice02/nix-atelier/issues/5).
 
-Machine-specific and private data — work identity, real secrets, anything that shouldn't be public — never has to live in this repo, forked or not. See [docs/profiles.md](docs/profiles.md) for the profile system, [examples/private-config/](examples/private-config/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
+Machine-specific and private data (work identity, real secrets, anything that shouldn't be public) never has to live in this repo, forked or not. See [docs/profiles.md](docs/profiles.md) for the profile system, [examples/private-config/](examples/private-config/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
 
 ## Quick start
 
@@ -76,7 +76,7 @@ bare name for Intel. They are not interchangeable; see
 
 ```sh
 just switch        # apply this machine's config (detects OS + architecture)
-just check         # lint, then validate the flake
+just check         # nix flake check --impure, includes formatting/lints
 just eval-all      # fast: evaluate every profile without building
 just update        # re-resolve all flake inputs together
 just --list        # everything else

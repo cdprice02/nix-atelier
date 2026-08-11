@@ -111,7 +111,7 @@ export __HM_SESS_VARS_SOURCED=1
 
 That guard variable is **exported**, so every child process inherits it. Once
 one shell has sourced an *older* version of the file, every shell descended
-from it — including `zsh -l`, tmux panes, and editor terminals — sees the
+from it (including `zsh -l`, tmux panes, and editor terminals) sees the
 guard already set and returns before applying the new `PATH`. The stale value
 propagates indefinitely, which is why even a new terminal window doesn't help
 if it was itself spawned from (or inherits the environment of) an
@@ -136,8 +136,8 @@ If the two differ, the guard is the cause.
 exec env -u __HM_SESS_VARS_SOURCED zsh -l
 ```
 
-A genuinely new *login* session — a new terminal app launch, or logging out
-and back in — also clears it, since neither inherits environment from the
+A genuinely new *login* session, such as a new terminal app launch or logging
+out and back in, also clears it, since neither inherits environment from the
 affected shell. Spawning a shell from within the affected session does not.
 
 See `modules/env.nix`'s comment block for the related (and separate)
@@ -247,7 +247,7 @@ just switch <profile>   # e.g. just switch minimal
 just switch             # uses user.nix's `profile` field, else "full"
 ```
 
-Pass the bare profile name (`just switch work`) on any machine and the right
+Pass the bare profile name (`just switch full`) on any machine and the right
 suffix is appended for you: `-darwin` / `-darwin-aarch64` on macOS, `-aarch64`
 on ARM Linux, nothing on x86_64 Linux. Passing an explicit name still works and
 is honoured: it is just checked against the machine first, so an
