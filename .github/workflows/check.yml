@@ -39,8 +39,13 @@ jobs:
       - id: list
         run: |
           mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
-          echo "linux-x86_64=$(nix shell nixpkgs#just -c just _list-linux-profiles-x86_64)" >> "$GITHUB_OUTPUT"
-          echo "linux-aarch64=$(nix shell nixpkgs#just -c just _list-linux-profiles-aarch64)" >> "$GITHUB_OUTPUT"
+          # _list-linux-profiles-x86_64/-aarch64 each re-run _list-linux-profiles
+          # (a full nix eval) internally, only to jq-filter the identical result
+          # two different ways. Evaluated once here instead, so the arch split
+          # is two jq filters over one eval rather than two.
+          LINUX=$(nix shell nixpkgs#just -c just _list-linux-profiles)
+          echo "linux-x86_64=$(echo "$LINUX" | jq -c '[.[] | select(endswith("-aarch64") | not)]')" >> "$GITHUB_OUTPUT"
+          echo "linux-aarch64=$(echo "$LINUX" | jq -c '[.[] | select(endswith("-aarch64"))]')" >> "$GITHUB_OUTPUT"
           DARWIN=$(nix shell nixpkgs#just -c just _list-darwin-profiles | jq -c '[.[] | {config: .}]')
           echo "darwin=$DARWIN" >> "$GITHUB_OUTPUT"
 
@@ -114,6 +119,15 @@ jobs:
           gc-max-store-size-linux: 2147483648
           gc-max-store-size-macos: 2147483648
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
+      # `flake-check` runs `checks.formatting` (treefmt.nix: nixfmt-rfc-style +
+      # statix + deadnix + mdformat) as part of `nix flake check`, once per
+      # matrix entry, even though the check's own output doesn't vary by
+      # system -- the same redundancy `docs-drift` already accepts. Pulling it
+      # into a dedicated single-system job would need `checks` restructured to
+      # separate the system-invariant entries from the ones that genuinely
+      # need a per-system derivation (the nmt builds), which is a bigger
+      # change than this job's own cost justifies at four cheap systems.
+      # Accepted, not fixed.
       - run: nix shell nixpkgs#just -c just flake-check ${{ matrix.system }}
       # Only meaningful once (the file's content doesn't vary by system) --
       # kept on this job rather than its own, since it needs the same Nix
@@ -133,6 +147,14 @@ jobs:
   # exactly as a user would reference them. No matrix: `just eval-all` loops
   # over all profiles internally. No QEMU/Rosetta: evaluating a foreign-arch
   # derivation needs no emulation, only building one does.
+  #
+  # Deliberately doesn't consume get-profiles' outputs even though both list
+  # the same profiles: get-profiles is gated to push/dispatch only (its sole
+  # consumers are the build-* matrices below), while this job has to run on
+  # every PR. Depending on a job that's skipped on PRs would skip this one
+  # too unless every step grew an `if: needs.get-profiles.result == ...`
+  # guard, for a saving of two small `nix eval --json` list calls against the
+  # ten real config evals this job actually does. Not worth the coupling.
   eval-all:
     runs-on: ubuntu-latest
     timeout-minutes: 10
