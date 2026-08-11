@@ -761,8 +761,22 @@
       );
 
     # ── checks ───────────────────────────────────────────────────────────────
-    # The Nix-specific verification: every Linux activation package builds, and
-    # the generated docs match their sources.
+    # The Nix-specific verification: nmt's assertion-level checks (rendered
+    # content, GUI/headless, excludeFeatures/extraModulePaths composability,
+    # per-platform feature filtering), plus generated-docs drift. Uniform
+    # across every system in `allSystems` -- no per-platform gap, because
+    # nothing in here builds a real profile closure. That used to not be true:
+    # this output previously also carried `activation-*` (a real build of
+    # every Linux homeConfiguration, since darwin's closures live in
+    # `darwinConfigurations` and were never included here), which meant it
+    # could only meaningfully run on a Linux CI runner -- `nix flake check` on
+    # this machine skipped straight to `docs-drift` and nothing else. Removed
+    # once CI's own `build-linux` job started covering the same 4 x86_64-linux
+    # profiles under a better name (`build-linux (full)` vs. `activation-full`):
+    # keeping both was pure duplication, not extra coverage. `build-linux`/
+    # `build-darwin` remain the only things that build a real closure; this
+    # output is what makes that unnecessary for everyday `just check` and CI's
+    # per-PR gate, on every system, not just Linux.
     #
     # Deliberately does NOT contain the lints. It used to, which meant every PR
     # ran alejandra/statix/deadnix/markdownlint twice: once inside this output
@@ -773,23 +787,6 @@
     # `just lint-all`, so a green local `just check` still covers lints: it
     # just gets them from the recipe rather than from this output, and lints the
     # working tree (what you are about to commit) instead of the last commit.
-    #
-    # Covers every system, but the contents differ by platform, and not
-    # arbitrarily: `activation-*` is derived from `homeConfigurations`, which
-    # only exist for Linux (macOS goes through `darwinConfigurations`), so
-    # darwin is left with the platform-independent checks: currently
-    # `docs-drift`. That is thin, but it is not nothing: before this output
-    # covered darwin at all, `nix flake check` on a Mac skipped `checks`
-    # entirely and passed, so a green local check meant only that the flake
-    # evaluated.
-    #
-    # The darwin system closures are deliberately NOT included here. CI's
-    # build-darwin job already builds all four, and adding them would turn
-    # `just check`: the command CONTRIBUTING tells you to run before every PR
-    #: into a multi-minute build. Real assertion-level darwin coverage comes
-    # from the nmt-* entries below instead: an eval-only test harness that
-    # never builds a real package, so it stays cheap even on every darwin
-    # system.
     checks = nixpkgs.lib.genAttrs allSystems (
       system: let
         # pkgsFor, not mkPkgs: mkPkgs always imports the rolling nixpkgs, which
@@ -798,13 +795,6 @@
         # before it can run. pkgsFor routes that one system to the pinned
         # nixpkgs-darwin input. Latent while `checks` was Linux-only.
         pkgs = pkgsFor system;
-        homeConfigsForSystem =
-          nixpkgs.lib.filterAttrs
-          (
-            _: cfg:
-              cfg.activationPackage.system or null == system
-          )
-          self.homeConfigurations;
         # nmt's own `build` attrset already includes an `all` aggregate
         # (build.all), which surfaces here as nmt-all: a single check that
         # depends on every individual nmt test.
@@ -879,12 +869,6 @@
           builtins.elem ./tests/nmt/fixtures/inert-feature.nix (platformFilteringModsFor platformFilteringOtherSystem);
       in
         (nixpkgs.lib.mapAttrs'
-          (name: cfg: {
-            name = "activation-${name}";
-            value = cfg.activationPackage;
-          })
-          homeConfigsForSystem)
-        // (nixpkgs.lib.mapAttrs'
           (name: drv: {
             name = "nmt-${name}";
             value = drv;

@@ -138,10 +138,13 @@ sync-work:
     git merge origin/main
     echo "Merged. Review, then: git push private work:main"
 
-# Validate flake without applying. Checks THIS system only: the `checks`
-# output builds Linux activation packages, so `--all-systems` on a Mac would
-# try to build `checks.x86_64-linux.*` and fail for lack of a Linux builder.
-# CI runs the full cross-system matrix (see .github/workflows/check.yml).
+# Validate flake without applying. Checks THIS system only by default: the
+# `checks` output still does a handful of *real* small builds (fzf/zoxide/
+# direnv, captured statically by nmt's shell-init tests), so `--all-systems`
+# on a Mac would try to build `checks.x86_64-linux.*`'s real packages and fail
+# for lack of a Linux builder. CI's flake-check job passes its own system
+# explicitly per matrix entry instead (see .github/workflows/check.yml),
+# using QEMU/Rosetta the same way build-linux/build-darwin do.
 #
 # Runs lint-all explicitly because the lints deliberately live outside the
 # flake's `checks` output (see flake.nix's comment there: they were being run
@@ -154,11 +157,13 @@ check: lint-all flake-check
 # Split out of `check` so CI's flake-check job can run just this half: it
 # already gets the four lints from its own dedicated lint-* jobs, and calling
 # `just check` there ran every lint twice per PR. `just check` above still
-# runs both for local use.
+# runs both for local use. `system` defaults to whatever's actually running
+# this, so local use (`just flake-check`, no args) is unchanged; CI's matrix
+# passes each entry's target system explicitly.
 [group('check')]
 [doc("nix flake check only, no lints; CI's flake-check job uses this")]
-flake-check:
-    nix flake check --impure
+flake-check system=`nix eval --impure --raw --expr 'builtins.currentSystem'`:
+    nix flake check --impure --system {{ system }}
 
 [group('check')]
 [doc('Fast: eval every profile without building')]
@@ -218,6 +223,18 @@ docs:
 [private]
 _list-linux-profiles:
     @nix eval --impure --json .#homeConfigurations --apply builtins.attrNames
+
+# Splits _list-linux-profiles by arch suffix rather than deriving a second
+# source of truth: CI's build-linux-x86_64/build-linux-aarch64 jobs need
+# separate matrices (x86_64 on every PR, aarch64 push-gated only -- see
+# check.yml), and this is the one place that split has to happen.
+[private]
+_list-linux-profiles-x86_64:
+    @{{ just_executable() }} _list-linux-profiles | jq -c '[.[] | select(endswith("-aarch64") | not)]'
+
+[private]
+_list-linux-profiles-aarch64:
+    @{{ just_executable() }} _list-linux-profiles | jq -c '[.[] | select(endswith("-aarch64"))]'
 
 [private]
 _list-darwin-profiles:
