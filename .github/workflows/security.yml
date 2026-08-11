@@ -30,3 +30,7 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # gitleaks-action fetches its own gitleaks binary independent of
+          # .pre-commit-config.yaml's pin, so the two can drift and scan with
+          # different detector rules. Pinned to match that file's rev exactly.
+          GITLEAKS_VERSION: 8.30.1
