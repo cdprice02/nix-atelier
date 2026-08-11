@@ -62,7 +62,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
     troubleshooting.md         # Common first-boot failures
   examples/private-config/     # Worked example: identity override, private packages, secrets -- copy out, don't run in place
   .github/workflows/
-    check.yml                  # eval-all, flake-check, 4 lints, build matrices
+    check.yml                  # get-profiles, flake-check matrix (incl. formatting), eval-all, build matrices
     bootstrap-smoke-test.yml   # Documented bootstrap, from scratch, in a container
     security.yml               # gitleaks
     update-flake-lock.yml      # Weekly atomic `just update` PR
