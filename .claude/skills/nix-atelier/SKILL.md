@@ -19,12 +19,12 @@ just eval-all           # fast: eval every profile without building
 just docs               # regenerate docs/profiles.md + docs/tools.md from Nix
 just update             # re-resolve ALL flake inputs together
 just sync               # update submodules to their tracked branch
-just fmt                # alejandra over all Nix files
+just fmt                # nixfmt-rfc-style + statix + deadnix + mdformat, via treefmt
 ```
 
-`just check` is the gate: it runs `nix flake check`, four lints (alejandra,
-statix, deadnix, markdownlint), and the eval-time assertions below. Run it before
-proposing a change is done.
+`just check` is the gate: it runs `nix flake check`, which includes
+`formatting` (treefmt: nixfmt-rfc-style, statix, deadnix, mdformat) alongside
+the eval-time assertions below. Run it before proposing a change is done.
 
 ## Three invariants that fail evaluation
 
@@ -36,10 +36,10 @@ the one you touched. Recognise them from the error text.
 Home Manager and nix-darwin are coupled to their nixpkgs release. There are two
 independent pairs, and darwin is split by architecture:
 
-| Target | nixpkgs | home-manager | nix-darwin |
-|---|---|---|---|
-| Linux/WSL2 + aarch64-darwin | `nixpkgs` | `home-manager` | `nix-darwin` (rolling) |
-| x86_64-darwin | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` (pinned 25.05) |
+| Target                      | nixpkgs          | home-manager          | nix-darwin                      |
+| --------------------------- | ---------------- | --------------------- | ------------------------------- |
+| Linux/WSL2 + aarch64-darwin | `nixpkgs`        | `home-manager`        | `nix-darwin` (rolling)          |
+| x86_64-darwin               | `nixpkgs-darwin` | `home-manager-darwin` | `nix-darwin-x86` (pinned 25.05) |
 
 `checkReleasePair` (`grep -n checkReleasePair flake.nix` to find it; line
 numbers here would rot) compares release strings and throws on mismatch. Only

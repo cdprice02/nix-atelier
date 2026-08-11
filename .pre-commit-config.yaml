@@ -12,27 +12,28 @@ repos:
     hooks:
       - id: gitleaks
 
-  # alejandra and markdownlint run via `language: system`, resolving to the
-  # binaries on PATH inside `nix develop` (devShells.default in flake.nix)
-  # rather than pre-commit fetching its own pinned rev of each tool. This
-  # keeps pre-commit, `nix fmt`, and CI's lint-alejandra/lint-markdownlint
-  # jobs on the exact same nixpkgs-pinned version instead of three
-  # independently-versioned sources of the same tool. Run `nix develop`
-  # (or have direnv load it) before `pre-commit run` for these to resolve.
+  # treefmt runs via `language: system`, resolving to the wrapper on PATH
+  # inside `nix develop` (devShells.default in flake.nix) rather than
+  # pre-commit fetching its own pinned rev. This keeps pre-commit, `nix fmt`,
+  # and CI's flake-check `formatting` check on the exact same nixpkgs-pinned
+  # tool versions instead of independently-versioned sources of the same
+  # tools. Run `nix develop` (or have direnv load it) before `pre-commit run`
+  # for this to resolve. One hook covers what used to be two (alejandra +
+  # markdownlint) plus statix/deadnix, which previously only ran in CI: treefmt
+  # bundles all four (see treefmt.nix), and it only touches files matching its
+  # own configured includes (*.nix, *.md), so passing it whatever pre-commit
+  # staged is safe even when that includes neither.
   - repo: local
     hooks:
-      - id: alejandra
-        name: alejandra
-        entry: alejandra
+      - id: treefmt
+        name: treefmt
+        # --no-cache: treefmt's sqlite eval-cache (~/Library/Caches/treefmt
+        # on macOS) hit a real "failed to open cache db: timeout" here,
+        # reproducibly, even with nothing else holding the db open --
+        # formatting itself still succeeded underneath the error, but
+        # pre-commit treated the nonzero exit as a hook failure regardless.
+        # Skipping the cache costs nothing meaningful here: pre-commit only
+        # ever passes the small set of staged files, not the whole tree.
+        entry: treefmt --no-cache
         language: system
         types: [file]
-        files: \.nix$
-      # Every tracked .md, not a hand-listed subset — pre-commit only ever
-      # passes staged files, which are tracked by definition, so this matches
-      # what `just _lint-markdownlint` selects via `git ls-files`. Submodule
-      # content under config/ is excluded by .markdownlintignore.
-      - id: markdownlint
-        name: markdownlint
-        entry: markdownlint
-        language: system
-        types: [markdown]

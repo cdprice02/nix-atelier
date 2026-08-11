@@ -93,8 +93,8 @@ Default `$EDITOR` for commit messages and quick edits. vscode is the daily-drive
 ### nixd
 Nix language server: completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files. [github.com/nix-community/nixd](https://github.com/nix-community/nixd)
 
-### alejandra
-Nix formatter: this repo's `nix fmt`, pre-commit hook, and CI lint all agree on it. Also on PATH for Claude Code's format-on-edit hook. [github.com/kamadorueda/alejandra](https://github.com/kamadorueda/alejandra)
+### nixfmt-rfc-style
+The official RFC 166 Nix formatter. This repo's `nix fmt` runs it via treefmt (see treefmt.nix), alongside statix/deadnix/mdformat; also on PATH here directly for Claude Code's format-on-edit hook. [github.com/NixOS/nixfmt](https://github.com/NixOS/nixfmt)
 
 ---
 
