@@ -1,4 +1,5 @@
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   home.packages = with pkgs; [
     # Rust: stable toolchain is the daily-driver default. rust-analyzer and
     # rustfmt are pinned to nightly (better proc-macro/type inference;
@@ -21,27 +22,39 @@
     # profile always collides on that path. The individual components have
     # no such shared doc path and combine cleanly.
     (rust-bin.stable.latest.minimal.override {
-      extensions = ["clippy"];
+      extensions = [ "clippy" ];
       targets =
-        if pkgs.stdenv.isDarwin
-        then ["x86_64-apple-darwin" "aarch64-apple-darwin"]
-        else ["x86_64-unknown-linux-gnu" "aarch64-unknown-linux-gnu"];
+        if pkgs.stdenv.isDarwin then
+          [
+            "x86_64-apple-darwin"
+            "aarch64-apple-darwin"
+          ]
+        else
+          [
+            "x86_64-unknown-linux-gnu"
+            "aarch64-unknown-linux-gnu"
+          ];
     })
-    (let
-      # Validate against the actual components this bundle consumes, not
-      # just `.minimal` (rustc/cargo/rust-std): some nightly dates are
-      # missing rust-analyzer/rustfmt/rust-src for a given platform, and
-      # `.minimal` alone evaluating successfully says nothing about those.
-      # `.override` with these as extensions forces resolveComponents to
-      # confirm all three exist for this date before selectLatestNightlyWith
-      # accepts it, so a bad date still falls back correctly.
-      nightly = rust-bin.selectLatestNightlyWith (
-        t:
+    (
+      let
+        # Validate against the actual components this bundle consumes, not
+        # just `.minimal` (rustc/cargo/rust-std): some nightly dates are
+        # missing rust-analyzer/rustfmt/rust-src for a given platform, and
+        # `.minimal` alone evaluating successfully says nothing about those.
+        # `.override` with these as extensions forces resolveComponents to
+        # confirm all three exist for this date before selectLatestNightlyWith
+        # accepts it, so a bad date still falls back correctly.
+        nightly = rust-bin.selectLatestNightlyWith (
+          t:
           t.minimal.override {
-            extensions = ["rust-src" "rustfmt-preview" "rust-analyzer-preview"];
+            extensions = [
+              "rust-src"
+              "rustfmt-preview"
+              "rust-analyzer-preview"
+            ];
           }
-      );
-    in
+        );
+      in
       # buildEnv (not symlinkJoin) with an explicit pathsToLink allowlist.
       # Two reasons this is not a plain symlinkJoin:
       #   1. The nightly components ship files that also ship in the stable
@@ -59,9 +72,17 @@
       #      buildEnv follows the symlink and links the src tree correctly.
       pkgs.buildEnv {
         name = "rust-analyzer-nightly-bundle";
-        paths = with nightly.availableComponents; [rust-analyzer rustfmt rust-src];
-        pathsToLink = ["/bin" "/lib/rustlib/src"];
-      })
+        paths = with nightly.availableComponents; [
+          rust-analyzer
+          rustfmt
+          rust-src
+        ];
+        pathsToLink = [
+          "/bin"
+          "/lib/rustlib/src"
+        ];
+      }
+    )
 
     # Cargo tools
     cargo-edit

@@ -21,7 +21,8 @@
   lib,
   options,
   ...
-}: rec {
+}:
+rec {
   # ── Capability probes ───────────────────────────────────────────────────────
   # Probed off `options`, not a version string: an option either exists in the
   # evaluating module tree or it doesn't, which is the thing actually being
@@ -36,37 +37,34 @@
   # Returns a fragment to merge into `programs.git`, letting several modules
   # each contribute their own slice (base + git-tools + gui-*) exactly as they
   # did with extraConfig.
-  gitConfig = cfg:
-    if hasGitSettings
-    then {settings = cfg;}
-    else {extraConfig = cfg;};
+  gitConfig = cfg: if hasGitSettings then { settings = cfg; } else { extraConfig = cfg; };
 
   # master: programs.git.userName/userEmail -> programs.git.settings.user.name/.email
   # `force` covers a private, machine-specific module (wired in via user.nix's
   # extraModulePaths) overriding base.nix's identity, which needs mkForce on
   # whichever spelling is live since base.nix sets its own identity at the
   # same real priority, not mkDefault.
-  gitIdentity = {
-    name,
-    email,
-    force ? false,
-  }: let
-    wrap =
-      if force
-      then lib.mkForce
-      else lib.id;
-  in
-    if hasGitSettings
-    then {
-      settings.user = {
-        name = wrap name;
-        email = wrap email;
+  gitIdentity =
+    {
+      name,
+      email,
+      force ? false,
+    }:
+    let
+      wrap = if force then lib.mkForce else lib.id;
+    in
+    if hasGitSettings then
+      {
+        settings.user = {
+          name = wrap name;
+          email = wrap email;
+        };
+      }
+    else
+      {
+        userName = wrap name;
+        userEmail = wrap email;
       };
-    }
-    else {
-      userName = wrap name;
-      userEmail = wrap email;
-    };
 
   # ── delta ───────────────────────────────────────────────────────────────────
   # master: programs.git.delta.{enable,options} -> programs.delta.{enable,options},
@@ -74,21 +72,23 @@
   # master auto-enables at a low priority and warns about, so it is set
   # explicitly). 25.05 has no programs.delta module at all.
   # Returns a fragment to merge into `programs`.
-  deltaConfig = deltaOptions:
-    if hasDeltaModule
-    then {
-      delta = {
-        enable = true;
-        enableGitIntegration = true;
-        options = deltaOptions;
+  deltaConfig =
+    deltaOptions:
+    if hasDeltaModule then
+      {
+        delta = {
+          enable = true;
+          enableGitIntegration = true;
+          options = deltaOptions;
+        };
+      }
+    else
+      {
+        git.delta = {
+          enable = true;
+          options = deltaOptions;
+        };
       };
-    }
-    else {
-      git.delta = {
-        enable = true;
-        options = deltaOptions;
-      };
-    };
 
   # ── ssh ─────────────────────────────────────────────────────────────────────
   # master: programs.ssh.matchBlocks -> programs.ssh.settings. Not a plain
@@ -102,39 +102,41 @@
   # to the legacy shape for 25.05. Only the directives this repo actually uses
   # are mapped; an unmapped one would silently vanish on the pinned pair, so the
   # fallback throws instead.
-  sshBlocks = blocks:
-    if hasSshSettings
-    then {settings = blocks;}
-    else let
-      legacyNames = {
-        IdentityFile = "identityFile";
-        User = "user";
-        IdentitiesOnly = "identitiesOnly";
-        HostName = "hostname";
-        Port = "port";
-      };
-      # Directives with no typed 25.05 equivalent ride extraOptions, which is
-      # exactly what that escape hatch existed for.
-      toLegacy = name: block: let
-        typed =
-          lib.mapAttrs' (
-            directive: value:
-              lib.nameValuePair legacyNames.${directive} value
-          )
-          (lib.filterAttrs (d: _: legacyNames ? ${d}) block);
-        extra = lib.filterAttrs (d: _: !(legacyNames ? ${d})) block;
+  sshBlocks =
+    blocks:
+    if hasSshSettings then
+      { settings = blocks; }
+    else
+      let
+        legacyNames = {
+          IdentityFile = "identityFile";
+          User = "user";
+          IdentitiesOnly = "identitiesOnly";
+          HostName = "hostname";
+          Port = "port";
+        };
+        # Directives with no typed 25.05 equivalent ride extraOptions, which is
+        # exactly what that escape hatch existed for.
+        toLegacy =
+          name: block:
+          let
+            typed = lib.mapAttrs' (directive: value: lib.nameValuePair legacyNames.${directive} value) (
+              lib.filterAttrs (d: _: legacyNames ? ${d}) block
+            );
+            extra = lib.filterAttrs (d: _: !(legacyNames ? ${d})) block;
+          in
+          lib.throwIf (block ? header)
+            "hm-compat.sshBlocks: `header` has no programs.ssh.matchBlocks equivalent (block ${name})"
+            (typed // lib.optionalAttrs (extra != { }) { extraOptions = extra; });
       in
-        lib.throwIf (block ? header)
-        "hm-compat.sshBlocks: `header` has no programs.ssh.matchBlocks equivalent (block ${name})"
-        (typed // lib.optionalAttrs (extra != {}) {extraOptions = extra;});
-    in {
-      matchBlocks = lib.mapAttrs toLegacy blocks;
-    };
+      {
+        matchBlocks = lib.mapAttrs toLegacy blocks;
+      };
 
   # master injects a default `*` match block and warns unless this is off; 25.05
   # has neither the option nor the injection. Kept so the explicit `*` block
   # stays authoritative on both.
-  sshDefaultConfigOff =
-    lib.optionalAttrs (options.programs.ssh ? enableDefaultConfig)
-    {enableDefaultConfig = false;};
+  sshDefaultConfigOff = lib.optionalAttrs (options.programs.ssh ? enableDefaultConfig) {
+    enableDefaultConfig = false;
+  };
 }

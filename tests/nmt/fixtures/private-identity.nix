@@ -9,9 +9,11 @@
   lib,
   options,
   ...
-}: let
-  compat = import ../../../modules/lib/hm-compat.nix {inherit lib options;};
-in {
+}:
+let
+  compat = import ../../../modules/lib/hm-compat.nix { inherit lib options; };
+in
+{
   programs.git = compat.gitIdentity {
     name = "Fixture Override";
     email = "fixture-override@example.com";

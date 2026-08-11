@@ -2,7 +2,7 @@
 
 Common first-boot failures and how to fix them.
 
----
+______________________________________________________________________
 
 ## `--impure` omitted → cryptic eval error
 
@@ -27,7 +27,7 @@ sudo darwin-rebuild switch --flake ~/.nix-atelier#<profile> --impure
 
 `user.nix` is read from the filesystem via `builtins.getEnv "HOME"`, which is an impure operation. This flag is always needed, not just at bootstrap.
 
----
+______________________________________________________________________
 
 ## home-manager / nixpkgs release mismatch
 
@@ -82,7 +82,7 @@ nix flake update nixpkgs home-manager nix-darwin
 nix flake update nixpkgs-darwin home-manager-darwin nix-darwin-x86
 ```
 
----
+______________________________________________________________________
 
 ## A newly installed tool stays shadowed, or a `sessionPath` entry is missing from `PATH`
 
@@ -144,7 +144,7 @@ See `modules/env.nix`'s comment block for the related (and separate)
 Linux-vs-darwin `PATH`-ordering behavior, which is often what you're checking
 when this surfaces.
 
----
+______________________________________________________________________
 
 ## Submodule directories empty after clone
 
@@ -164,7 +164,7 @@ Or clone correctly from the start:
 git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier
 ```
 
----
+______________________________________________________________________
 
 ## SSH key not added to GitHub → submodule fetch fails
 
@@ -188,7 +188,7 @@ home-manager switch --flake ~/.nix-atelier#<profile> --impure
 
 `<sshKey>` is the prefix of your personal email from `user.nix` (e.g. `you` for `you@example.com`).
 
----
+______________________________________________________________________
 
 ## Home Manager symlink conflict (`~/.claude` already exists)
 
@@ -204,7 +204,7 @@ ls -la ~/.claude   # should point to ~/.nix-atelier/config/claude
 
 If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-atelier/config/claude` before deleting the backup.
 
----
+______________________________________________________________________
 
 ## SSL errors from curl, AWS CLI, Python requests, or npm behind a TLS-inspecting proxy
 
@@ -214,7 +214,7 @@ If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-ate
 
 **Fix:** Install the CA into the system bundle the normal distro way (e.g. copy it into `/usr/local/share/ca-certificates/` and run `update-ca-certificates`), not into anything this repo manages. See [bootstrap.md](bootstrap.md)'s step 5 for details.
 
----
+______________________________________________________________________
 
 ## `just` or `home-manager` not found during bootstrap
 

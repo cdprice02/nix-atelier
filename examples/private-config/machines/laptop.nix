@@ -2,7 +2,8 @@
 # installed tool outside Nix, a laptop-only working-directory convention,
 # anything the public framework has no business knowing about because it
 # only makes sense on this one machine.
-{config, ...}: {
+{ config, ... }:
+{
   home.sessionVariables = {
     MY_LAPTOP_ONLY_VAR = "some-machine-specific-value";
   };

@@ -3,10 +3,12 @@
   lib,
   options,
   ...
-}: let
-  compat = import ./lib/hm-compat.nix {inherit lib options;};
+}:
+let
+  compat = import ./lib/hm-compat.nix { inherit lib options; };
   guiBase = import ./lib/gui-base.nix;
-in {
+in
+{
   home.packages = with pkgs; [
     obsidian
   ];
@@ -32,9 +34,11 @@ in {
     vscode.enable = true;
 
     # credential.helper for Linux GUI machines
-    git = compat.gitConfig (guiBase.git
+    git = compat.gitConfig (
+      guiBase.git
       // {
         credential.helper = lib.mkForce "store";
-      });
+      }
+    );
   };
 }

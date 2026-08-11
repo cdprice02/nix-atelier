@@ -3,7 +3,8 @@
 # headless build machine but not worth a public feature of its own -- too
 # small, too specific to this one machine's job to justify a shared feature
 # module.
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   home.packages = with pkgs; [
     borgbackup # this machine's own backup job shells out to it
   ];

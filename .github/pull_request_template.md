@@ -1,4 +1,5 @@
 <!-- markdownlint-disable-file MD041 -->
+
 <!-- MD041 wants a top-level heading first, but GitHub renders this file as the
      PR body, where an h1 would sit oddly above the repo's own PR title. -->
 

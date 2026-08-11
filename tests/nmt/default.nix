@@ -8,7 +8,7 @@
 # (e.g. symlinks.nix's expected home directory, which differs between darwin
 # and Linux) -- files that don't need it just ignore the argument, matching
 # shell-init.nix/dotfile-content.nix's plain-attrset shape below.
-{system}:
+{ system }:
 {
   activation-package-renders = {
     nmt.description = ''
@@ -26,6 +26,6 @@
 }
 // import ./shell-init.nix
 // import ./dotfile-content.nix
-// import ./symlinks.nix {inherit system;}
+// import ./symlinks.nix { inherit system; }
 // import ./tmux.nix
 // import ./gui-absent.nix

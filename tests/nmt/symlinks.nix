@@ -8,13 +8,12 @@
 # computed here in Nix, not read from $HOME at assertion-script runtime,
 # since the build sandbox's real $HOME has no relation to the fixture's
 # declared home.homeDirectory.
-{system}: let
+{ system }:
+let
   isDarwin = builtins.match ".*-darwin" system != null;
-  homeDir =
-    if isDarwin
-    then "/Users/yourusername"
-    else "/home/yourusername";
-in {
+  homeDir = if isDarwin then "/Users/yourusername" else "/home/yourusername";
+in
+{
   agent-symlinks-present = {
     nmt.description = ''
       features/claude.nix and features/copilot.nix each point their symlink

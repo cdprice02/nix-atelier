@@ -1,5 +1,9 @@
-{user, ...}: {
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+{ user, ... }:
+{
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   # Define user for Home Manager compatibility
   users.users.${user.username} = {
