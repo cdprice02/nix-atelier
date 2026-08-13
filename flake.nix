@@ -22,7 +22,7 @@
     # on nixpkgs-unstable AND runs current macOS, so it has neither problem.
     # This pin therefore applies to x86_64-darwin ONLY; aarch64-darwin tracks
     # the rolling nixpkgs/home-manager/nix-darwin inputs, same as Linux (the
-    # arch split lives in mkDarwinConfig below). Every Linux/WSL2 profile also
+    # arch split lives in lib/systems.nix). Every Linux/WSL2 profile also
     # stays on rolling nixpkgs-unstable above.
     nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
     # nix-darwin enforces that its release branch and its nixpkgs input's
@@ -187,9 +187,7 @@
         allSystems
         isLinux
         isX86Darwin
-        pkgsConfig
         pkgsFor
-        linuxPairOk
         ;
 
       # user is threaded into every module via specialArgs. mkUser lives in
@@ -208,12 +206,6 @@
       treefmtEval = nixpkgs.lib.genAttrs allSystems (
         system: treefmt-nix.lib.evalModule nixpkgs-darwin.legacyPackages.${system} ./treefmt.nix
       );
-
-      # Not a function of system, and doesn't also carry self/system: a grep
-      # across modules/, system/, and tests/ (#117) found zero real consumers
-      # of either (every match was prose, not a module destructuring them as
-      # an argument).
-      userSpecialArgs = { inherit user; };
 
       # ── Feature/tier data model ────────────────────────────────────────────────
       # features.nix: name -> module path registry. core/env aren't in it: they're
@@ -352,6 +344,7 @@
                 file = nixpkgs.lib.mkDefault (userData.sopsFile or null);
                 secrets = nixpkgs.lib.mkDefault (userData.secrets or [ ]);
               };
+              submodules = nixpkgs.lib.mkDefault (userData.submodules or { });
             };
           };
         in
@@ -377,12 +370,13 @@
 
       # ── mkConfigs (#122) ─────────────────────────────────────────────────────
       # The pure, consumable entry point: see lib/mkConfigs.nix for the schema
-      # and per-kind builders. Purely additive here -- this repo's own
-      # homeConfigurations/darwinConfigurations below still build the old way,
-      # via the real (impure) user.nix. Migrating them onto mkConfigs, adding
-      # a real nixosConfigurations entry, and removing --impure are later,
-      # separate changes; this file only proves the entry point itself works
-      # and exposes it as a real flake output for external consumers.
+      # and per-kind builders. This repo's own homeConfigurations/
+      # darwinConfigurations further down are built through it too (see
+      # "This repo's own configs" below): the real proof it works standalone
+      # is this repo depending on it for its own real configs, not a
+      # special-cased internal path that merely looks similar. Only identity
+      # loading (userBase, just below) stays impure; that removal is --impure
+      # removal's own, separate PR.
       mkConfigsLib = import ./lib/mkConfigs.nix {
         inherit (nixpkgs) lib;
         systems = systemsLib;
@@ -412,28 +406,35 @@
       };
       inherit (nmtHarness) testUser mkNmtTests;
 
-      # ── Home Manager (standalone Linux/WSL2) ────────────────────────────────
-      mkHomeConfig =
-        {
-          tier,
-          withGui,
-          system,
-        }:
-        # assert forces the release-pair check before any config is built. No
-        # feature/tier-name validation is needed here: tiers are derived directly
-        # from features.nix's own attrNames (see the tiers binding above), so
-        # there is no second, hand-maintained list that could disagree with it.
-        assert linuxPairOk;
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = pkgsFor system;
-          extraSpecialArgs = userSpecialArgs;
-          modules = (mkProfile { inherit tier withGui system; }) ++ [ { nixpkgs.config = pkgsConfig; } ];
+      # ── This repo's own configs, through mkConfigs (#122) ───────────────────
+      # This repo is the first real caller of its own lib.mkConfigs, not a
+      # special-cased internal path: the matrix generation below (tier x gui
+      # x arch for home, the two darwin arches) is this repo's own
+      # convenience for dogfooding every combination, kept exactly as before;
+      # what changed is that the resulting configs attrset is handed to the
+      # same mkConfigs everyone else calls, instead of built by a separate,
+      # parallel mkHomeConfig/mkDarwinConfig.
+      #
+      # aws/nativeInstallers/configRepos/sops/submodules aren't in mkConfigs's
+      # schema (see machine.nix, #120): every config below carries them
+      # through its own extraConfig instead, translated once here from
+      # user.nix's flat shape. Identical in spirit to mkProfile's own
+      # machineBridge, but a plain value, not mkDefault: extraConfig entries
+      # are already the real, single definition for this repo's own configs,
+      # nothing else could override them.
+      atelierExtraConfig = {
+        atelier = {
+          aws.profile = userBase.aws.profile or null;
+          nativeInstallers = userBase.nativeInstallers or [ ];
+          configRepos = userBase.configRepos or { };
+          sops = {
+            file = userBase.sopsFile or null;
+            secrets = userBase.secrets or [ ];
+          };
+          submodules = userBase.submodules or { };
         };
+      };
 
-      # Cartesian product of tier x gui x arch: every homeConfigurations name
-      # falls out of this loop, so a new feature (which only changes what
-      # `full` contains) never requires touching this list, and neither does a
-      # new tier.
       linuxArches = [
         "x86_64-linux"
         "aarch64-linux"
@@ -443,64 +444,64 @@
         tierName
         + (nixpkgs.lib.optionalString withGui "-gui")
         + (nixpkgs.lib.optionalString (arch == "aarch64-linux") "-aarch64");
-      homeConfigMatrix = nixpkgs.lib.concatMap (
-        tierName:
-        nixpkgs.lib.concatMap
-          (
-            withGui:
-            map (arch: {
-              name = mkHomeConfigName tierName withGui arch;
-              value = mkHomeConfig {
-                tier = tierName;
-                inherit withGui;
-                system = arch;
-              };
-            }) linuxArches
-          )
-          [
-            false
-            true
-          ]
-      ) (builtins.attrNames tiers);
+      homeConfigsAttrs = builtins.listToAttrs (
+        nixpkgs.lib.concatMap (
+          tierName:
+          nixpkgs.lib.concatMap
+            (
+              withGui:
+              map (arch: {
+                name = mkHomeConfigName tierName withGui arch;
+                value = {
+                  tier = tierName;
+                  inherit withGui;
+                  system = arch;
+                  extraConfig = atelierExtraConfig;
+                };
+              }) linuxArches
+            )
+            [
+              false
+              true
+            ]
+        ) (builtins.attrNames tiers)
+      );
 
-      # ── Darwin (nix-darwin + home-manager) ──────────────────────────────────
       # Darwin always includes GUI: nix-darwin implies a graphical macOS
       # environment, and it's always the `full` tier -- a headless or minimal
-      # Mac isn't a real use case this repo targets.
-      mkDarwinConfig =
-        { system }:
-        # x86_64-darwin rides the pinned 25.05 trio (nixpkgs-darwin +
-        # nix-darwin-x86 + home-manager-darwin); aarch64-darwin rides the rolling
-        # trio (nixpkgs + nix-darwin + home-manager), same inputs as Linux. Each
-        # nix-darwin/home-manager must match its nixpkgs release, so all three
-        # move together per arch -- resolved once, in lib/systems.nix, and
-        # shared with lib/mkConfigs.nix's own darwin builder (#122).
-        # assert forces the matching release-pair check before any config builds.
-        assert systemsLib.pairOkFor system;
-        (systemsLib.darwinLibFor system).lib.darwinSystem {
-          inherit system;
-          specialArgs = userSpecialArgs;
-          modules = [
-            ./system/darwin.nix
-            (systemsLib.hmDarwinModuleFor system)
-            {
-              nixpkgs.pkgs = pkgsFor system;
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = false;
-                backupFileExtension = "bk";
-                extraSpecialArgs = userSpecialArgs;
-                users.${user.username} = {
-                  imports = mkProfile {
-                    inherit system;
-                    tier = "full";
-                    withGui = true;
-                  };
-                };
-              };
-            }
-          ];
+      # Mac isn't a real use case this repo targets. mkConfigs's own darwin
+      # kind already defaults to this; the entries below only need `system`.
+      darwinConfigsAttrs = {
+        "full-darwin" = {
+          system = "x86_64-darwin";
+          extraConfig = atelierExtraConfig;
         };
+        "full-darwin-aarch64" = {
+          system = "aarch64-darwin";
+          extraConfig = atelierExtraConfig;
+        };
+      };
+
+      thisRepoConfigs = mkConfigsLib.mkConfigs {
+        identity = {
+          inherit (userBase)
+            username
+            name
+            email
+            github
+            ;
+        };
+        configs = {
+          home = homeConfigsAttrs;
+          darwin = darwinConfigsAttrs;
+        };
+        features = {
+          extra = userBase.extraFeatures or [ ];
+          exclude = userBase.excludeFeatures or [ ];
+          extraModulePaths = userBase.extraModulePaths or [ ];
+          extraSystemModulePaths = userBase.extraSystemModulePaths or [ ];
+        };
+      };
     in
     {
       # ── lib ──────────────────────────────────────────────────────────────────
@@ -516,22 +517,17 @@
       #
       # Generated from tiers x {gui,no-gui} x {x86_64,aarch64}: adding a tier or
       # a feature never means adding a name here.
-      homeConfigurations = builtins.listToAttrs homeConfigMatrix;
+      inherit (thisRepoConfigs) homeConfigurations;
 
       # ── darwinConfigurations ────────────────────────────────────────────────
       # Bootstrap: sudo darwin-rebuild switch --flake ~/.nix-atelier#<name>
-      darwinConfigurations = {
-        "full-darwin" = mkDarwinConfig {
-          system = "x86_64-darwin";
-        };
-        "full-darwin-aarch64" = mkDarwinConfig {
-          system = "aarch64-darwin";
-        };
-      };
+      inherit (thisRepoConfigs) darwinConfigurations;
 
       # ── nixosConfigurations ─────────────────────────────────────────────────
-      # NixOS support is tracked in issue #5. Requires hardware-configuration.nix
-      # and a mkNixosConfig helper (analogous to mkDarwinConfig above).
+      # The nixos kind already exists in lib/mkConfigs.nix (thisRepoConfigs.
+      # nixosConfigurations, currently {}); this repo shipping a real entry
+      # of its own, build-verified against a synthetic hardware fixture, is
+      # tracked separately in issue #5.
 
       # ── devShells ────────────────────────────────────────────────────────────
       # `nix develop`: the treefmt wrapper (nixfmt-rfc-style + statix + deadnix
