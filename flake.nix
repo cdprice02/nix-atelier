@@ -267,11 +267,16 @@
               true
           );
 
-      docsGenerated = (import ./modules/docs-gen.nix { inherit (nixpkgs) lib; }) {
-        inherit tiers toolCatalog;
-        homeConfigNames = builtins.attrNames self.homeConfigurations;
-        darwinConfigNames = builtins.attrNames self.darwinConfigurations;
-      };
+      docsGenerated =
+        (import ./modules/docs-gen.nix {
+          inherit (nixpkgs) lib;
+          inherit (systemsLib) mkHomeConfigName;
+          linuxArches = systemsLib.linuxSystems;
+        })
+          {
+            inherit tiers toolCatalog;
+            darwinConfigNames = builtins.attrNames self.darwinConfigurations;
+          };
 
       # ── Profile compositor ────────────────────────────────────────────────────
       # Produces the ordered module list for a profile.
@@ -442,15 +447,6 @@
         };
       };
 
-      linuxArches = [
-        "x86_64-linux"
-        "aarch64-linux"
-      ];
-      mkHomeConfigName =
-        tierName: withGui: arch:
-        tierName
-        + (nixpkgs.lib.optionalString withGui "-gui")
-        + (nixpkgs.lib.optionalString (arch == "aarch64-linux") "-aarch64");
       homeConfigsAttrs = builtins.listToAttrs (
         nixpkgs.lib.concatMap (
           tierName:
@@ -458,14 +454,14 @@
             (
               withGui:
               map (arch: {
-                name = mkHomeConfigName tierName withGui arch;
+                name = systemsLib.mkHomeConfigName tierName withGui arch;
                 value = {
                   tier = tierName;
                   inherit withGui;
                   system = arch;
                   extraConfig = atelierExtraConfig;
                 };
-              }) linuxArches
+              }) systemsLib.linuxSystems
             )
             [
               false
