@@ -1,7 +1,7 @@
 {
   pkgs,
   lib,
-  user,
+  config,
   ...
 }:
 {
@@ -24,11 +24,11 @@
     // lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
       AWS_VAULT_BACKEND = "file";
     }
-    // lib.optionalAttrs (user.aws.profile or null != null) {
-      # Left unset by default: a hardcoded default here risks accidentally
-      # running a command against the wrong AWS account. Set
-      # user.aws.profile in user.nix to opt in on a given machine.
-      AWS_PROFILE = user.aws.profile;
+    // lib.optionalAttrs (config.atelier.aws.profile != null) {
+      # Left unset by default (see machine.nix, #120): a hardcoded default
+      # here risks accidentally running a command against the wrong AWS
+      # account. Set atelier.aws.profile to opt in on a given machine.
+      AWS_PROFILE = config.atelier.aws.profile;
     };
 
     # Skeleton only: written once, never overwritten. Real profiles get

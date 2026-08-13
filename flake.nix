@@ -336,25 +336,24 @@
             else
               [ ./modules/gui-darwin.nix ];
 
-          # Opt-in only, gated on user.nix's sopsFile being set -- no separate
-          # boolean, since a set sopsFile already says everything a flag would.
-          # This repo is public and forked by others (see CONTRIBUTING.md):
-          # sops-nix decrypts at *activation* time using whichever age key is on
-          # disk, so if this were wired in unconditionally, `home-manager
-          # switch` would hard-fail on any machine that isn't this repo owner's
-          # (no matching age key). Importing the module itself is otherwise
-          # inert (declares options, no activation-time effect) with no secrets
-          # configured, but keeping the import itself gated too means it's
-          # genuinely absent from the module tree, not just unconfigured, for
-          # anyone who hasn't opted in.
-          sopsMods =
-            if (userData.sopsFile or null) != null then
-              [
-                sops-nix.homeManagerModules.sops
-                ./modules/secrets-sops.nix
-              ]
-            else
-              [ ];
+          # Bridges userData's flat aws/nativeInstallers/configRepos/sopsFile/
+          # secrets fields (this repo's still-impure user.nix shape, and the
+          # nmt harness's testUser) onto machine.nix's atelier.* options
+          # (#120). lib.mkDefault, not a plain assignment: a mkConfigs (#122)
+          # caller's own extraConfig setting the same option is a real,
+          # higher-priority definition and must win outright rather than
+          # conflicting with this fallback.
+          machineBridge = {
+            atelier = {
+              aws.profile = nixpkgs.lib.mkDefault (userData.aws.profile or null);
+              nativeInstallers = nixpkgs.lib.mkDefault (userData.nativeInstallers or [ ]);
+              configRepos = nixpkgs.lib.mkDefault (userData.configRepos or { });
+              sops = {
+                file = nixpkgs.lib.mkDefault (userData.sopsFile or null);
+                secrets = nixpkgs.lib.mkDefault (userData.secrets or [ ]);
+              };
+            };
+          };
         in
         nixpkgs.lib.warnIf (skippedNames != [ ])
           ''
@@ -365,12 +364,15 @@
             [
               ./modules/base.nix
               ./modules/env.nix
+              ./modules/machine.nix
+              sops-nix.homeManagerModules.sops
+              ./modules/secrets-sops.nix
               caret.homeManagerModules.default
+              machineBridge
             ]
             ++ featureMods
             ++ privateMods
             ++ guiMods
-            ++ sopsMods
           );
 
       # ── mkConfigs (#122) ─────────────────────────────────────────────────────
