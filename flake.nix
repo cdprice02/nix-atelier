@@ -163,93 +163,40 @@
           import (builtins.head existingUserNix)
         else
           import (self + /user.nix.example);
-      # Derive SSH key name from email prefix: key file: ~/.ssh/<sshKey>. Shared
-      # with testUser below (the nmt harness's identity-independent stand-in),
-      # so both go through the same derivation.
-      mkUser = base: base // { sshKey = builtins.elemAt (builtins.split "@" base.email) 0; };
-      user = mkUser userBase;
-
-      pkgsConfig = {
-        allowUnfree = true;
+      # ── Systems ────────────────────────────────────────────────────────────
+      # Which of the two release pairs a system uses, and the resolved
+      # pkgs/home-manager/nix-darwin for it: one cohesive unit (lib/systems.nix)
+      # instead of half a dozen separate bindings, shared between this file's
+      # own (still impure) config construction below and lib/mkConfigs.nix
+      # (#122). Fails evaluation on a release-pair mismatch rather than
+      # warning (HM's own home.enableNixpkgsReleaseCheck only warns, which is
+      # easy to miss); update both inputs of the offending pair together
+      # (`just update`, which never updates a single input).
+      systemsLib = import ./lib/systems.nix {
+        inherit
+          nixpkgs
+          nixpkgs-darwin
+          home-manager
+          home-manager-darwin
+          nix-darwin
+          nix-darwin-x86
+          rust-overlay
+          ;
       };
+      inherit (systemsLib)
+        allSystems
+        isLinux
+        isX86Darwin
+        pkgsConfig
+        pkgsFor
+        linuxPairOk
+        ;
 
-      # ── Release pairing guard ────────────────────────────────────────────────
-      # Home Manager's module code is coupled to its nixpkgs release: a mismatched
-      # pair evaluates but emits deprecation warnings and can silently generate
-      # wrong config (HM itself only warns, via home.enableNixpkgsReleaseCheck).
-      # This repo maintains two independent pairs: rolling (Linux/WSL2) and
-      # pinned (darwin): so a `nix flake update <one-input>` can desync either
-      # one.
-      #
-      # Fail evaluation instead of warning, so drift can't be ignored. To fix a
-      # failure here, update BOTH inputs of the offending pair together (`just
-      # update`, which never updates a single input).
-      hmRelease = hm: (builtins.fromJSON (builtins.readFile (hm + "/release.json"))).release;
-      checkReleasePair =
-        label: hm: npkgs:
-        let
-          hmVer = hmRelease hm;
-          npkgsVer = npkgs.lib.trivial.release;
-        in
-        nixpkgs.lib.throwIf (hmVer != npkgsVer) ''
-          ${label}: home-manager (${hmVer}) and nixpkgs (${npkgsVer}) releases disagree.
-
-          Home Manager modules are coupled to their nixpkgs release; a mismatched
-          pair produces deprecation warnings and can generate incorrect config.
-
-          Fix: update both inputs of this pair together: `just update`.
-        '' true;
-
-      # Evaluated by every config output below (see mkHomeConfig / mkDarwinConfig).
-      # The rolling pair (nixpkgs + home-manager master) backs Linux/WSL2 AND
-      # aarch64-darwin; the pinned pair backs x86_64-darwin only.
-      linuxPairOk = checkReleasePair "rolling (Linux/WSL2 + aarch64-darwin)" home-manager nixpkgs;
-      darwinPairOk = checkReleasePair "x86_64-darwin (pinned)" home-manager-darwin nixpkgs-darwin;
-
-      # ── Helpers ──────────────────────────────────────────────────────────────
-      # Every system this flake produces per-system outputs for (devShells,
-      # formatter, packages, checks). Named once rather than repeating the
-      # literal at each genAttrs call site, so adding or dropping a platform is
-      # one edit.
-      allSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
-      linuxSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-      ];
-
-      isLinux = s: builtins.elem s linuxSystems;
-      # Only x86_64-darwin uses the pinned 25.05 darwin inputs (see input
-      # comment). aarch64-darwin rides the rolling inputs, same as Linux.
-      isX86Darwin = s: s == "x86_64-darwin";
-
-      # nixpkgs with rust-overlay applied
-      mkPkgs =
-        system:
-        import nixpkgs {
-          inherit system;
-          config = pkgsConfig;
-          overlays = [ rust-overlay.overlays.default ];
-        };
-
-      # x86_64-darwin uses the pinned nixpkgs-darwin input (see the flake input
-      # comment above for why), not the rolling nixpkgs-unstable used everywhere
-      # else: including aarch64-darwin.
-      mkPkgsDarwin =
-        system:
-        import nixpkgs-darwin {
-          inherit system;
-          config = pkgsConfig;
-          overlays = [ rust-overlay.overlays.default ];
-        };
-
-      # Right package set for any system: pinned nixpkgs-darwin for x86_64-darwin,
-      # rolling nixpkgs for everything else (Linux + aarch64-darwin).
-      pkgsFor = system: if isX86Darwin system then mkPkgsDarwin system else mkPkgs system;
+      # user is threaded into every module via specialArgs. mkUser lives in
+      # lib/mkConfigs.nix (#122) rather than here: it has no real dependency
+      # on this file beyond a source location, and the nmt harness's testUser
+      # goes through the same derivation.
+      user = mkConfigsLib.mkUser userBase;
 
       # Deliberately nixpkgs-darwin.legacyPackages on every system, not
       # pkgsFor (which would only route x86_64-darwin there and everything
@@ -262,11 +209,10 @@
         system: treefmt-nix.lib.evalModule nixpkgs-darwin.legacyPackages.${system} ./treefmt.nix
       );
 
-      # user is threaded into every module via specialArgs. Used to also
-      # carry self/system: a grep across modules/, system/, and tests/ (#117)
-      # found zero real consumers of either (every match was prose, not a
-      # module destructuring them as an argument), so both are dropped and
-      # this is a plain attrset rather than a function of system.
+      # Not a function of system, and doesn't also carry self/system: a grep
+      # across modules/, system/, and tests/ (#117) found zero real consumers
+      # of either (every match was prose, not a module destructuring them as
+      # an argument).
       userSpecialArgs = { inherit user; };
 
       # ── Feature/tier data model ────────────────────────────────────────────────
@@ -427,6 +373,20 @@
             ++ sopsMods
           );
 
+      # ── mkConfigs (#122) ─────────────────────────────────────────────────────
+      # The pure, consumable entry point: see lib/mkConfigs.nix for the schema
+      # and per-kind builders. Purely additive here -- this repo's own
+      # homeConfigurations/darwinConfigurations below still build the old way,
+      # via the real (impure) user.nix. Migrating them onto mkConfigs, adding
+      # a real nixosConfigurations entry, and removing --impure are later,
+      # separate changes; this file only proves the entry point itself works
+      # and exposes it as a real flake output for external consumers.
+      mkConfigsLib = import ./lib/mkConfigs.nix {
+        inherit (nixpkgs) lib;
+        systems = systemsLib;
+        inherit mkProfile;
+      };
+
       # ── Test harness (nmt) ───────────────────────────────────────────────────
       # See tests/nmt/harness.nix for the harness itself (#117): scrubbed,
       # build-free module composition plus the nmt test-runner wiring. Only
@@ -443,10 +403,10 @@
           nmt
           isX86Darwin
           pkgsFor
-          mkUser
           mkProfile
           installedPackageNames
           ;
+        inherit (mkConfigsLib) mkUser;
       };
       inherit (nmtHarness) testUser mkNmtTests;
 
@@ -463,7 +423,7 @@
         # there is no second, hand-maintained list that could disagree with it.
         assert linuxPairOk;
         home-manager.lib.homeManagerConfiguration {
-          pkgs = mkPkgs system;
+          pkgs = pkgsFor system;
           extraSpecialArgs = userSpecialArgs;
           modules = (mkProfile { inherit tier withGui system; }) ++ [ { nixpkgs.config = pkgsConfig; } ];
         };
@@ -507,29 +467,20 @@
       # Mac isn't a real use case this repo targets.
       mkDarwinConfig =
         { system }:
-        let
-          # x86_64-darwin rides the pinned 25.05 trio (nixpkgs-darwin +
-          # nix-darwin-x86 + home-manager-darwin); aarch64-darwin rides the rolling
-          # trio (nixpkgs + nix-darwin + home-manager), same inputs as Linux. Each
-          # nix-darwin/home-manager must match its nixpkgs release, so all three
-          # move together per arch.
-          x86 = isX86Darwin system;
-          darwinLib = if x86 then nix-darwin-x86 else nix-darwin;
-          hmModule =
-            if x86 then
-              home-manager-darwin.darwinModules.home-manager
-            else
-              home-manager.darwinModules.home-manager;
-          # assert forces the matching release-pair check before any config builds.
-          pairOk = if x86 then darwinPairOk else linuxPairOk;
-        in
-        assert pairOk;
-        darwinLib.lib.darwinSystem {
+        # x86_64-darwin rides the pinned 25.05 trio (nixpkgs-darwin +
+        # nix-darwin-x86 + home-manager-darwin); aarch64-darwin rides the rolling
+        # trio (nixpkgs + nix-darwin + home-manager), same inputs as Linux. Each
+        # nix-darwin/home-manager must match its nixpkgs release, so all three
+        # move together per arch -- resolved once, in lib/systems.nix, and
+        # shared with lib/mkConfigs.nix's own darwin builder (#122).
+        # assert forces the matching release-pair check before any config builds.
+        assert systemsLib.pairOkFor system;
+        (systemsLib.darwinLibFor system).lib.darwinSystem {
           inherit system;
           specialArgs = userSpecialArgs;
           modules = [
             ./system/darwin.nix
-            hmModule
+            (systemsLib.hmDarwinModuleFor system)
             {
               nixpkgs.pkgs = pkgsFor system;
               home-manager = {
@@ -550,6 +501,13 @@
         };
     in
     {
+      # ── lib ──────────────────────────────────────────────────────────────────
+      # The consumable entry point (#122): a flake input elsewhere calls
+      # `nix-atelier.lib.mkConfigs { ... }`. See lib/mkConfigs.nix.
+      lib = {
+        inherit (mkConfigsLib) mkConfigs;
+      };
+
       # ── homeConfigurations ──────────────────────────────────────────────────
       # Bootstrap: nix run home-manager -- switch --flake ~/.nix-atelier#<name>
       # After first apply: home-manager switch --flake ~/.nix-atelier#<name>
@@ -706,6 +664,64 @@
           platformFilteringKeptOnOther = builtins.elem ./tests/nmt/fixtures/inert-feature.nix (
             platformFilteringModsFor platformFilteringOtherSystem
           );
+
+          # mkConfigs (#122) proof, pure eval-level like the check above: no
+          # real config gets built through here, this is entirely about the
+          # schema and per-kind dispatch in lib/mkConfigs.nix.
+          mkConfigsTestIdentity = {
+            username = "testuser";
+            name = "Test User";
+            email = "test@example.com";
+            github.user = "testuser";
+          };
+
+          # Valid input dispatches each kind to the right output attrset,
+          # keyed by the name given: proves the configs.home/darwin/nixos
+          # split actually wires through, without forcing a real build
+          # (attrNames on a lib.mapAttrs result only needs the source
+          # attrset's keys, not each mapped value).
+          mkConfigsValid = mkConfigsLib.mkConfigs {
+            identity = mkConfigsTestIdentity;
+            configs.home.test.system = "x86_64-linux";
+            configs.darwin.test.system = "aarch64-darwin";
+          };
+          mkConfigsDispatchOk =
+            (builtins.attrNames mkConfigsValid.homeConfigurations == [ "test" ])
+            && (builtins.attrNames mkConfigsValid.darwinConfigurations == [ "test" ])
+            && (mkConfigsValid.nixosConfigurations == { });
+
+          # A misspelled field (here "tierr") must be rejected rather than
+          # silently ignored -- the actual problem #122 set out to fix.
+          # builtins.deepSeq forces the whole config tree: attrNames alone
+          # would only force the outer configs.home attrset's keys, not each
+          # named entry's own fields, and the module system's "option does
+          # not exist" check fires when a submodule's fields are resolved,
+          # not when its container's key set is.
+          mkConfigsTypoRejected =
+            !(builtins.tryEval (
+              builtins.deepSeq (mkConfigsLib.evalConfig {
+                identity = mkConfigsTestIdentity;
+                configs.home.test = {
+                  system = "x86_64-linux";
+                  tierr = "full";
+                };
+              }) true
+            )).success;
+
+          # A field that belongs to a different kind (tier is a home-only
+          # concept) must be rejected the same way on darwin, proving the
+          # configs.home/.darwin/.nixos split actually prevents cross-kind
+          # leakage rather than merely documenting an intent to.
+          mkConfigsCrossKindRejected =
+            !(builtins.tryEval (
+              builtins.deepSeq (mkConfigsLib.evalConfig {
+                identity = mkConfigsTestIdentity;
+                configs.darwin.test = {
+                  system = "aarch64-darwin";
+                  tier = "full";
+                };
+              }) true
+            )).success;
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -746,6 +762,17 @@
                 ${system} should be dropped from that system's module list and
                 kept on every other system (droppedOnSelf=${builtins.toJSON platformFilteringDroppedOnSelf}
                 keptOnOther=${builtins.toJSON platformFilteringKeptOnOther}).
+              '';
+
+          mkconfigs-schema =
+            if mkConfigsDispatchOk && mkConfigsTypoRejected && mkConfigsCrossKindRejected then
+              pkgs.runCommand "check-mkconfigs-schema" { } "touch $out"
+            else
+              throw ''
+                mkconfigs-schema: lib.mkConfigs's schema and dispatch aren't
+                behaving as designed (dispatchOk=${builtins.toJSON mkConfigsDispatchOk}
+                typoRejected=${builtins.toJSON mkConfigsTypoRejected}
+                crossKindRejected=${builtins.toJSON mkConfigsCrossKindRejected}).
               '';
 
           formatting = treefmtEval.${system}.config.build.check self;
