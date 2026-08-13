@@ -427,6 +427,34 @@
             ++ sopsMods
           );
 
+      # ── mkConfigs (#122) ─────────────────────────────────────────────────────
+      # The pure, consumable entry point: see lib/mkConfigs.nix for the schema
+      # and per-kind builders. Purely additive here -- this repo's own
+      # homeConfigurations/darwinConfigurations below still build the old way,
+      # via the real (impure) user.nix. Migrating them onto mkConfigs, adding
+      # a real nixosConfigurations entry, and removing --impure are later,
+      # separate changes; this file only proves the entry point itself works
+      # and exposes it as a real flake output for external consumers.
+      mkConfigsLib = import ./lib/mkConfigs.nix {
+        inherit (nixpkgs) lib;
+        inherit
+          home-manager
+          home-manager-darwin
+          nix-darwin
+          nix-darwin-x86
+          pkgsFor
+          isX86Darwin
+          linuxPairOk
+          darwinPairOk
+          mkProfile
+          mkUser
+          tiers
+          pkgsConfig
+          allSystems
+          linuxSystems
+          ;
+      };
+
       # ── Test harness (nmt) ───────────────────────────────────────────────────
       # See tests/nmt/harness.nix for the harness itself (#117): scrubbed,
       # build-free module composition plus the nmt test-runner wiring. Only
@@ -550,6 +578,13 @@
         };
     in
     {
+      # ── lib ──────────────────────────────────────────────────────────────────
+      # The consumable entry point (#122): a flake input elsewhere calls
+      # `nix-atelier.lib.mkConfigs { ... }`. See lib/mkConfigs.nix.
+      lib = {
+        inherit (mkConfigsLib) mkConfigs;
+      };
+
       # ── homeConfigurations ──────────────────────────────────────────────────
       # Bootstrap: nix run home-manager -- switch --flake ~/.nix-atelier#<name>
       # After first apply: home-manager switch --flake ~/.nix-atelier#<name>
@@ -706,6 +741,64 @@
           platformFilteringKeptOnOther = builtins.elem ./tests/nmt/fixtures/inert-feature.nix (
             platformFilteringModsFor platformFilteringOtherSystem
           );
+
+          # mkConfigs (#122) proof, pure eval-level like the check above: no
+          # real config gets built through here, this is entirely about the
+          # schema and per-kind dispatch in lib/mkConfigs.nix.
+          mkConfigsTestIdentity = {
+            username = "testuser";
+            name = "Test User";
+            email = "test@example.com";
+            github.user = "testuser";
+          };
+
+          # Valid input dispatches each kind to the right output attrset,
+          # keyed by the name given: proves the configs.home/darwin/nixos
+          # split actually wires through, without forcing a real build
+          # (attrNames on a lib.mapAttrs result only needs the source
+          # attrset's keys, not each mapped value).
+          mkConfigsValid = mkConfigsLib.mkConfigs {
+            identity = mkConfigsTestIdentity;
+            configs.home.test.system = "x86_64-linux";
+            configs.darwin.test.system = "aarch64-darwin";
+          };
+          mkConfigsDispatchOk =
+            (builtins.attrNames mkConfigsValid.homeConfigurations == [ "test" ])
+            && (builtins.attrNames mkConfigsValid.darwinConfigurations == [ "test" ])
+            && (mkConfigsValid.nixosConfigurations == { });
+
+          # A misspelled field (here "tierr") must be rejected rather than
+          # silently ignored -- the actual problem #122 set out to fix.
+          # builtins.deepSeq forces the whole config tree: attrNames alone
+          # would only force the outer configs.home attrset's keys, not each
+          # named entry's own fields, and the module system's "option does
+          # not exist" check fires when a submodule's fields are resolved,
+          # not when its container's key set is.
+          mkConfigsTypoRejected =
+            !(builtins.tryEval (
+              builtins.deepSeq (mkConfigsLib.evalConfig {
+                identity = mkConfigsTestIdentity;
+                configs.home.test = {
+                  system = "x86_64-linux";
+                  tierr = "full";
+                };
+              }) true
+            )).success;
+
+          # A field that belongs to a different kind (tier is a home-only
+          # concept) must be rejected the same way on darwin, proving the
+          # configs.home/.darwin/.nixos split actually prevents cross-kind
+          # leakage rather than merely documenting an intent to.
+          mkConfigsCrossKindRejected =
+            !(builtins.tryEval (
+              builtins.deepSeq (mkConfigsLib.evalConfig {
+                identity = mkConfigsTestIdentity;
+                configs.darwin.test = {
+                  system = "aarch64-darwin";
+                  tier = "full";
+                };
+              }) true
+            )).success;
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -746,6 +839,17 @@
                 ${system} should be dropped from that system's module list and
                 kept on every other system (droppedOnSelf=${builtins.toJSON platformFilteringDroppedOnSelf}
                 keptOnOther=${builtins.toJSON platformFilteringKeptOnOther}).
+              '';
+
+          mkconfigs-schema =
+            if mkConfigsDispatchOk && mkConfigsTypoRejected && mkConfigsCrossKindRejected then
+              pkgs.runCommand "check-mkconfigs-schema" { } "touch $out"
+            else
+              throw ''
+                mkconfigs-schema: lib.mkConfigs's schema and dispatch aren't
+                behaving as designed (dispatchOk=${builtins.toJSON mkConfigsDispatchOk}
+                typoRejected=${builtins.toJSON mkConfigsTypoRejected}
+                crossKindRejected=${builtins.toJSON mkConfigsCrossKindRejected}).
               '';
 
           formatting = treefmtEval.${system}.config.build.check self;
