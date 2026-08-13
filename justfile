@@ -188,7 +188,12 @@ eval-all:
         echo "eval darwinConfigurations.$p"
         nix eval --impure --raw .#darwinConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
     done
-    total=$(( ${#linux[@]} + ${#darwin[@]} ))
+    mapfile -t nixos < <({{ just_executable() }} _list-nixos-profiles | jq -r '.[]')
+    for p in "${nixos[@]}"; do
+        echo "eval nixosConfigurations.$p"
+        nix eval --impure --raw .#nixosConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
+    done
+    total=$(( ${#linux[@]} + ${#darwin[@]} + ${#nixos[@]} ))
     echo "All $total profiles evaluated cleanly."
 
 # Wraps the run in `nix develop` because .pre-commit-config.yaml's treefmt
@@ -246,6 +251,20 @@ _list-linux-profiles-aarch64:
 _list-darwin-profiles:
     @nix eval --impure --json .#darwinConfigurations --apply builtins.attrNames
 
+# Same arch-suffix split as _list-linux-profiles-x86_64/-aarch64 above, for
+# CI's build-nixos-x86_64/build-nixos-aarch64 jobs (#5).
+[private]
+_list-nixos-profiles:
+    @nix eval --impure --json .#nixosConfigurations --apply builtins.attrNames
+
+[private]
+_list-nixos-profiles-x86_64:
+    @{{ just_executable() }} _list-nixos-profiles | jq -c '[.[] | select(endswith("-aarch64") | not)]'
+
+[private]
+_list-nixos-profiles-aarch64:
+    @{{ just_executable() }} _list-nixos-profiles | jq -c '[.[] | select(endswith("-aarch64"))]'
+
 [private]
 _build-linux PROFILE:
     nix build .#homeConfigurations.{{ PROFILE }}.activationPackage --impure
@@ -253,3 +272,9 @@ _build-linux PROFILE:
 [private]
 _build-darwin PROFILE:
     nix build .#darwinConfigurations.{{ PROFILE }}.system --impure
+
+# Build-verified only (#5): system.build.toplevel proves the config
+# evaluates and builds, not that it has run on real hardware.
+[private]
+_build-nixos PROFILE:
+    nix build .#nixosConfigurations.{{ PROFILE }}.config.system.build.toplevel --impure

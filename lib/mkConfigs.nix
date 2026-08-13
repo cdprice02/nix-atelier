@@ -289,6 +289,15 @@ let
           ++ [
             nixosHmModule
             {
+              # useGlobalPkgs means Home Manager uses NixOS's own pkgs, not a
+              # separately-instantiated one -- so that pkgs needs the same
+              # rust-overlay pkgsFor already applies for home/darwin, set
+              # here the NixOS way (nixpkgs.pkgs), or featureMods that expect
+              # rust-bin (lang-rust.nix) fail with "undefined variable"
+              # inside home-manager.users.<username>.packages. Found by an
+              # actual build, not eval alone: eval-only checks never force
+              # this option.
+              nixpkgs.pkgs = pkgsFor entry.system;
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;

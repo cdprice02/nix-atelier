@@ -32,6 +32,8 @@ jobs:
       linux-x86_64:  ${{ steps.list.outputs.linux-x86_64 }}
       linux-aarch64: ${{ steps.list.outputs.linux-aarch64 }}
       darwin:        ${{ steps.list.outputs.darwin }}
+      nixos-x86_64:  ${{ steps.list.outputs.nixos-x86_64 }}
+      nixos-aarch64: ${{ steps.list.outputs.nixos-aarch64 }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -73,6 +75,9 @@ jobs:
           echo "linux-aarch64=$(echo "$LINUX" | jq -c '[.[] | select(endswith("-aarch64"))]')" >> "$GITHUB_OUTPUT"
           DARWIN=$(nix shell nixpkgs#just -c just _list-darwin-profiles | jq -c '[.[] | {config: .}]')
           echo "darwin=$DARWIN" >> "$GITHUB_OUTPUT"
+          NIXOS=$(nix shell nixpkgs#just -c just _list-nixos-profiles)
+          echo "nixos-x86_64=$(echo "$NIXOS" | jq -c '[.[] | select(endswith("-aarch64") | not)]')" >> "$GITHUB_OUTPUT"
+          echo "nixos-aarch64=$(echo "$NIXOS" | jq -c '[.[] | select(endswith("-aarch64"))]')" >> "$GITHUB_OUTPUT"
 
   # ── nix flake check, per system ───────────────────────────────────────────────
   # A matrix, not a single x86_64-linux job: `checks` (flake.nix) no longer
@@ -293,6 +298,72 @@ jobs:
           purge-primary-key: never
       - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
+
+  # ── Full system.build.toplevel, native x86_64 NixOS profiles (#5) ────────────
+  # Build-verified only: full-nixos/full-nixos-aarch64 build against a
+  # synthetic hardware fixture (tests/fixtures/nixos-hardware-stub.nix), not
+  # real hardware -- there is none in this loop. Same gating and cache-key
+  # reasoning as build-linux-x86_64 above.
+  build-nixos-x86_64:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: get-profiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.get-profiles.outputs.nixos-x86_64) }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+      - uses: cachix/install-nix-action@v31.11.0
+      - uses: nix-community/cache-nix-action@v7.0.2
+        with:
+          primary-key: nix-nixos-build-x86_64-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-nixos-build-x86_64-
+          gc-max-store-size-linux: 4294967296
+          purge: true
+          purge-prefixes: nix-nixos-build-x86_64-
+          purge-created: 0
+          purge-primary-key: never
+      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
+      - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
+
+  # ── Full system.build.toplevel, QEMU-emulated aarch64 NixOS profiles (#5) ────
+  # Same QEMU setup and gating as build-linux-aarch64 above; same
+  # build-verified-only scope as build-nixos-x86_64 above.
+  build-nixos-aarch64:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: get-profiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.get-profiles.outputs.nixos-aarch64) }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+      - uses: docker/setup-qemu-action@v4.2.0
+        with:
+          platforms: arm64
+      - uses: cachix/install-nix-action@v31.11.0
+        with:
+          extra_nix_config: |
+            extra-platforms = aarch64-linux
+      - uses: nix-community/cache-nix-action@v7.0.2
+        with:
+          primary-key: nix-nixos-build-aarch64-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-nixos-build-aarch64-
+          gc-max-store-size-linux: 4294967296
+          purge: true
+          purge-prefixes: nix-nixos-build-aarch64-
+          purge-created: 0
+          purge-primary-key: never
+      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
+      - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
 
   # ── Full system build for every Darwin profile ────────────────────────────────
   # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built

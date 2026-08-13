@@ -227,7 +227,7 @@
 
       # ── Docs generation ────────────────────────────────────────────────────
       # Realized package identities (p.pname or p.name) across every already-
-      # built home/darwin config: reuses the actual mkProfile composition
+      # built home/darwin/nixos config: reuses the actual mkProfile composition
       # rather than statically re-scanning modules/features/*.nix, so it also
       # catches packages home-manager's own program modules inject implicitly
       # (e.g. programs.git.delta.enable -> the delta package, with no
@@ -239,8 +239,15 @@
           darwinPkgLists = map (cfg: cfg.config.home-manager.users.${user.username}.home.packages) (
             builtins.attrValues self.darwinConfigurations
           );
+          # Same shape as darwin: nixosSystem also nests Home Manager under
+          # home-manager.users.<username>, not home.packages directly.
+          nixosPkgLists = map (cfg: cfg.config.home-manager.users.${user.username}.home.packages) (
+            builtins.attrValues self.nixosConfigurations
+          );
         in
-        nixpkgs.lib.unique (map pkgIdent (nixpkgs.lib.flatten (homePkgLists ++ darwinPkgLists)));
+        nixpkgs.lib.unique (
+          map pkgIdent (nixpkgs.lib.flatten (homePkgLists ++ darwinPkgLists ++ nixosPkgLists))
+        );
 
       # Bidirectional: every installed package needs a tool-catalog.nix entry
       # (or an explicit exclusion), and every catalog entry needs to actually
@@ -482,6 +489,30 @@
         };
       };
 
+      # Ships build-verified only (#5): there's no NixOS hardware in this
+      # loop to run a real `nixos-rebuild switch` end to end. hardwareModule
+      # points at a synthetic fixture (sibling to the nmt fixtures) with just
+      # enough (fileSystems."/", a grub device) for system.build.toplevel to
+      # evaluate and build; it is never meant to boot anything. A real
+      # consumer calling lib.mkConfigs points hardwareModule at their own
+      # machine's real hardware-configuration.nix instead. toString, not a
+      # bare path, matching extraModulePaths' own string convention -- this
+      # one happens to live in-repo, but the mechanism has to work for an
+      # out-of-repo, impure path too.
+      nixosHardwareStub = toString ./tests/fixtures/nixos-hardware-stub.nix;
+      nixosConfigsAttrs = {
+        "full-nixos" = {
+          system = "x86_64-linux";
+          hardwareModule = nixosHardwareStub;
+          extraConfig = atelierExtraConfig;
+        };
+        "full-nixos-aarch64" = {
+          system = "aarch64-linux";
+          hardwareModule = nixosHardwareStub;
+          extraConfig = atelierExtraConfig;
+        };
+      };
+
       thisRepoConfigs = mkConfigsLib.mkConfigs {
         identity = {
           inherit (userBase)
@@ -494,6 +525,7 @@
         configs = {
           home = homeConfigsAttrs;
           darwin = darwinConfigsAttrs;
+          nixos = nixosConfigsAttrs;
         };
         features = {
           extra = userBase.extraFeatures or [ ];
@@ -524,10 +556,12 @@
       inherit (thisRepoConfigs) darwinConfigurations;
 
       # ── nixosConfigurations ─────────────────────────────────────────────────
-      # The nixos kind already exists in lib/mkConfigs.nix (thisRepoConfigs.
-      # nixosConfigurations, currently {}); this repo shipping a real entry
-      # of its own, build-verified against a synthetic hardware fixture, is
-      # tracked separately in issue #5.
+      # Build-verified only (#5): see nixosConfigsAttrs above for why. No
+      # bootstrap command here the way homeConfigurations/darwinConfigurations
+      # have one -- full-nixos/full-nixos-aarch64 build against a synthetic
+      # hardware fixture and were never meant to run `nixos-rebuild switch`
+      # anywhere real.
+      inherit (thisRepoConfigs) nixosConfigurations;
 
       # ── devShells ────────────────────────────────────────────────────────────
       # `nix develop`: the treefmt wrapper (nixfmt-rfc-style + statix + deadnix

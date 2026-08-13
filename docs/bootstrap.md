@@ -318,8 +318,17 @@ ______________________________________________________________________
 
 ## NixOS
 
-Not implemented yet (tracked in issue #5): `flake.nix` has no
-`nixosConfigurations` output to build on. It needs a `mkNixosConfig` helper
-(analogous to `mkDarwinConfig`) plus a target machine's
-`hardware-configuration.nix` before `sudo nixos-rebuild switch` would have
-anything to point at.
+Supported as a config kind (#5), build-verified only: this repo's own
+`nixosConfigurations.full-nixos`/`full-nixos-aarch64` build against a
+synthetic hardware fixture (`tests/fixtures/nixos-hardware-stub.nix`), not
+real hardware -- there is none in this loop to test against, and these two
+were never meant to run `nixos-rebuild switch` anywhere. `nix build .#nixosConfigurations.full-nixos.config.system.build.toplevel` proves the
+config evaluates and builds; it proves nothing about booting or activation.
+
+To actually deploy NixOS with this framework, call `lib.mkConfigs` from your
+own flake (see `templates.default` once it lands) with `configs.nixos.<name>`
+pointing `hardwareModule` at your own machine's real
+`hardware-configuration.nix` (generate one with `nixos-generate-config`, the
+standard NixOS tool, on the target machine). There is no bootstrap walkthrough
+here the way WSL2/macOS have one above, because nobody has run this against
+real NixOS hardware yet to write one accurately.
