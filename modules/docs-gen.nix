@@ -10,11 +10,19 @@
 # generated, ALL edits go through its generator, including these "hand
 # maintained" parts: editing the committed docs/*.md directly gets
 # overwritten on the next `just docs` / CI regeneration.
-{ lib }:
+{
+  lib,
+  # The one, single definition of the homeConfigurations naming scheme
+  # (lib/systems.nix, #118): calling it directly here, the same function
+  # flake.nix's own matrix construction calls, means this table can no
+  # longer disagree with the real homeConfigurations attrset -- there is
+  # nothing left to reconcile with an eval-time throw.
+  mkHomeConfigName,
+  linuxArches,
+}:
 {
   tiers,
   toolCatalog,
-  homeConfigNames,
   darwinConfigNames,
 }:
 let
@@ -22,7 +30,11 @@ let
   # docs/profiles.md
   # ═══════════════════════════════════════════════════════════════════════
   # Editorial ordering (bootstrap-complexity progression), not attrNames'
-  # arbitrary sort; validated against tiers' real keys below.
+  # arbitrary sort. Genuinely hand-authored, not derivable from tiers (an
+  # unordered attrset): still validated against its real keys below, since
+  # that's a real check (a renamed/removed tier), just not one a shared
+  # function could eliminate the way homeConfigNamesOk/darwinNamesOk (#118)
+  # were eliminated below.
   tierOrder = [
     "minimal"
     "full"
@@ -30,42 +42,6 @@ let
   tierOrderOk =
     lib.throwIf (lib.sort lib.lessThan tierOrder != lib.sort lib.lessThan (lib.attrNames tiers))
       "docs-gen.nix: tierOrder (${toString tierOrder}) doesn't match tiers' keys (${toString (lib.attrNames tiers)}); update tierOrder"
-      true;
-
-  linuxArches = [
-    "x86_64-linux"
-    "aarch64-linux"
-  ];
-  mkHomeConfigName =
-    tierName: withGui: arch:
-    tierName
-    + (lib.optionalString withGui "-gui")
-    + (lib.optionalString (arch == "aarch64-linux") "-aarch64");
-
-  # Same loop flake.nix's own homeConfigMatrix runs, over the same tierOrder
-  # used for display below: if the two ever disagree about which names exist,
-  # this throws rather than silently rendering a table that doesn't match the
-  # real homeConfigurations attrset (same "fail eval, don't drift silently"
-  # idiom the darwin guard below uses).
-  expectedHomeConfigNames = lib.concatMap (
-    tierName:
-    lib.concatMap (withGui: map (arch: mkHomeConfigName tierName withGui arch) linuxArches) [
-      false
-      true
-    ]
-  ) tierOrder;
-  homeConfigNamesOk =
-    lib.throwIf (lib.sort lib.lessThan expectedHomeConfigNames != lib.sort lib.lessThan homeConfigNames)
-      "docs-gen.nix: computed homeConfigurations names (${toString expectedHomeConfigNames}) don't match the real ones (${toString homeConfigNames}); flake.nix's homeConfigMatrix and this file's mkHomeConfigName have drifted apart"
-      true;
-
-  expectedDarwinNames = [
-    "full-darwin"
-    "full-darwin-aarch64"
-  ];
-  darwinNamesOk =
-    lib.throwIf (lib.sort lib.lessThan darwinConfigNames != lib.sort lib.lessThan expectedDarwinNames)
-      "docs-gen.nix: darwinConfigurations names changed (now ${toString darwinConfigNames}); update the hardcoded darwin table in modules/docs-gen.nix to match"
       true;
 
   describeHomeConfig =
@@ -102,19 +78,18 @@ let
     ) tierOrder
   );
 
-  darwinArchLabel = suffix: if suffix == "-aarch64" then "Apple Silicon" else "Intel";
-  darwinProfileRow = suffix: "| \`full-darwin${suffix}\` | macOS (${darwinArchLabel suffix}) |\n";
+  # Reads darwinConfigNames directly (#118) rather than a hardcoded parallel
+  # list reconciled by a throw: this table can no longer render a name that
+  # doesn't exist in the real darwinConfigurations, because it never had its
+  # own idea of what the names are.
+  darwinArchLabel = name: if lib.hasSuffix "-aarch64" name then "Apple Silicon" else "Intel";
+  darwinProfileRow = name: "| \`${name}\` | macOS (${darwinArchLabel name}) |\n";
   darwinProfileRows = lib.concatStrings (
-    map darwinProfileRow [
-      ""
-      "-aarch64"
-    ]
+    map darwinProfileRow (lib.sort lib.lessThan darwinConfigNames)
   );
 
   profilesMd =
     assert tierOrderOk;
-    assert homeConfigNamesOk;
-    assert darwinNamesOk;
     ''
       # Profiles
 

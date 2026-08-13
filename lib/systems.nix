@@ -87,6 +87,17 @@ let
     else
       home-manager.darwinModules.home-manager;
   darwinLibFor = system: if isX86Darwin system then nix-darwin-x86 else nix-darwin;
+
+  # The one, single definition of this repo's homeConfigurations naming
+  # scheme (#118): flake.nix's own matrix construction and docs-gen.nix's
+  # profile table both call this directly now, instead of docs-gen.nix
+  # carrying a second copy reconciled by an eval-time throw. A renamed
+  # scheme can no longer make the two disagree; there is only one function.
+  mkHomeConfigName =
+    tierName: withGui: arch:
+    tierName
+    + (lib.optionalString withGui "-gui")
+    + (lib.optionalString (arch == "aarch64-linux") "-aarch64");
 in
 {
   inherit
@@ -103,6 +114,7 @@ in
     hmLibFor
     hmDarwinModuleFor
     darwinLibFor
+    mkHomeConfigName
     ;
 
   # NixOS only ever uses the rolling trio: there is no pinned-x86_64-darwin-
