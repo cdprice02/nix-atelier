@@ -1,10 +1,14 @@
 # The pure, consumable entry point (#122). A plain function of a typed
 # argument attrset to { homeConfigurations; darwinConfigurations;
-# nixosConfigurations; }, no getEnv, no --impure. Closed over this repo's own
-# pinned inputs (home-manager/nix-darwin/their x86_64-darwin counterparts) and
-# its existing compositor (mkProfile, pkgsFor, mkUser, tiers), all passed in
-# rather than re-derived here, so this file adds only what mkConfigs itself
-# needs: schema validation and per-kind config construction.
+# nixosConfigurations; }, no getEnv, no --impure.
+#
+# Three dependencies, each a genuinely distinct concern: `lib` (the standard
+# library), `systems` (lib/systems.nix -- which of the two release pairs a
+# system uses, and the resolved pkgs/home-manager/nix-darwin for it), and
+# `mkProfile` (this repo's existing feature compositor, unchanged). Identity
+# handling (mkUser) and the tier registry are self-contained here rather than
+# threaded in: neither has any real dependency on flake.nix beyond a source
+# file this module is exactly as close to.
 #
 # Deliberately does not do matrix generation (tier x gui x arch and similar):
 # that is this repo's own convenience for dogfooding every combination, not
@@ -14,39 +18,37 @@
 # through the same `configs` argument everyone else uses.
 {
   lib,
-  home-manager,
-  home-manager-darwin,
-  nix-darwin,
-  nix-darwin-x86,
-  pkgsFor,
-  isX86Darwin,
-  linuxPairOk,
-  darwinPairOk,
+  systems,
   mkProfile,
-  mkUser,
-  tiers,
-  pkgsConfig,
-  allSystems,
-  linuxSystems,
 }:
 let
-  darwinSystems = lib.subtractLists linuxSystems allSystems;
+  inherit (systems)
+    allSystems
+    linuxSystems
+    darwinSystems
+    pkgsConfig
+    pkgsFor
+    pairOkFor
+    hmLibFor
+    hmDarwinModuleFor
+    darwinLibFor
+    nixosHmModule
+    ;
 
-  # x86_64-darwin rides the pinned 25.05 trio; every other system (Linux and
-  # aarch64-darwin) rides the rolling trio. Same split flake.nix's own
-  # mkDarwinConfig already makes, generalized here to also cover the `home`
-  # kind: unlike the old homeConfigurations (Linux/WSL2 only), a consumer can
-  # target any of the four systems with kind = "home", darwin included, for
-  # anyone managing a Mac with plain home-manager instead of nix-darwin.
-  pairOkFor = system: if isX86Darwin system then darwinPairOk else linuxPairOk;
-  hmLibFor = system: if isX86Darwin system then home-manager-darwin.lib else home-manager.lib;
-  hmDarwinModuleFor =
-    system:
-    if isX86Darwin system then
-      home-manager-darwin.darwinModules.home-manager
-    else
-      home-manager.darwinModules.home-manager;
-  darwinLibFor = system: if isX86Darwin system then nix-darwin-x86 else nix-darwin;
+  # Derive SSH key name from email prefix: key file ~/.ssh/<sshKey>. Shared
+  # with the nmt harness's testUser, so both go through the same derivation;
+  # flake.nix's still-impure user.nix path imports this back out (see the
+  # attrset returned at the bottom of this file) rather than keeping its own
+  # copy.
+  mkUser = base: base // { sshKey = builtins.elemAt (builtins.split "@" base.email) 0; };
+
+  # Same registry mkProfile itself resolves feature names against: tier
+  # *names* are all this schema needs (to validate `tier`), not the feature
+  # modules themselves, which mkProfile already owns.
+  tiers = {
+    minimal = [ ];
+    full = builtins.attrNames (import ../modules/features.nix);
+  };
 
   # ── Schema ─────────────────────────────────────────────────────────────
   # lib.evalModules, not a hand-rolled validator: this repo's users already
@@ -285,7 +287,7 @@ let
           ]
           ++ systemModules
           ++ [
-            home-manager.nixosModules.home-manager
+            nixosHmModule
             {
               home-manager = {
                 useGlobalPkgs = true;
@@ -311,7 +313,7 @@ let
     };
 in
 {
-  inherit mkConfigs;
+  inherit mkConfigs mkUser;
 
   # Schema validation only, no kind-building: exposed for flake.nix's own
   # checks to prove a misspelled or cross-kind field is rejected, via
