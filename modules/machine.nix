@@ -89,6 +89,12 @@ in
         description = "Secret names to decrypt from atelier.sops.file. Only meaningful when file is set.";
       };
     };
+
+    submodules = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      description = "Private remote overrides for config/ submodules, keyed by submodule name. See base.nix's submoduleOverrides activation script.";
+    };
   };
 
   config = {

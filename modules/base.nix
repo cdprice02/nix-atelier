@@ -119,14 +119,14 @@ in
         fi
       '';
 
-      # For each entry in user.submodules, wire up a private remote in the
-      # corresponding config/ submodule and check out a tracking branch.
-      # Idempotent: skips if the remote already exists.
+      # For each entry in atelier.submodules (#120), wire up a private remote
+      # in the corresponding config/ submodule and check out a tracking
+      # branch. Idempotent: skips if the remote already exists.
       # entryAfter writeBoundary: submodule dirs must be cloned before we can add remotes.
-      # user.submodules = { claude = "git@github.com:you/private-claude.git"; };
+      # atelier.submodules = { claude = "git@github.com:you/private-claude.git"; };
       submoduleOverrides = lib.hm.dag.entryAfter [ "writeBoundary" ] (
         let
-          submodules = user.submodules or { };
+          inherit (config.atelier) submodules;
           git = "${pkgs.git}/bin/git";
           mkOverride = name: url: ''
             _sm_dir="$HOME/.nix-atelier/config/${name}"
