@@ -601,6 +601,12 @@
     "shared-mime-info"
     "dummy-xdg-mime-dirs1"
     "dummy-xdg-mime-dirs2"
+    # NixOS only (#5): fontconfig cache placeholders, from the interaction
+    # between Home Manager's fonts.fontconfig module and NixOS's own system-
+    # level one under useGlobalPkgs -- neither darwin nor standalone Home
+    # Manager produces these.
+    "dummy-fc-dir1"
+    "dummy-fc-dir2"
     "hm-session-vars.fish"
     "hm-session-vars.sh"
     "home-configuration-reference-manpage"
