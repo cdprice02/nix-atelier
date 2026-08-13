@@ -543,6 +543,22 @@
         inherit (mkConfigsLib) mkConfigs;
       };
 
+      # ── templates ────────────────────────────────────────────────────────────
+      # `nix flake init -t github:cdprice02/nix-atelier` scaffolds a ~15-line
+      # consumer flake.nix that already calls lib.mkConfigs, replacing fork-
+      # and-edit entirely (#122). See templates/default/flake.nix; kept in
+      # sync with the real schema by the template-default check below.
+      templates.default = {
+        path = ./templates/default;
+        description = "A minimal flake.nix calling nix-atelier's lib.mkConfigs";
+        welcomeText = ''
+          Edit flake.nix: fill in your identity and at least one config.
+          Then `nix flake check`, and apply with `home-manager switch --flake .#<name>`
+          (or `sudo darwin-rebuild switch --flake .#<name>` for a darwin config).
+          See README.md for more.
+        '';
+      };
+
       # ── homeConfigurations ──────────────────────────────────────────────────
       # Bootstrap: nix run home-manager -- switch --flake ~/.nix-atelier#<name>
       # After first apply: home-manager switch --flake ~/.nix-atelier#<name>
@@ -754,6 +770,14 @@
                 };
               }) true
             )).success;
+
+          # templates/default/flake.nix (#122) stays honest against schema
+          # drift: called directly here, the same way a real consumer's
+          # flake.nix would (nix-atelier = self simulates the real flake
+          # input), no nix flake init round-trip needed to catch a stale
+          # field name.
+          templateOutputs = (import ./templates/default/flake.nix).outputs { nix-atelier = self; };
+          templateDispatchOk = builtins.attrNames templateOutputs.homeConfigurations == [ "full" ];
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -805,6 +829,16 @@
                 behaving as designed (dispatchOk=${builtins.toJSON mkConfigsDispatchOk}
                 typoRejected=${builtins.toJSON mkConfigsTypoRejected}
                 crossKindRejected=${builtins.toJSON mkConfigsCrossKindRejected}).
+              '';
+
+          template-default =
+            if templateDispatchOk then
+              pkgs.runCommand "check-template-default" { } "touch $out"
+            else
+              throw ''
+                template-default: templates/default/flake.nix no longer
+                produces the expected homeConfigurations.full -- it has
+                drifted from lib.mkConfigs's real schema.
               '';
 
           formatting = treefmtEval.${system}.config.build.check self;
