@@ -39,9 +39,9 @@ let
   # public commit history: this repo, and any fork of it, is public.
   # GitHub attributes commits from either noreply form to the account, so
   # this costs nothing and is strictly better than a real address by default.
-  # Falls back to user.email when user.nix has no github block at all (e.g.
-  # the nmt test fixture). user.email itself stays required regardless: it's
-  # still where sshKey is derived from (see flake.nix).
+  # Falls back to user.email when the identity has no github block at all
+  # (e.g. the nmt test fixture). user.email itself stays required regardless:
+  # it's still where sshKey is derived from (see flake.nix).
   gitEmail =
     if !(user ? github) then
       user.email
@@ -140,7 +140,7 @@ in
                   echo "submodule ${name}: private remote configured (${url})"
                 else
                   echo "WARNING: submodule ${name}: fetch from private remote failed."
-                  echo "  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier --impure"
+                  echo "  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier"
                   $DRY_RUN_CMD ${git} -C "$_sm_dir" remote remove private
                 fi
               fi
@@ -288,8 +288,13 @@ in
           enable = true;
 
           includes = [
-            # self doesn't include submodule contents in the Nix store; use live path instead.
-            # Safe because --impure is already required for user.nix.
+            # self doesn't include submodule contents in the Nix store; use live
+            # path instead. Just a string here, never dereferenced by Nix itself
+            # (only by git, later, at its own runtime), so this needs no
+            # impurity at eval time regardless -- unlike extraModulePaths, which
+            # really does import an out-of-store path (see modules/machine.nix,
+            # #149's tracked gap on the hardcoded ~/.nix-atelier assumption
+            # below).
             { path = "${homeDir}/.nix-atelier/config/git/gitalias/gitalias.txt"; }
           ];
 

@@ -5,7 +5,6 @@
 # infrastructure; imported from there the same way tests/nmt/*.nix already
 # are for their own assertions.
 {
-  self,
   nixpkgs,
   home-manager,
   home-manager-darwin,
@@ -15,6 +14,7 @@
   mkUser,
   mkProfile,
   installedPackageNames,
+  userBase,
 }:
 let
   # ── Test harness (nmt) ───────────────────────────────────────────────────
@@ -26,9 +26,10 @@ let
   # otherwise has almost nothing to say (see docs-drift's own comment below).
   nmtSrc = nmt;
 
-  # user.nix.example, not a real user.nix: tests must be identity-independent,
-  # not a description of whichever machine happens to be evaluating them.
-  testUser = mkUser (import (self + /user.nix.example));
+  # flake.nix's own placeholder identity, not a real one: tests must be
+  # identity-independent, not a description of whichever machine happens to
+  # be evaluating them.
+  testUser = mkUser userBase;
 
   # Replaces a single derivation's outPath with "@name@" (its own name, not
   # the caller's attribute name, so e.g. buildPackages.gettext and

@@ -1,10 +1,8 @@
-# Default profile: read from user.nix's `profile` field if set, else "full".
-# Backtick assignment runs once when just parses this file. `grep .` makes
-# the fallback fire on empty output: the trailing `|| echo` guards only the
-# last pipeline stage, so without it a failed `nix eval` (no user.nix, or nix
-# not yet on PATH) would leave `tr` exiting 0 and the default empty. grep
-# exits non-zero on no input, triggering the fallback.
-default_profile := `nix eval --impure --expr '(import ./user.nix).profile or "full"' 2>/dev/null | tr -d '"' | grep . || echo full`
+# Default profile when `just switch` is called with no argument. This repo's
+# own configs are a placeholder identity (#122): there is no per-machine
+# user.nix anymore to read a preferred default from, so "full" is simply the
+# literal default -- pass an explicit profile name to override it.
+default_profile := "full"
 
 # Recipes prefixed with `_` are CI-internal plumbing, hidden from `just
 # --list` by design (just's own private-recipe convention) but still
@@ -74,7 +72,7 @@ switch PROFILE=default_profile *NH_ARGS:
         # No leading `sudo`: nh self-elevates internally when activation needs
         # root (respects $SUDO_ASKPASS), rather than requiring the whole build
         # to run as root the way a bare `sudo darwin-rebuild switch` did.
-        nh darwin switch {{ NH_ARGS }} -H "$profile" . -- --impure
+        nh darwin switch {{ NH_ARGS }} -H "$profile" .
     else
         # homeConfigurations: <profile> is x86_64-linux, <profile>-aarch64 is
         # aarch64-linux. This half previously did no arch handling at all, so
@@ -93,7 +91,7 @@ switch PROFILE=default_profile *NH_ARGS:
                     profile="${profile}-aarch64"
                 fi ;;
         esac
-        nh home switch {{ NH_ARGS }} -c "$profile" -b bk . -- --impure
+        nh home switch {{ NH_ARGS }} -c "$profile" -b bk .
     fi
 
 # `just rebuild` is a pure alias for `switch`, kept only so muscle memory from
@@ -171,7 +169,7 @@ check: flake-check
 [group('check')]
 [doc("nix flake check only; CI's flake-check job uses this per system")]
 flake-check system=`nix eval --impure --raw --expr 'builtins.currentSystem'`:
-    nix flake check --impure --system {{ system }}
+    nix flake check --system {{ system }}
 
 [group('check')]
 [doc('Fast: eval every profile without building')]
@@ -181,17 +179,17 @@ eval-all:
     mapfile -t linux < <({{ just_executable() }} _list-linux-profiles | jq -r '.[]')
     for p in "${linux[@]}"; do
         echo "eval homeConfigurations.$p"
-        nix eval --impure --raw .#homeConfigurations."$p".activationPackage.drvPath >/dev/null
+        nix eval --raw .#homeConfigurations."$p".activationPackage.drvPath >/dev/null
     done
     mapfile -t darwin < <({{ just_executable() }} _list-darwin-profiles | jq -r '.[]')
     for p in "${darwin[@]}"; do
         echo "eval darwinConfigurations.$p"
-        nix eval --impure --raw .#darwinConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
+        nix eval --raw .#darwinConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
     done
     mapfile -t nixos < <({{ just_executable() }} _list-nixos-profiles | jq -r '.[]')
     for p in "${nixos[@]}"; do
         echo "eval nixosConfigurations.$p"
-        nix eval --impure --raw .#nixosConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
+        nix eval --raw .#nixosConfigurations."$p".config.system.build.toplevel.drvPath >/dev/null
     done
     total=$(( ${#linux[@]} + ${#darwin[@]} + ${#nixos[@]} ))
     echo "All $total profiles evaluated cleanly."
@@ -226,14 +224,14 @@ docs:
     #!/usr/bin/env bash
     set -euo pipefail
     system="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
-    cp "$(nix build .#packages."$system".docs-profiles-md --impure --no-link --print-out-paths)" docs/profiles.md
-    cp "$(nix build .#packages."$system".docs-tools-md --impure --no-link --print-out-paths)" docs/tools.md
+    cp "$(nix build .#packages."$system".docs-profiles-md --no-link --print-out-paths)" docs/profiles.md
+    cp "$(nix build .#packages."$system".docs-tools-md --no-link --print-out-paths)" docs/tools.md
     chmod +w docs/profiles.md docs/tools.md
     echo "docs/profiles.md and docs/tools.md regenerated."
 
 [private]
 _list-linux-profiles:
-    @nix eval --impure --json .#homeConfigurations --apply builtins.attrNames
+    @nix eval --json .#homeConfigurations --apply builtins.attrNames
 
 # Splits _list-linux-profiles by arch suffix rather than deriving a second
 # source of truth: CI's build-linux-x86_64/build-linux-aarch64 jobs need
@@ -249,13 +247,13 @@ _list-linux-profiles-aarch64:
 
 [private]
 _list-darwin-profiles:
-    @nix eval --impure --json .#darwinConfigurations --apply builtins.attrNames
+    @nix eval --json .#darwinConfigurations --apply builtins.attrNames
 
 # Same arch-suffix split as _list-linux-profiles-x86_64/-aarch64 above, for
 # CI's build-nixos-x86_64/build-nixos-aarch64 jobs (#5).
 [private]
 _list-nixos-profiles:
-    @nix eval --impure --json .#nixosConfigurations --apply builtins.attrNames
+    @nix eval --json .#nixosConfigurations --apply builtins.attrNames
 
 [private]
 _list-nixos-profiles-x86_64:
@@ -267,14 +265,14 @@ _list-nixos-profiles-aarch64:
 
 [private]
 _build-linux PROFILE:
-    nix build .#homeConfigurations.{{ PROFILE }}.activationPackage --impure
+    nix build .#homeConfigurations.{{ PROFILE }}.activationPackage
 
 [private]
 _build-darwin PROFILE:
-    nix build .#darwinConfigurations.{{ PROFILE }}.system --impure
+    nix build .#darwinConfigurations.{{ PROFILE }}.system
 
 # Build-verified only (#5): system.build.toplevel proves the config
 # evaluates and builds, not that it has run on real hardware.
 [private]
 _build-nixos PROFILE:
-    nix build .#nixosConfigurations.{{ PROFILE }}.config.system.build.toplevel --impure
+    nix build .#nixosConfigurations.{{ PROFILE }}.config.system.build.toplevel

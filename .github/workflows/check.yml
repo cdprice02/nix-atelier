@@ -65,7 +65,6 @@ jobs:
           purge-primary-key: never
       - id: list
         run: |
-          mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
           # _list-linux-profiles-x86_64/-aarch64 each re-run _list-linux-profiles
           # (a full nix eval) internally, only to jq-filter the identical result
           # two different ways. Evaluated once here instead, so the arch split
@@ -85,7 +84,7 @@ jobs:
   # removed as dead weight once build-linux-x86_64 below covers the same 4
   # profiles under a better name) -- it's nmt (assertion-level content checks
   # + a handful of small real builds like fzf/zoxide/direnv) plus two trivial
-  # pure-eval/diff checks. That makes `nix flake check --impure --system
+  # pure-eval/diff checks. That makes `nix flake check --system
   # <system>` cheap and safe on every system, including the ones this job
   # didn't cover before: darwin (where modules/lib/hm-compat.nix's
   # x86_64-darwin/25.05-pin option shim had *no* CI coverage at all until
@@ -154,7 +153,6 @@ jobs:
           purge-prefixes: nix-checks-${{ matrix.system }}-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       # `flake-check` runs `checks.formatting` (treefmt.nix: nixfmt-rfc-style +
       # statix + deadnix + mdformat) as part of `nix flake check`, once per
       # matrix entry, even though the check's own output doesn't vary by
@@ -165,11 +163,6 @@ jobs:
       # change than this job's own cost justifies at four cheap systems.
       # Accepted, not fixed.
       - run: nix shell nixpkgs#just -c just flake-check ${{ matrix.system }}
-      # Only meaningful once (the file's content doesn't vary by system) --
-      # kept on this job rather than its own, since it needs the same Nix
-      # install regardless and x86_64-linux always runs.
-      - if: matrix.system == 'x86_64-linux'
-        run: nix eval --file user.nix.example
 
   # ── Fast: eval every profile's derivation path without building ──────────────
   # Runs on every push/PR: catches type errors, missing options, and
@@ -210,7 +203,6 @@ jobs:
           purge-prefixes: nix-linux-eval-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just eval-all
 
   # ── Full activation-package build, native x86_64 Linux profiles ──────────────
@@ -253,7 +245,6 @@ jobs:
           purge-prefixes: nix-linux-build-x86_64-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
   # ── Full activation-package build, QEMU-emulated aarch64 Linux profiles ──────
@@ -296,7 +287,6 @@ jobs:
           purge-prefixes: nix-linux-build-aarch64-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
   # ── Full system.build.toplevel, native x86_64 NixOS profiles (#5) ────────────
@@ -327,7 +317,6 @@ jobs:
           purge-prefixes: nix-nixos-build-x86_64-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
 
   # ── Full system.build.toplevel, QEMU-emulated aarch64 NixOS profiles (#5) ────
@@ -362,7 +351,6 @@ jobs:
           purge-prefixes: nix-nixos-build-aarch64-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
 
   # ── Full system build for every Darwin profile ────────────────────────────────
@@ -403,5 +391,4 @@ jobs:
           purge-prefixes: nix-macos-build-
           purge-created: 0
           purge-primary-key: never
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       - run: nix shell nixpkgs#just -c just _build-darwin ${{ matrix.config }}

@@ -8,10 +8,11 @@
 # and secrets-sops.nix only consume them, they don't own them).
 #
 # mkConfigs (#122) callers set these through a config's own extraConfig; this
-# repo's still-impure user.nix path sets them through the bridge module in
-# flake.nix's mkProfile (translating userData's flat aws/nativeInstallers/
-# configRepos/sops fields into these options via lib.mkDefault, so a real
-# extraConfig definition elsewhere always wins without conflicting).
+# repo's own placeholder identity sets them (all defaults) through the
+# bridge module in flake.nix's mkProfile (translating userData's flat
+# aws/nativeInstallers/configRepos/sops fields into these options via
+# lib.mkDefault, so a real extraConfig definition elsewhere always wins
+# without conflicting).
 {
   config,
   lib,

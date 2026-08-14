@@ -4,31 +4,6 @@ Common first-boot failures and how to fix them.
 
 ______________________________________________________________________
 
-## `--impure` omitted → cryptic eval error
-
-**Symptom:** `nix flake` or `home-manager switch` errors with something like:
-
-```text
-error: … builtins.getEnv "HOME" evaluated to ""
-```
-
-**Fix:** Every `home-manager switch` and `darwin-rebuild switch` requires `--impure`. At first bootstrap, `home-manager` may not be on PATH yet: use the `nix run` form:
-
-```sh
-# First bootstrap (home-manager / darwin-rebuild not yet on PATH)
-nix run home-manager -- switch --flake ~/.nix-atelier#<profile> --impure -b bk
-sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-atelier#<profile> --impure
-
-# Subsequent applies
-home-manager switch --flake ~/.nix-atelier#<profile> --impure -b bk
-sudo darwin-rebuild switch --flake ~/.nix-atelier#<profile> --impure
-```
-
-`user.nix` is read from the filesystem via `builtins.getEnv "HOME"`, which is an impure operation. This flag is always needed, not just at bootstrap.
-
-______________________________________________________________________
-
 ## home-manager / nixpkgs release mismatch
 
 **Symptom (before the guard existed):** the switch *succeeds*, but prints a
@@ -172,7 +147,7 @@ ______________________________________________________________________
 
 ```text
 WARNING: submodule claude: fetch from private remote failed.
-  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier --impure
+  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier
 ```
 
 **Fix:**
@@ -183,10 +158,11 @@ cat ~/.ssh/<sshKey>.pub
 
 # Paste it at: https://github.com/settings/keys
 # Then re-run:
-home-manager switch --flake ~/.nix-atelier#<profile> --impure
+home-manager switch --flake ~/.nix-atelier#<profile>
 ```
 
-`<sshKey>` is the prefix of your personal email from `user.nix` (e.g. `you` for `you@example.com`).
+`<sshKey>` is the prefix of your identity's email (the `email` field in your
+`flake.nix`'s `lib.mkConfigs` call, e.g. `you` for `you@example.com`).
 
 ______________________________________________________________________
 
@@ -229,22 +205,20 @@ run straight from the flake:
 
 ```sh
 # Linux / WSL2
-nix run home-manager -- switch --flake ~/.nix-atelier#<profile> --impure -b bk
+nix run home-manager -- switch --flake .#<name> -b bk
 
 # macOS, Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
-
-# macOS, Intel: pinned nix-darwin release, matching this repo's 25.05 pin
-sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
+  run nix-darwin -- switch --flake .#<name>
 ```
 
-After the first apply, `just`, `home-manager`, and `nh` are on PATH and you can use the short form on either OS: `just switch` detects the platform itself and applies via `nh home switch` or `nh darwin switch` accordingly:
+After the first apply, `home-manager`/`darwin-rebuild` are on PATH and you can use the short form directly: `home-manager switch --flake .#<name>` or `sudo darwin-rebuild switch --flake .#<name>`.
+
+If you're working inside a clone of this repo itself (not a consumer flake scaffolded from `templates/default`), `just`/`nh` are also installed, and `just switch <profile>` detects the platform itself and applies via `nh home switch` or `nh darwin switch` accordingly:
 
 ```sh
 just switch <profile>   # e.g. just switch minimal
-just switch             # uses user.nix's `profile` field, else "full"
+just switch             # defaults to "full"
 ```
 
 Pass the bare profile name (`just switch full`) on any machine and the right

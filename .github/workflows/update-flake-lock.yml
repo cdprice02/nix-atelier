@@ -26,7 +26,6 @@ jobs:
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31.11.0
-      - run: mkdir -p "$HOME/.nix-atelier" && cp user.nix.example "$HOME/.nix-atelier/user.nix"
       # `just update` (nix flake update, no args): atomically re-resolves
       # every input together, the same command a human would run. Never a
       # single input: see justfile's own comment on why, and CLAUDE.md's

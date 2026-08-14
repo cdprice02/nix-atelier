@@ -1,19 +1,19 @@
 # Contributing
 
-## This repo is a personal config, and a reusable framework
+## This repo is a consumable framework, not a fork-and-edit config
 
 Two kinds of contributions make sense here, and it helps to know the difference before opening a PR.
 
-### Fork for personal preferences
+### Consume it for personal preferences
 
-Tool choices, dotfile content, prompt theming, personal modules, your own username: these belong in your fork. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted here, but forks are actively encouraged. See [docs/profiles.md](docs/profiles.md) for the `extraFeatures`/`excludeFeatures`/`extraModulePaths` escape hatches, and [examples/private-config/](examples/private-config/) for a worked example of machine-specific customization living entirely outside this repo.
+Tool choices, dotfile content, prompt theming, personal modules, your own identity: these belong in your own flake.nix, calling `lib.mkConfigs`, not in a PR here. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted. See [docs/profiles.md](docs/profiles.md) for the `features.extra`/`features.exclude`/`features.extraModulePaths` escape hatches, and [examples/private-config/](examples/private-config/) for a worked example of machine-specific customization living entirely outside this repo.
 
 ### PRs welcome for framework improvements
 
 Improvements to the *framework itself* benefit every adopter and are welcome:
 
 - Bug fixes in activation scripts, module composition, or CI
-- Improvements to `mkProfile`, `mkHomeConfig`, `mkDarwinConfig` helpers in `flake.nix`
+- Improvements to `mkProfile` (`flake.nix`) or `lib/mkConfigs.nix`'s schema and builders
 - New module *patterns* (not personal tool choices)
 - Documentation fixes and additions
 - CI/lint pipeline improvements
@@ -24,12 +24,14 @@ ______________________________________________________________________
 
 ## Adapting for your own setup
 
-1. Fork this repo
-2. Copy the identity template: `cp user.nix.example user.nix`
-3. Fill in `user.nix` with your username, name, and email
-4. Apply: `nix run home-manager -- switch --flake ~/.nix-atelier#full --impure`
+1. `nix flake init -t github:cdprice02/nix-atelier` in a new directory
+2. Fill in `flake.nix`: your identity, and at least one config
+3. `nix flake check`
+4. Apply: `nix run home-manager -- switch --flake .#<name>` (or `sudo darwin-rebuild switch` for a darwin config)
 
-See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checklist and [docs/profiles.md](docs/profiles.md) for the tier/gui/arch axes and the `extraFeatures`/`excludeFeatures`/`extraModulePaths` customization hooks.
+See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checklist, [templates/default/README.md](templates/default/flake.nix) for what the scaffolded `flake.nix` looks like, and [docs/profiles.md](docs/profiles.md) for the tier/gui/arch axes and the `features.extra`/`features.exclude`/`features.extraModulePaths` customization hooks.
+
+Working inside a clone of this repo itself, to submit a framework improvement, is different: see "Local validation" below, and note this repo's own `flake.nix` builds placeholder-identity configs to prove `lib.mkConfigs` works, not a real machine's config.
 
 ______________________________________________________________________
 
@@ -39,7 +41,7 @@ Before opening a PR, run:
 
 ```sh
 just eval-all                 # fast: every profile's drvPath, no building
-just check                    # fuller: nix flake check --impure, formatting included
+just check                    # fuller: nix flake check, formatting included
 nix fmt                       # or `just fmt`: auto-fixes (nixfmt-rfc-style, statix, deadnix, mdformat)
 just precommit                # trailing whitespace, secrets scan, treefmt
 ```
