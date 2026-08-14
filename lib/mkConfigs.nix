@@ -37,7 +37,7 @@ let
 
   # Derive SSH key name from email prefix: key file ~/.ssh/<sshKey>. Shared
   # with the nmt harness's testUser, so both go through the same derivation;
-  # flake.nix's still-impure user.nix path imports this back out (see the
+  # flake.nix's own placeholder identity imports this back out (see the
   # attrset returned at the bottom of this file) rather than keeping its own
   # copy.
   mkUser = base: base // { sshKey = builtins.elemAt (builtins.split "@" base.email) 0; };
@@ -185,7 +185,7 @@ let
               extraModulePaths = lib.mkOption {
                 type = lib.types.listOf lib.types.str;
                 default = [ ];
-                description = "Absolute paths to private Home Manager modules, as strings (imported at use time; requires --impure only for the caller's own use of getEnv, not for this function).";
+                description = "Absolute paths to private Home Manager modules, as strings (imported at use time; resolving a path outside the flake's own source needs --impure on whichever real switch/build sets this field, not on mkConfigs itself).";
               };
               extraSystemModulePaths = lib.mkOption {
                 type = lib.types.listOf lib.types.str;

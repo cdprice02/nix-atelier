@@ -38,28 +38,22 @@ permissions:
 jobs:
   # Proves the literal command sequence docs/bootstrap.md's WSL2/Linux
   # section tells a new user to type still works, starting from nothing:
-  # different from check.yml's build-linux, which already proves every
-  # profile builds, but does so via cachix/install-nix-action (not the
-  # curl-piped installer the docs use) on a fully-provisioned ubuntu-latest
-  # runner (not a bare container) and jumps straight to `nix build
+  # a template scaffold (#122), not a clone of this repo. Different from
+  # check.yml's build-linux, which already proves every profile builds, but
+  # does so via cachix/install-nix-action (not the curl-piped installer the
+  # docs use) on a fully-provisioned ubuntu-latest runner (not a bare
+  # container) and jumps straight to `nix build
   # .#homeConfigurations.X.activationPackage` (not the docs' own `nix run
   # home-manager -- switch`, which actually *runs* each activation script
   # rather than merely building the package that contains them).
   #
-  # Switches minimal first, then full, in the same container: `checks`
-  # builds every activation package but never runs one, so this job is the
-  # only thing that does -- and minimal alone (sshKey, submoduleOverrides)
-  # left four feature-owned scripts completely unexercised: awsConfigSkeleton,
-  # claudeCode, and the user-declared nativeInstaller-*/configRepo-* pair.
-  # `full` (tiers.full = builtins.attrNames features) is the cheapest way to
-  # reach the first two with no extra fixture data.
-  # Also proves the realistic upgrade-in-place path (a user who starts
-  # minimal and later switches to full on the same machine), for free: both
-  # sshKey and submoduleOverrides are documented idempotent, so rerunning
-  # them under full costs nothing new to verify. The user-declared
-  # nativeInstaller-*/configRepo-* scripts stay out of scope here -- they
-  # need their own CI-fixture user.nix pointed at real, stable URLs, which
-  # is its own follow-up rather than free with `full`.
+  # `checks` builds every activation package but never runs one, so this job
+  # is the only thing that does. `full` (tiers.full = builtins.attrNames
+  # features) reaches every feature-owned activation script (sshKey,
+  # submoduleOverrides, awsConfigSkeleton, claudeCode) with no extra fixture
+  # data; there's no `minimal`-then-`full` upgrade-in-place run anymore
+  # (the old rationale for it, exercising sshKey/submoduleOverrides twice)
+  # since a fresh scaffold only ever starts from one config.
   #
   # No macOS equivalent: GitHub Actions has no bare/ephemeral macOS
   # container the way ubuntu:24.04 is for Linux (macos-14 is a persistent
@@ -123,15 +117,13 @@ jobs:
           echo 'ciuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
           chown -R ciuser:ciuser "$GITHUB_WORKSPACE"
 
-      # Mirrors docs/bootstrap.md's WSL2 steps 1, 3 (via
-      # NIX_CONFIG_USER_FILE instead of a literal ~/.nix-atelier clone path,
-      # since the repo's already checked out at $GITHUB_WORKSPACE: see
-      # flake.nix's NIX_CONFIG_USER_FILE override), and 7. Step 2 (clone) is
-      # covered by actions/checkout above rather than run here directly.
-      # Steps 4-6, 8-9 aren't exercised: they're either not relevant to a
-      # minimal bootstrap (secrets, corporate CA, default shell)
-      # or don't affect whether the bootstrap sequence itself still works
-      # (SSH key, pre-commit).
+      # Mirrors docs/bootstrap.md's WSL2 steps 1-3 and 6: scaffold via
+      # templates.default (#122), fill in identity, apply. `--override-input
+      # nix-atelier "path:$GITHUB_WORKSPACE"` points the scaffolded flake at
+      # this PR's own checkout rather than the published github: URL, so the
+      # job tests the code under review, not the last release. Steps 4-5
+      # (secrets, corporate CA) aren't exercised: not relevant to whether the
+      # bootstrap sequence itself still works.
       - name: Run the documented bootstrap sequence
         env:
           # nix run home-manager -- switch resolves the home-manager
@@ -144,38 +136,33 @@ jobs:
         run: |
           cat > /tmp/bootstrap-test.sh <<'SCRIPT'
           set -euo pipefail
-          cd "$GITHUB_WORKSPACE"
           sh <(curl -L https://nixos.org/nix/install) --no-daemon
           . ~/.nix-profile/etc/profile.d/nix.sh
           mkdir -p ~/.config/nix
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           echo "access-tokens = github.com=$GITHUB_TOKEN" >> ~/.config/nix/nix.conf
-          cp user.nix.example user.nix
-          # docs/bootstrap.md step 3 is "copy the example, then fill in
-          # username/name/email": copying alone skips the second half, and
-          # home-manager refuses to activate when home.username doesn't match
-          # $USER ("USER is ciuser, expected yourusername"). Substituting the
-          # real account name performs the documented edit, so the sequence
-          # under test stays the one the docs actually describe.
-          sed -i "s/^  username = \"yourusername\";/  username = \"$(id -un)\";/" user.nix
-          grep -q "username = \"$(id -un)\";" user.nix \
-            || { echo "user.nix username substitution failed:"; cat user.nix; exit 1; }
-          export NIX_CONFIG_USER_FILE="$PWD/user.nix"
+          mkdir -p ~/my-config && cd ~/my-config
+          nix flake init -t "$GITHUB_WORKSPACE#default"
+          # docs/bootstrap.md's step is "fill in identity, including
+          # username": the template ships a placeholder, and home-manager
+          # refuses to activate when home.username doesn't match $USER
+          # ("USER is ciuser, expected yourusername"). Substituting the real
+          # account name performs the documented edit, so the sequence under
+          # test stays the one the docs actually describe.
+          sed -i "s/username = \"yourusername\";/username = \"$(id -un)\";/" flake.nix
+          grep -q "username = \"$(id -un)\";" flake.nix \
+            || { echo "flake.nix username substitution failed:"; cat flake.nix; exit 1; }
+          nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"
           # -b bk mirrors the documented command. useradd -m seeds
           # /home/ciuser with /etc/skel's .bashrc and .profile, exactly like a
           # real distro or WSL2 install, and Home Manager aborts rather than
           # clobber them. This is the single most likely first-run failure for
-          # a new user, so the sequence under test has to cover it.
-          nix run home-manager -- switch --flake .#minimal --impure -b bk
-          # No -b bk here: minimal's own switch already created the one-time
-          # backups on first run, and this activates over that existing
-          # generation rather than starting fresh -- exactly the
-          # already-activated state the sshKey/submoduleOverrides idempotency
-          # guards exist for. Real network calls: claudeCode's installer
-          # (claude.ai/install.sh) actually runs here, same as the Nix
-          # installer curl above -- not stubbed, since the point is proving
-          # the real script, not a mock of it.
-          nix run home-manager -- switch --flake .#full --impure
+          # a new user, so the sequence under test has to cover it. Real
+          # network calls: claudeCode's installer (claude.ai/install.sh)
+          # actually runs here, same as the Nix installer curl above -- not
+          # stubbed, since the point is proving the real script, not a mock
+          # of it.
+          nix run home-manager -- switch --override-input nix-atelier "path:$GITHUB_WORKSPACE" --flake .#full -b bk
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh

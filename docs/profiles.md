@@ -33,9 +33,9 @@ system  : x86_64-linux | aarch64-linux | x86_64-darwin | aarch64-darwin
 
 `tier` expands into a set of named features: `minimal` is `[]`, `full` is
 every key in `modules/features.nix`, so a new feature joins `full`
-automatically with no list to maintain. `user.nix` can add features
-beyond a machine's tier via `extraFeatures`, or drop specific ones via
-`excludeFeatures`: see `user.nix.example`.
+automatically with no list to maintain. A `lib.mkConfigs` caller can add
+features beyond a config's tier via `features.extra`, or drop specific
+ones via `features.exclude`: see `templates/default/flake.nix`.
 
 ## Module composition
 
@@ -45,8 +45,8 @@ Hand-maintained, not generated (below the per-profile tables).
 |--------|--------------|
 | `base.nix` ("core") | always |
 | `env.nix` | always |
-| every `features/*.nix` | tier = full, or named in `extraFeatures`, minus anything in `excludeFeatures` |
-| `extraModulePaths` entries | always, if set in `user.nix` (private, machine-specific modules) |
+| every `features/*.nix` | tier = full, or named in `features.extra`, minus anything in `features.exclude` |
+| `features.extraModulePaths` entries | always, if set in a mkConfigs call (private, machine-specific modules) |
 | `gui-linux.nix` | withGui = true, Linux |
 | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
 
@@ -70,11 +70,16 @@ Each profile is built for both `x86_64-linux` and `aarch64-linux`. The `aarch64`
 | `full-gui` | core + every feature + gui-linux | Full desktop Linux |
 | `full-gui-aarch64` | core + every feature + gui-linux | Full desktop Linux |
 
-Bootstrap:
+These are this repo's own configs, built with a placeholder identity to
+prove `lib.mkConfigs` works (see `flake.nix`); they're not meant to be
+switched to directly. To get a config like one of these on a real
+machine: `nix flake init -t github:cdprice02/nix-atelier`, fill in your
+identity, then apply the config you named (see
+`templates/default/README.md`):
 ```sh
-nix run home-manager -- switch --flake ~/.nix-atelier#full --impure -b bk
+nix run home-manager -- switch --flake .#<name> -b bk
 # After first apply, home-manager is on PATH:
-home-manager switch --flake ~/.nix-atelier#full --impure -b bk
+home-manager switch --flake .#<name> -b bk
 ```
 
 ## darwinConfigurations (macOS)
@@ -92,33 +97,33 @@ config builds against a pinned nixpkgs 25.05 (nixpkgs-unstable has dropped
 x86_64-darwin), while the Apple Silicon config rides the same rolling inputs
 as Linux.
 
-Bootstrap: `darwin-rebuild` does not exist until after the first apply, so
-the first one runs nix-darwin straight from the flake:
+These are this repo's own configs (placeholder identity, not meant to
+be switched to directly, same as the home ones above). `darwin-rebuild`
+does not exist until after a real machine's first apply, so that one
+runs nix-darwin straight from the flake:
 ```sh
-# Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin -- switch --flake ~/.nix-atelier#full-darwin-aarch64 --impure
-
-# Intel: pinned nix-darwin release, matching this repo's 25.05 pin
-sudo nix --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/nix-darwin-25.05 -- switch --flake ~/.nix-atelier#full-darwin --impure
+  run nix-darwin -- switch --flake .#<name>
 ```
 
-Every later apply can just use `just switch`, which appends the right
-suffix for the machine's architecture automatically.
+Every later apply can just use `darwin-rebuild switch --flake .#<name>`
+directly (or `just switch`, if working inside a clone of this repo
+itself rather than a consumer's own flake.nix).
 
 ## Customizing your machine
 
-The framework makes most decisions for you; three escape hatches in
-`user.nix` cover the rest; see `user.nix.example` for the exact syntax:
+The framework makes most decisions for you; three escape hatches in a
+`lib.mkConfigs` call's `features` argument cover the rest (see
+`templates/default/flake.nix` for the exact syntax):
 
-- `extraFeatures`: add named features (see `modules/features.nix`) on
-  top of a machine's tier, e.g. `minimal` plus just `tmux`.
-- `excludeFeatures`: drop features regardless of tier, e.g. `full`
+- `features.extra`: add named features (see `modules/features.nix`) on
+  top of a config's tier, e.g. `minimal` plus just `tmux`.
+- `features.exclude`: drop features regardless of tier, e.g. `full`
   without `lang-rust`.
-- `extraModulePaths`: absolute paths to private, machine-specific
-  home-manager modules that live outside this repo entirely (identity
-  overrides, extra secrets, anything that shouldn't be public).
+- `features.extraModulePaths`: absolute paths to private,
+  machine-specific home-manager modules that live outside this repo
+  entirely (identity overrides, extra secrets, anything that shouldn't
+  be public).
 
 Regenerate this file and commit the result after any change that affects
 it (a new feature, a renamed tier); the `docs-drift` check fails

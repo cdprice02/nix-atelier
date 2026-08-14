@@ -5,7 +5,8 @@ machine-specific, non-public data: identity overrides, packages too niche
 for a shared feature, and real secrets. None of it belongs in the public
 `nix-atelier` repo, and none of it is a Nix module the framework imports on
 its own: every file here is wired in explicitly, per machine, from that
-machine's own `user.nix`.
+machine's own `lib.mkConfigs` call (see `templates/default/flake.nix` for the
+entry point this plugs into).
 
 This directory is not meant to be used as-is. Copy it out to your own
 private repo, rename the machine files to match your own machines, delete
@@ -34,35 +35,41 @@ special shape required beyond being a valid module. Each demonstrates one
 - **`laptop.nix`**: sets an environment variable and a `PATH` entry that
   only make sense on this one machine.
 - **`build-server.nix`**: a headless machine's tier (`minimal`, typically)
-  is set in *that machine's own* `user.nix`, not here; this file only adds
-  the one extra package that machine's job needs.
+  is set in that machine's own `configs.home.<name>.tier`, not here; this
+  file only adds the one extra package that machine's job needs.
 
 ## Wiring it into nix-atelier
 
-In the target machine's `user.nix`:
+In the target machine's `flake.nix`:
 
 ```nix
-extraModulePaths = ["/absolute/path/to/your-private-repo/machines/workstation.nix"];
+configs.home.<name>.extraConfig = { };  # atelier.* options, if any (see Secrets below)
+features.extraModulePaths = ["/absolute/path/to/your-private-repo/machines/workstation.nix"];
 ```
 
 `extraModulePaths` takes a list; a machine can layer in more than one file
-if it genuinely needs to. Requires `--impure`, which every `home-manager switch` / `darwin-rebuild switch` already needs for `user.nix` itself.
+if it genuinely needs to. Resolving an absolute path outside the flake's own
+source needs `--impure` on that machine's own `home-manager switch` /
+`darwin-rebuild switch` -- not on `mkConfigs` itself, and not on nix-atelier's
+own `flake.nix`, which never touches this mechanism.
 
 ## Secrets
 
 `secrets/secrets.yaml.example` and `.sops.yaml.example` show the shape of a
 real private secrets file; see the root repo's own `docs/bootstrap.md` for
 the actual `age-keygen` / `sops` steps to create one for real. Once you have
-one, wire it in the same way as a machine module, via that machine's
-`user.nix`:
+one, wire it in the same way as a machine module, via that machine's own
+config's `extraConfig`:
 
 ```nix
-secrets  = ["GITHUB_PERSONAL_ACCESS_TOKEN" "MY_SERVICE_PAT"];
-sopsFile = "/absolute/path/to/your-private-repo/secrets/workstation.yaml";
+configs.home.<name>.extraConfig.atelier.sops = {
+  secrets = ["GITHUB_PERSONAL_ACCESS_TOKEN" "MY_SERVICE_PAT"];
+  file = "/absolute/path/to/your-private-repo/secrets/workstation.yaml";
+};
 ```
 
 One file per machine, not one shared file: the same service can need a
 different token on a different machine, and `secrets-sops.nix` is built
-around that: each machine's `user.nix` points its own `sopsFile` at its
-own file, so the same key *name* can carry a different real value per
+around that: each machine's own config points its own `atelier.sops.file` at
+its own file, so the same key *name* can carry a different real value per
 machine.

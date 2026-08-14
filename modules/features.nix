@@ -7,7 +7,7 @@
 # an attrset { module = <path>; unsupported = [ "<system>" ... ]; } for a
 # feature that cannot build on some system this flake targets. mkProfile
 # drops an unsupported feature on that system and warns once at evaluation;
-# `excludeFeatures` in user.nix silences the warning.
+# `features.exclude` in a mkConfigs call silences the warning.
 {
   shell-tools = ./features/shell-tools.nix;
   lang-rust = ./features/lang-rust.nix;

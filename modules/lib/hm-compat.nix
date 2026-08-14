@@ -40,8 +40,9 @@ rec {
   gitConfig = cfg: if hasGitSettings then { settings = cfg; } else { extraConfig = cfg; };
 
   # master: programs.git.userName/userEmail -> programs.git.settings.user.name/.email
-  # `force` covers a private, machine-specific module (wired in via user.nix's
-  # extraModulePaths) overriding base.nix's identity, which needs mkForce on
+  # `force` covers a private, machine-specific module (wired in via a
+  # mkConfigs call's features.extraModulePaths) overriding base.nix's
+  # identity, which needs mkForce on
   # whichever spelling is live since base.nix sets its own identity at the
   # same real priority, not mkDefault.
   gitIdentity =

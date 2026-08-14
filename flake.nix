@@ -62,10 +62,10 @@
       url = "github:cdprice02/caret";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
-    # Only ever imported when a machine's user.nix sets sopsFile; see
-    # mkProfile's sopsMods below. Follows nixpkgs (not nixpkgs-darwin):
-    # unlike caret, sops-nix has no x86_64-darwin-specific build concern, so
-    # it doesn't need the same override.
+    # Always imported (#120), inert unless atelier.sops.file is set: see
+    # modules/secrets-sops.nix. Follows nixpkgs (not nixpkgs-darwin): unlike
+    # caret, sops-nix has no x86_64-darwin-specific build concern, so it
+    # doesn't need the same override.
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -120,55 +120,28 @@
     }:
     let
       # ── Identity ────────────────────────────────────────────────────────────
-      # Identity is loaded from user.nix (gitignored, never committed).
-      # Copy user.nix.example to user.nix and fill in your values.
-      # builtins.getEnv is impure (value varies per eval), so all home-manager
-      # switch calls require --impure. Alternatives (a hardcoded absolute path,
-      # sops-nix) trade portability or simplicity for that impurity.
-      #
-      # Default location is $HOME/.nix-atelier/user.nix. If you've cloned this
-      # repo somewhere else, set NIX_CONFIG_USER_FILE to the full path of your
-      # user.nix instead of relying on the default.
-      homeDir = builtins.getEnv "HOME";
-      # SUDO_USER is set by sudo to the invoking (real) user. `sudo
-      # darwin-rebuild switch` / `sudo nixos-rebuild switch` reset $HOME to
-      # root's home (/var/root), so getEnv "HOME" alone would miss the real
-      # user.nix and silently fall back to user.nix.example (username
-      # "yourusername"): which then fails activation on `system.primaryUser`.
-      # Fall back to the invoking user's home in that case, trying both the
-      # darwin (/Users) and Linux (/home) prefixes rather than probing the
-      # eval system. First existing candidate wins.
-      sudoUser = builtins.getEnv "SUDO_USER";
-      userNixPathOverride = builtins.getEnv "NIX_CONFIG_USER_FILE";
-      userNixCandidates =
-        nixpkgs.lib.optional (userNixPathOverride != "") userNixPathOverride
-        ++ nixpkgs.lib.optional (homeDir != "") (homeDir + "/.nix-atelier/user.nix")
-        ++ nixpkgs.lib.optionals (sudoUser != "") [
-          "/Users/${sudoUser}/.nix-atelier/user.nix"
-          "/home/${sudoUser}/.nix-atelier/user.nix"
-        ];
-      existingUserNix = builtins.filter builtins.pathExists userNixCandidates;
-      userBase =
-        if userNixPathOverride != "" then
-          # Explicitly set: a typo'd path is a real mistake, not a fresh
-          # checkout that hasn't created user.nix yet: fail loudly instead of
-          # silently building with the placeholder identity.
-          (
-            if builtins.pathExists userNixPathOverride then
-              import userNixPathOverride
-            else
-              throw "NIX_CONFIG_USER_FILE=${userNixPathOverride} does not exist"
-          )
-        else if existingUserNix != [ ] then
-          import (builtins.head existingUserNix)
-        else
-          import (self + /user.nix.example);
+      # A placeholder, deliberately: this repo is consumed, not forked and
+      # edited (see templates/default/flake.nix, #122, which is the real
+      # example now). homeConfigurations/darwinConfigurations/
+      # nixosConfigurations below exist to prove lib.mkConfigs works
+      # standalone (this repo is the first real caller of its own library),
+      # not to be switched to on a real machine. A real identity, and any
+      # real per-machine values (sopsFile, aws.profile, native installers,
+      # private config repos), belong in a consumer's own flake.nix instead,
+      # set via lib.mkConfigs's identity/extraConfig arguments -- never here,
+      # since this repo is public and this value is committed.
+      userBase = {
+        username = "yourusername";
+        name = "Your Name";
+        email = "you@example.com";
+        github.user = "yourgithubname";
+      };
       # ── Systems ────────────────────────────────────────────────────────────
       # Which of the two release pairs a system uses, and the resolved
       # pkgs/home-manager/nix-darwin for it: one cohesive unit (lib/systems.nix)
       # instead of half a dozen separate bindings, shared between this file's
-      # own (still impure) config construction below and lib/mkConfigs.nix
-      # (#122). Fails evaluation on a release-pair mismatch rather than
+      # own config construction below and lib/mkConfigs.nix (#122). Fails
+      # evaluation on a release-pair mismatch rather than
       # warning (HM's own home.enableNixpkgsReleaseCheck only warns, which is
       # easy to miss); update both inputs of the offending pair together
       # (`just update`, which never updates a single input).
@@ -286,9 +259,9 @@
       # `features` bindings, so every real call site (home/darwin configs) below
       # is unaffected. The nmt harness overrides both: userData so its fixture is
       # genuinely identity-independent (previously it silently read whichever
-      # real user.nix happened to be on the evaluating machine -- harmless today
-      # only because this machine's extraFeatures/excludeFeatures/
-      # extraModulePaths happen to be empty, but a contributor with a private
+      # identity happened to be hardcoded in this file at the time -- harmless
+      # today only because this repo's own placeholder identity has empty
+      # extraFeatures/excludeFeatures/extraModulePaths, but a real consumer's
       # extraModulePaths entry would have had it evaluated into `nix flake
       # check`), and featuresOverride so the platform-filtering check
       # (feature-platform-filtering below) can exercise a synthetic unsupported
@@ -307,13 +280,14 @@
             featuresOverride.${name} or (throw ''
               unknown feature "${name}": valid features: ${builtins.concatStringsSep ", " (builtins.attrNames featuresOverride)}
             '');
-          # Tier defaults plus user.nix's extraFeatures, deduplicated (a name in
-          # both is not an error: the module system already dedupes imports by
-          # file, so this has always been silently fine -- unique here just
-          # avoids resolving the same name twice). excludeFeatures is the
-          # inverse escape hatch: names to drop regardless of where they came
-          # from, and also how a machine silences the unsupported-platform
-          # warning below for a feature it was never going to use anyway.
+          # Tier defaults plus the caller's extraFeatures (features.extra in a
+          # mkConfigs call), deduplicated (a name in both is not an error: the
+          # module system already dedupes imports by file, so this has always
+          # been silently fine -- unique here just avoids resolving the same
+          # name twice). excludeFeatures (features.exclude) is the inverse
+          # escape hatch: names to drop regardless of where they came from,
+          # and also how a machine silences the unsupported-platform warning
+          # below for a feature it was never going to use anyway.
           requestedNames = nixpkgs.lib.unique (
             (tiers.${tier} or (throw "unknown tier \"${tier}\"")) ++ (userData.extraFeatures or [ ])
           );
@@ -327,9 +301,11 @@
 
           # Absolute paths to private, machine-specific modules outside this
           # repo: a string absolute path imports to a real module, and relative
-          # imports inside it resolve against the real filesystem, the same
-          # --impure trick user.nix itself relies on. See examples/private-config/
-          # for a worked example. Empty by default.
+          # imports inside it resolve against the real filesystem. Resolving an
+          # absolute path outside the flake's own source needs --impure on
+          # whichever real switch/build actually sets this field; the schema
+          # itself (mkConfigs's features.extraModulePaths) doesn't require it.
+          # See examples/private-config/ for a worked example. Empty by default.
           privateMods = map import (userData.extraModulePaths or [ ]);
 
           guiMods =
@@ -341,12 +317,12 @@
               [ ./modules/gui-darwin.nix ];
 
           # Bridges userData's flat aws/nativeInstallers/configRepos/sopsFile/
-          # secrets fields (this repo's still-impure user.nix shape, and the
-          # nmt harness's testUser) onto machine.nix's atelier.* options
-          # (#120). lib.mkDefault, not a plain assignment: a mkConfigs (#122)
-          # caller's own extraConfig setting the same option is a real,
-          # higher-priority definition and must win outright rather than
-          # conflicting with this fallback.
+          # secrets fields onto machine.nix's atelier.* options (#120): used
+          # by this repo's own placeholder identity below (all defaults) and
+          # by the nmt harness's testUser. lib.mkDefault, not a plain
+          # assignment: a mkConfigs (#122) caller's own extraConfig setting
+          # the same option is a real, higher-priority definition and must
+          # win outright rather than conflicting with this fallback.
           machineBridge = {
             atelier = {
               aws.profile = nixpkgs.lib.mkDefault (userData.aws.profile or null);
@@ -363,7 +339,7 @@
         nixpkgs.lib.warnIf (skippedNames != [ ])
           ''
             Skipping features unsupported on ${system}: ${nixpkgs.lib.concatStringsSep ", " skippedNames}.
-            Add them to excludeFeatures in user.nix to silence this.
+            Add them to features.exclude in your mkConfigs call to silence this.
           ''
           (
             [
@@ -386,9 +362,10 @@
       # darwinConfigurations further down are built through it too (see
       # "This repo's own configs" below): the real proof it works standalone
       # is this repo depending on it for its own real configs, not a
-      # special-cased internal path that merely looks similar. Only identity
-      # loading (userBase, just below) stays impure; that removal is --impure
-      # removal's own, separate PR.
+      # special-cased internal path that merely looks similar. No --impure
+      # anywhere in this file anymore: identity is a placeholder literal, and
+      # extraModulePaths/extraSystemModulePaths/hardwareModule are empty by
+      # default, so nothing here ever touches an out-of-flake path.
       mkConfigsLib = import ./lib/mkConfigs.nix {
         inherit (nixpkgs) lib;
         systems = systemsLib;
@@ -404,7 +381,6 @@
       # to the harness -- mkNmtModules is only ever called from mkNmtTests.
       nmtHarness = import ./tests/nmt/harness.nix {
         inherit
-          self
           nixpkgs
           home-manager
           home-manager-darwin
@@ -413,6 +389,7 @@
           pkgsFor
           mkProfile
           installedPackageNames
+          userBase
           ;
         inherit (mkConfigsLib) mkUser;
       };
@@ -430,10 +407,12 @@
       # aws/nativeInstallers/configRepos/sops/submodules aren't in mkConfigs's
       # schema (see machine.nix, #120): every config below carries them
       # through its own extraConfig instead, translated once here from
-      # user.nix's flat shape. Identical in spirit to mkProfile's own
-      # machineBridge, but a plain value, not mkDefault: extraConfig entries
-      # are already the real, single definition for this repo's own configs,
-      # nothing else could override them.
+      # userBase's flat shape (all defaults for this repo's own placeholder
+      # identity; a real consumer's own flake.nix would have real values).
+      # Identical in spirit to mkProfile's own machineBridge, but a plain
+      # value, not mkDefault: extraConfig entries are already the real,
+      # single definition for this repo's own configs, nothing else could
+      # override them.
       atelierExtraConfig = {
         atelier = {
           aws.profile = userBase.aws.profile or null;

@@ -1,6 +1,5 @@
 result
 result-*
-user.nix
 
 # Secrets and local certs — never commit
 secrets.env

@@ -22,10 +22,11 @@ promptly as is practical rather than to a fixed SLA.
 
 What's relevant to report here:
 
-- A way for a fork's `just switch` / `just check` to execute attacker-controlled
-  code beyond what's already inherent to Nix (arbitrary flake evaluation is a
-  known, accepted risk of using flakes at all; this is about anything beyond
-  that baseline).
+- A way for a consumer's `just switch` / `just check`, or their own
+  `home-manager switch` / `darwin-rebuild switch` against a `lib.mkConfigs`
+  call, to execute attacker-controlled code beyond what's already inherent to
+  Nix (arbitrary flake evaluation is a known, accepted risk of using flakes at
+  all; this is about anything beyond that baseline).
 - A flaw in the activation scripts (`sshKey`, `submoduleOverrides`, the
   native-installer hooks in `features/claude.nix`) that could leak a secret,
   overwrite unrelated files, or run with unintended privilege.
@@ -34,12 +35,13 @@ What's relevant to report here:
 
 What's out of scope, by design rather than oversight:
 
-- `user.nix` and `~/.config/secrets/env` are gitignored and never committed;
-  they hold real identity and secrets values on a machine but are not part
-  of this repository's history. The same is true of any real, private
-  `secrets.yaml` a fork of this framework points `sopsFile` at; this repo's
-  own `secrets/secrets.yaml.example` and `.sops.yaml` are placeholder-only
-  and carry no real ciphertext or real recipient.
+- A consumer's own real identity and secrets values live in their own
+  flake.nix (`lib.mkConfigs`'s `identity` argument) and
+  `~/.config/secrets/env` (gitignored, never committed); neither is part of
+  this repository's history. The same is true of any real, private
+  `secrets.yaml` a consumer points `atelier.sops.file` at; this repo's own
+  `secrets/secrets.yaml.example` and `.sops.yaml` are placeholder-only and
+  carry no real ciphertext or real recipient.
 - `gitleaks` (`.github/workflows/security.yml`) already scans every push and
   PR for accidentally committed plaintext secrets. A finding there is CI
   failing loudly, not something to report privately.
