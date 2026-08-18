@@ -2,6 +2,17 @@
 
 First-time setup checklist per target machine.
 
+**Before you start:** the `full` tier runs a first-party-vendor-hosted
+`curl | bash` install script (`claude.ai/install.sh`) unconditionally on
+first activation, to install Claude Code -- and does the same for any
+`atelier.nativeInstallers` entry you declare yourself. This is a deliberate
+design choice (Nix's rebuild cycle can't track Claude Code's release pace),
+not an accident, but it's worth knowing before your first `switch`/apply
+below runs it. See `modules/features/claude.nix` and
+`modules/lib/native-installer.nix` for exactly what runs, and
+[SECURITY.md](../SECURITY.md)'s scope section for how it's treated for
+reporting purposes. Use `minimal` instead of `full` to opt out entirely.
+
 ______________________________________________________________________
 
 ## WSL2 (Linux, single-user Nix)

@@ -30,6 +30,14 @@ What's relevant to report here:
 - A flaw in the activation scripts (`sshKey`, `submoduleOverrides`, the
   native-installer hooks in `features/claude.nix`) that could leak a secret,
   overwrite unrelated files, or run with unintended privilege.
+- Note on the native-installer hooks specifically: the `full` tier runs a
+  first-party-vendor-hosted `curl | bash` script (`claude.ai/install.sh`)
+  unconditionally on first activation, and does the same for any
+  `atelier.nativeInstallers` entry a consumer declares. This is a
+  deliberate design choice (see `modules/lib/native-installer.nix`'s own
+  comments for why), disclosed here and in `docs/bootstrap.md` rather than
+  something to report on its own; a flaw in *how* it's invoked (the
+  previous bullet) is still in scope.
 - A flaw in `modules/secrets-sops.nix` that could expose a decrypted secret
   to an unintended recipient, or resolve to the wrong `sopsFile`.
 
