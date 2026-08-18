@@ -821,6 +821,76 @@
               (examplesConfig.home.sessionVariables.MY_LAPTOP_ONLY_VAR or null) == "some-machine-specific-value"
             && examplesGitName == "Your Workstation Name"
             && examplesGitEmail == "you@workstation.example.com";
+
+          # modules/secrets-sops.nix coverage (#130): no fixture, test, or CI
+          # path had ever set atelier.sops.file, so the module was
+          # unreachable code as far as CI was concerned. A pure eval-level
+          # check, not nmt: sops-nix's actual secret decryption is a
+          # real-activation-time concern (on darwin it runs via a launchd
+          # agent, invisible to nmt's build-free rendering entirely), but
+          # secrets-sops.nix's own job -- translating atelier.sops.file/
+          # .secrets into the right sops.* options -- is exactly an
+          # eval-level concern, checkable directly against `.config.sops`.
+          secretsSopsHomeDir = "/home/testuser";
+          secretsSopsFixtureFile = "/absolute/path/to/laptop.yaml";
+          mkSecretsSopsEval =
+            atelierSops:
+            (mkConfigsLib.mkConfigs {
+              identity = mkConfigsTestIdentity;
+              configs.home.secrets-sops-check = {
+                system = "x86_64-linux";
+                extraConfig.atelier.sops = atelierSops;
+              };
+            }).homeConfigurations.secrets-sops-check.config.sops;
+
+          # On: file set, two secret names declared.
+          secretsSopsOn = mkSecretsSopsEval {
+            file = secretsSopsFixtureFile;
+            secrets = [
+              "GITHUB_PERSONAL_ACCESS_TOKEN"
+              "CONTEXT7_API_KEY"
+            ];
+          };
+          secretsSopsOnOk =
+            secretsSopsOn.age.keyFile == "${secretsSopsHomeDir}/.config/sops/age/keys.txt"
+            && !secretsSopsOn.validateSopsFiles
+            && secretsSopsOn.defaultSopsFile == secretsSopsFixtureFile
+            &&
+              (builtins.attrNames secretsSopsOn.secrets) == [
+                "CONTEXT7_API_KEY"
+                "GITHUB_PERSONAL_ACCESS_TOKEN"
+              ]
+            && secretsSopsOn.templates."secrets-env".path == "${secretsSopsHomeDir}/.config/secrets/env"
+            && secretsSopsOn.templates."secrets-env".mode == "0400"
+            &&
+              (builtins.match ".*export GITHUB_PERSONAL_ACCESS_TOKEN=.*"
+                secretsSopsOn.templates."secrets-env".content
+              ) != null
+            &&
+              (builtins.match ".*export CONTEXT7_API_KEY=.*" secretsSopsOn.templates."secrets-env".content)
+              != null;
+
+          # Off: file unset (the module's actual on/off switch), same as
+          # every real config's default. sops.secrets should be untouched by
+          # this module -- not merely "empty because nothing else set it",
+          # but genuinely never assigned by secrets-sops.nix's own mkIf.
+          # defaultSopsFile itself isn't checked here: sops-nix declares it
+          # with no default, so *evaluating* the option's value (not merely
+          # `?`-testing its presence, which is always true for a declared
+          # option) throws when nothing has set it -- itself confirmation
+          # this module leaves it alone when atelier.sops.file is unset.
+          secretsSopsOff = mkSecretsSopsEval { };
+          secretsSopsOffOk = secretsSopsOff.secrets == { };
+
+          # Off, but with secrets *also* declared: proves the deliberate,
+          # non-throwing design (file's presence, not secrets' non-emptiness,
+          # is the on/off switch -- a real, load-bearing decision, not an
+          # oversight) rather than merely re-testing the same default state
+          # secretsSopsOff already covers.
+          secretsSopsOffWithSecretsDeclared = mkSecretsSopsEval {
+            secrets = [ "GITHUB_PERSONAL_ACCESS_TOKEN" ];
+          };
+          secretsSopsOffWithSecretsDeclaredOk = secretsSopsOffWithSecretsDeclared.secrets == { };
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -902,6 +972,18 @@
                 (hello/borgbackup packages, MY_LAPTOP_ONLY_VAR, workstation.nix's
                 forced git identity override) through a real extraConfig.imports
                 wiring.
+              '';
+
+          secrets-sops =
+            if secretsSopsOnOk && secretsSopsOffOk && secretsSopsOffWithSecretsDeclaredOk then
+              pkgs.runCommand "check-secrets-sops" { } "touch $out"
+            else
+              throw ''
+                secrets-sops: modules/secrets-sops.nix isn't translating
+                atelier.sops.file/.secrets into sops.* the way it's supposed
+                to (on=${builtins.toJSON secretsSopsOnOk}
+                off=${builtins.toJSON secretsSopsOffOk}
+                offWithSecretsDeclared=${builtins.toJSON secretsSopsOffWithSecretsDeclaredOk}).
               '';
 
           formatting = treefmtEval.${system}.config.build.check self;
