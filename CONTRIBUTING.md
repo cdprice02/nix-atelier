@@ -67,6 +67,32 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
+## Releases and versioning
+
+A release marks a meaningful milestone, not a schedule: there's no fixed
+cadence, and not every merged PR needs one. `CHANGELOG.md` gets a new entry,
+and a GitHub Release with the real substance, when a tag actually goes out.
+
+Version numbers follow semver against `lib.mkConfigs`'s public contract,
+since #122 made that contract the thing consumers actually depend on:
+
+- **Major**: a breaking change to `lib.mkConfigs`'s schema, or to what a
+  `configs.home`/`.darwin`/`.nixos` entry accepts (a field renamed or
+  removed, a required field added, changed default behavior for an existing
+  field).
+- **Minor**: a new capability that doesn't break an existing consumer's
+  `mkConfigs` call (a new config kind, a new `atelier.*` option, a new
+  feature added to `full`).
+- **Patch**: a fix that doesn't change the schema at all.
+
+Before v3.0.0, this repo was a fork-and-edit template rather than a
+consumable library, so earlier version bumps (v1.0.0, v2.0.0, v2.1.0)
+predate this policy and don't strictly follow it; see
+[docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're upgrading a
+pre-v3 fork.
+
+______________________________________________________________________
+
 ## Repository secrets
 
 Only one, and only for the weekly `flake.lock` automation:

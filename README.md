@@ -94,6 +94,7 @@ just --list        # everything else
 |                                                      |                                                                      |
 | ---------------------------------------------------- | -------------------------------------------------------------------- |
 | [ARCHITECTURE.md](ARCHITECTURE.md)                   | How the framework thinks: compositor, extension points, drift guards |
+| [CHANGELOG.md](CHANGELOG.md)                         | Version history, and where to find each release's full notes         |
 | [docs/bootstrap.md](docs/bootstrap.md)               | First-time setup, per target                                         |
 | [docs/profiles.md](docs/profiles.md)                 | Every profile and how they compose                                   |
 | [docs/tools.md](docs/tools.md)                       | What each profile installs                                           |
