@@ -64,11 +64,12 @@ just --list        # everything else
 
 ## Docs
 
-|                                                      |                                                               |
-| ---------------------------------------------------- | ------------------------------------------------------------- |
-| [docs/bootstrap.md](docs/bootstrap.md)               | First-time setup, per target                                  |
-| [docs/profiles.md](docs/profiles.md)                 | Every profile and how they compose                            |
-| [docs/tools.md](docs/tools.md)                       | What each profile installs                                    |
-| [docs/troubleshooting.md](docs/troubleshooting.md)   | Common first-boot failures                                    |
-| [examples/private-config/](examples/private-config/) | Worked example: identity overrides, private packages, secrets |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                   | Forking, local validation, PR standards                       |
+|                                                      |                                                                      |
+| ---------------------------------------------------- | -------------------------------------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                   | How the framework thinks: compositor, extension points, drift guards |
+| [docs/bootstrap.md](docs/bootstrap.md)               | First-time setup, per target                                         |
+| [docs/profiles.md](docs/profiles.md)                 | Every profile and how they compose                                   |
+| [docs/tools.md](docs/tools.md)                       | What each profile installs                                           |
+| [docs/troubleshooting.md](docs/troubleshooting.md)   | Common first-boot failures                                           |
+| [examples/private-config/](examples/private-config/) | Worked example: identity overrides, private packages, secrets        |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                   | Forking, local validation, PR standards                              |
