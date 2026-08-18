@@ -2,8 +2,10 @@
 
 ## Supported versions
 
-Only `main` is supported. This is a personal configuration, not a versioned
-library: apply fixes by pulling latest, not by requesting a backport.
+Only `main` is supported. Tagged releases exist to mark meaningful
+milestones, not to carry a backport policy: apply fixes by bumping your
+`nix-atelier` flake input to latest, not by requesting a patch against an
+older tag.
 
 ## Reporting a vulnerability
 
