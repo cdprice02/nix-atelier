@@ -55,10 +55,12 @@ jobs:
   # (the old rationale for it, exercising sshKey/submoduleOverrides twice)
   # since a fresh scaffold only ever starts from one config.
   #
-  # No macOS equivalent: GitHub Actions has no bare/ephemeral macOS
-  # container the way ubuntu:24.04 is for Linux (macos-14 is a persistent
-  # pre-provisioned VM). check.yml's build-darwin already covers macOS
-  # build correctness, which is the part that *is* testable that way.
+  # macOS gets its own sibling job below (darwin-switch-smoke-test, #101)
+  # rather than a variant of this one: GitHub Actions has no bare/ephemeral
+  # macOS container the way ubuntu:24.04 is for Linux (macos-14 is a
+  # persistent pre-provisioned VM), so it can't reuse the useradd/container
+  # scaffolding here, and it needs sudo for a real system-level
+  # darwin-rebuild switch rather than a plain home-manager generation.
   bootstrap-smoke-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -167,3 +169,93 @@ jobs:
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh
           su - ciuser -c "GITHUB_WORKSPACE='$GITHUB_WORKSPACE' GITHUB_TOKEN='$GITHUB_TOKEN' /tmp/bootstrap-test.sh"
+
+  # Real activation, not just a closure build (#101): check.yml's
+  # build-darwin only proves darwinConfigurations.<name>.system builds,
+  # never that an activation script actually runs on a real macOS system --
+  # the same gap the job above closed for Linux (#43). No `needs:` between
+  # the two jobs in this file: they run concurrently, same as the rest of
+  # this workflow's jobs.
+  #
+  # Gated to push/dispatch only, unlike the Linux job above (which runs on
+  # every PR): this one is meaningfully more expensive -- Homebrew casks
+  # actually install (system/darwin.nix's brews/casks are unconditional for
+  # every darwin config), real network calls, real disk usage -- matching
+  # build-darwin's own push/dispatch gating in check.yml.
+  #
+  # Scaffolds via templates.default (#122) with the runner's own real
+  # $(id -un), not this repo's own placeholder-identity matrix:
+  # darwinConfigurations.full-darwin-aarch64 uses "yourusername", which has
+  # no corresponding real macOS account for system/darwin.nix's
+  # users.users.${user.username} to manage. Runs natively on macos-14's own
+  # architecture (aarch64-darwin, Apple Silicon): the x86_64-darwin pair
+  # only exists for this repo's own Intel dogfooding machine, and a real
+  # activation exercised through Rosetta emulation would prove less about a
+  # typical user's Mac than a native run does -- check.yml's build-darwin
+  # matrix already covers x86_64-darwin's build correctness via Rosetta.
+  darwin-switch-smoke-test:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+      - uses: cachix/install-nix-action@v31.11.0
+      - uses: nix-community/cache-nix-action@v7.0.2
+        with:
+          primary-key: nix-darwin-switch-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-darwin-switch-
+          gc-max-store-size-macos: 4294967296
+          purge: true
+          purge-prefixes: nix-darwin-switch-
+          purge-created: 0
+          purge-primary-key: never
+
+      # Mirrors docs/bootstrap.md's macOS section: scaffold via
+      # templates.default, then a real edit of flake.nix (the CI equivalent
+      # of the documented `$EDITOR flake.nix` step) filling in a real
+      # identity and a darwin config, then the documented first-apply
+      # command -- nix-darwin has no separate installer, so the very first
+      # apply runs it straight from the flake, exactly as a brand-new
+      # machine would. `--override-input nix-atelier "path:$GITHUB_WORKSPACE"`
+      # points the scaffold at this PR's own checkout rather than the
+      # published github: URL, so this tests the code under review.
+      - name: Scaffold and switch a real darwin config
+        run: |
+          mkdir -p ~/my-config && cd ~/my-config
+          nix flake init -t "$GITHUB_WORKSPACE#default"
+          cat > flake.nix <<'EOF'
+          {
+            description = "darwin-switch-smoke-test config";
+            inputs.nix-atelier.url = "github:cdprice02/nix-atelier";
+            outputs =
+              { nix-atelier, ... }:
+              nix-atelier.lib.mkConfigs {
+                identity = {
+                  username = "CI_USERNAME_PLACEHOLDER";
+                  name = "CI Runner";
+                  email = "ci@example.com";
+                  github.user = "ci";
+                };
+                configs.darwin.full.system = "aarch64-darwin";
+              };
+          }
+          EOF
+          sed -i '' "s/CI_USERNAME_PLACEHOLDER/$(id -un)/" flake.nix
+          grep -q "username = \"$(id -un)\";" flake.nix \
+            || { echo "flake.nix username substitution failed:"; cat flake.nix; exit 1; }
+          nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"
+
+          # First-activation-only (docs/troubleshooting.md documents this for
+          # real users too): the persistent macos-14 runner already has its
+          # own /etc/nix/nix.conf (written by cachix/install-nix-action) and
+          # macOS's own default /etc/bashrc/.zshrc, none of which nix-darwin
+          # recognizes as its own on a first switch. It refuses to overwrite
+          # them silently; renaming is nix-darwin's own documented remedy.
+          for f in /etc/nix/nix.conf /etc/bashrc /etc/zshrc; do
+            [ -e "$f" ] && sudo mv "$f" "$f.before-nix-darwin"
+          done
+
+          sudo nix --extra-experimental-features "nix-command flakes" \
+            run nix-darwin -- switch --flake .#full --override-input nix-atelier "path:$GITHUB_WORKSPACE"

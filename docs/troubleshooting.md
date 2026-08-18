@@ -182,6 +182,24 @@ If you have config in `~/.claude.bk` you want to keep, merge it into `~/.nix-ate
 
 ______________________________________________________________________
 
+## `nix run nix-darwin -- switch` fails with "Unexpected files in /etc, aborting activation"
+
+**Symptom:** the very first darwin apply (`sudo nix run nix-darwin -- switch --flake .#<name>`, before `darwin-rebuild` exists) fails with a list of files nix-darwin refuses to overwrite, typically `/etc/nix/nix.conf`, `/etc/bashrc`, `/etc/zshrc`.
+
+**Cause:** these files already exist from macOS's own defaults (`/etc/bashrc`, `/etc/zshrc`) or from step 1's Nix installer (`/etc/nix/nix.conf`), and nix-darwin refuses to silently clobber content it doesn't recognize as its own on a first activation.
+
+**Fix:** exactly what the error message says: rename each listed file by appending `.before-nix-darwin`, then rerun the apply command.
+
+```sh
+sudo mv /etc/nix/nix.conf /etc/nix/nix.conf.before-nix-darwin
+sudo mv /etc/bashrc /etc/bashrc.before-nix-darwin
+sudo mv /etc/zshrc /etc/zshrc.before-nix-darwin
+```
+
+nix-darwin regenerates all three from your config on the switch that follows. This is a one-time, first-activation-only step: every later `darwin-rebuild switch` manages these files itself and won't hit this again.
+
+______________________________________________________________________
+
 ## SSL errors from curl, AWS CLI, Python requests, or npm behind a TLS-inspecting proxy
 
 **Symptom:** certificate-verification failures from Nix-managed tools specifically (system-packaged tools work fine), typically on a corporate network.
