@@ -477,5 +477,16 @@ jobs:
           grep -q "username = \"$(id -un)\";" flake.nix \
             || { echo "flake.nix username substitution failed:"; cat flake.nix; exit 1; }
           nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"
+
+          # First-activation-only (docs/troubleshooting.md documents this for
+          # real users too): the persistent macos-14 runner already has its
+          # own /etc/nix/nix.conf (written by cachix/install-nix-action) and
+          # macOS's own default /etc/bashrc/.zshrc, none of which nix-darwin
+          # recognizes as its own on a first switch. It refuses to overwrite
+          # them silently; renaming is nix-darwin's own documented remedy.
+          for f in /etc/nix/nix.conf /etc/bashrc /etc/zshrc; do
+            [ -e "$f" ] && sudo mv "$f" "$f.before-nix-darwin"
+          done
+
           sudo nix --extra-experimental-features "nix-command flakes" \
             run nix-darwin -- switch --flake .#full --override-input nix-atelier "path:$GITHUB_WORKSPACE"
