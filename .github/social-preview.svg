@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <!-- GitHub social preview image; see social-preview.md in this same
+       directory for what it is and how to regenerate social-preview.png
+       from this file. -->
+  <!-- rose-pine base (repo's own darker override) -->
+  <rect width="1280" height="640" fill="#1a1921"/>
+
+  <!-- prompt + title + block cursor -->
+  <text x="96" y="290" font-family="FiraCode Nerd Font Mono" font-weight="700" font-size="72" fill="#31748f">&#10095;</text>
+  <text x="170" y="290" font-family="FiraCode Nerd Font Mono" font-weight="700" font-size="72" fill="#e0def4">nix-atelier</text>
+  <rect x="660" y="228" width="34" height="62" fill="#524f67"/>
+
+  <!-- tagline -->
+  <text x="98" y="340" font-family="FiraCode Nerd Font Mono" font-weight="400" font-size="24" fill="#908caa"># A Nix framework for reproducible dev environments</text>
+
+  <!-- platform pills, ordered macOS / Linux / WSL2 / NixOS (README's own order), centered text -->
+  <g font-family="FiraCode Nerd Font Mono" font-weight="500" font-size="22" fill="#e0def4">
+    <rect x="98" y="400" width="128" height="46" rx="23" fill="#31748f" fill-opacity="0.12" stroke="#31748f" stroke-opacity="0.6"/>
+    <text x="162" y="430" text-anchor="middle">macOS</text>
+
+    <rect x="242" y="400" width="120" height="46" rx="23" fill="#31748f" fill-opacity="0.12" stroke="#31748f" stroke-opacity="0.6"/>
+    <text x="302" y="430" text-anchor="middle">Linux</text>
+
+    <rect x="378" y="400" width="112" height="46" rx="23" fill="#31748f" fill-opacity="0.12" stroke="#31748f" stroke-opacity="0.6"/>
+    <text x="434" y="430" text-anchor="middle">WSL2</text>
+
+    <rect x="506" y="400" width="128" height="46" rx="23" fill="#31748f" fill-opacity="0.12" stroke="#31748f" stroke-opacity="0.6"/>
+    <text x="570" y="430" text-anchor="middle">NixOS</text>
+  </g>
+</svg>
