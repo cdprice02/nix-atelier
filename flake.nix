@@ -654,6 +654,31 @@
               tests = import ./tests/nmt/composition.nix;
             }).build;
 
+          # Machine-integration variant (#129): layers in
+          # fixtures/machine-integration.nix, the same extraModulePaths
+          # mechanism a real private machine module uses, to give
+          # atelier.nativeInstallers/configRepos/submodules (empty and
+          # therefore inert under every other instance's default fixture)
+          # something real to render and assert on.
+          machineIntegrationNmtBuild =
+            (mkNmtTests {
+              inherit system;
+              userDataOverrides = {
+                extraModulePaths = [ (toString ./tests/nmt/fixtures/machine-integration.nix) ];
+              };
+              tests = import ./tests/nmt/machine-integration.nix;
+            }).build;
+
+          # minimal-tier variant (#129): every other instance defaults to
+          # tier = "full"; this is the only one that actually evaluates
+          # tiers.minimal's empty feature list through the harness.
+          minimalNmtBuild =
+            (mkNmtTests {
+              inherit system;
+              tier = "minimal";
+              tests = import ./tests/nmt/minimal.nix;
+            }).build;
+
           # Pure eval-level check (not nmt: this is about which modules
           # mkProfile *selects*, not what a rendered tree contains) that an
           # `unsupported`-declared feature is actually dropped on its excluded
@@ -753,6 +778,49 @@
           # field name.
           templateOutputs = (import ./templates/default/flake.nix).outputs { nix-atelier = self; };
           templateDispatchOk = builtins.attrNames templateOutputs.homeConfigurations == [ "full" ];
+
+          # examples/private-config (#129) was previously never evaluated by
+          # anything in CI -- only its general shape was loosely mirrored by
+          # tests/nmt/fixtures/private-identity.nix. Wired through the real
+          # consumer mechanism its own README documents (a config's
+          # extraConfig.imports), not a synthetic shortcut: this is the same
+          # path a real private machine module goes through, proving the
+          # examples actually work with that mechanism rather than merely
+          # parsing as valid Nix. workstation.nix is a module factory (needs
+          # hmCompatPath); laptop.nix/build-server.nix are plain modules.
+          examplesModules = [
+            (import ./examples/private-config/machines/workstation.nix {
+              hmCompatPath = ./modules/lib/hm-compat.nix;
+            })
+            (import ./examples/private-config/machines/laptop.nix)
+            (import ./examples/private-config/machines/build-server.nix)
+          ];
+          examplesConfig =
+            (mkConfigsLib.mkConfigs {
+              identity = mkConfigsTestIdentity;
+              configs.home.examples-check = {
+                inherit system;
+                extraConfig.imports = examplesModules;
+              };
+            }).homeConfigurations.examples-check.config;
+          examplesHasPackage =
+            name: builtins.any (p: (p.pname or p.name or "") == name) examplesConfig.home.packages;
+          # userName/userEmail (25.05, pinned x86_64-darwin) vs
+          # settings.user.name/.email (rolling, everywhere else): checking
+          # both `or` branches rather than picking one keeps this check
+          # honest across whichever pin backs the system under test, same
+          # as hm-compat.nix itself.
+          examplesGitName =
+            examplesConfig.programs.git.userName or examplesConfig.programs.git.settings.user.name or null;
+          examplesGitEmail =
+            examplesConfig.programs.git.userEmail or examplesConfig.programs.git.settings.user.email or null;
+          examplesOk =
+            (examplesHasPackage "hello")
+            && (examplesHasPackage "borgbackup")
+            &&
+              (examplesConfig.home.sessionVariables.MY_LAPTOP_ONLY_VAR or null) == "some-machine-specific-value"
+            && examplesGitName == "Your Workstation Name"
+            && examplesGitEmail == "you@workstation.example.com";
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -766,6 +834,14 @@
           name = "nmt-composition-${name}";
           value = drv;
         }) compositionNmtBuild)
+        // (nixpkgs.lib.mapAttrs' (name: drv: {
+          name = "nmt-machine-${name}";
+          value = drv;
+        }) machineIntegrationNmtBuild)
+        // (nixpkgs.lib.mapAttrs' (name: drv: {
+          name = "nmt-minimal-${name}";
+          value = drv;
+        }) minimalNmtBuild)
         // {
           # assert docsCatalogValid forces the bidirectional catalog check
           # (see above) before this even attempts the diff, so a catalog
@@ -814,6 +890,18 @@
                 template-default: templates/default/flake.nix no longer
                 produces the expected homeConfigurations.full -- it has
                 drifted from lib.mkConfigs's real schema.
+              '';
+
+          examples-private-config =
+            if examplesOk then
+              pkgs.runCommand "check-examples-private-config" { } "touch $out"
+            else
+              throw ''
+                examples-private-config: examples/private-config/machines/*.nix
+                no longer evaluate to what their own README documents
+                (hello/borgbackup packages, MY_LAPTOP_ONLY_VAR, workstation.nix's
+                forced git identity override) through a real extraConfig.imports
+                wiring.
               '';
 
           formatting = treefmtEval.${system}.config.build.check self;

@@ -25,9 +25,12 @@ secrets/
 .sops.yaml.example      # placeholder recipient
 ```
 
-Each `machines/*.nix` file is a plain home-manager module fragment: no
-special shape required beyond being a valid module. Each demonstrates one
-*kind* of customization:
+Each `machines/*.nix` file is a home-manager module fragment. `laptop.nix`
+and `build-server.nix` are plain modules; `workstation.nix` is a module
+*factory* (a function of `{ hmCompatPath }` that returns the module), since
+it needs nix-atelier's `hm-compat.nix` helper for a forced git-identity
+override and that path has to be threaded in from the consuming flake rather
+than assumed. Each file demonstrates one *kind* of customization:
 
 - **`workstation.nix`**: overrides `base.nix`'s git identity for this one
   machine (the pattern a work machine typically needs), and installs a
@@ -40,16 +43,25 @@ special shape required beyond being a valid module. Each demonstrates one
 
 ## Wiring it into nix-atelier
 
-In the target machine's `flake.nix`:
+In the target machine's `flake.nix`, a config's own `extraConfig` is the
+place to both set `atelier.*` options (see Secrets below) and `imports` a
+private machine module -- there is no repo-wide `extraModulePaths` shared
+across every config `lib.mkConfigs` produces, since a config's own
+`extraConfig` merges only into that one config:
 
 ```nix
-configs.home.<name>.extraConfig = { };  # atelier.* options, if any (see Secrets below)
-features.extraModulePaths = ["/absolute/path/to/your-private-repo/machines/workstation.nix"];
+configs.home.<name>.extraConfig = {
+  imports = [
+    (import /absolute/path/to/your-private-repo/machines/workstation.nix {
+      hmCompatPath = "${nix-atelier}/modules/lib/hm-compat.nix";
+    })
+  ];
+};
 ```
 
-`extraModulePaths` takes a list; a machine can layer in more than one file
-if it genuinely needs to. Resolving an absolute path outside the flake's own
-source needs `--impure` on that machine's own `home-manager switch` /
+A machine can layer in more than one module the same way, just by adding
+more entries to `imports`. Resolving an absolute path outside the flake's
+own source needs `--impure` on that machine's own `home-manager switch` /
 `darwin-rebuild switch` -- not on `mkConfigs` itself, and not on nix-atelier's
 own `flake.nix`, which never touches this mechanism.
 

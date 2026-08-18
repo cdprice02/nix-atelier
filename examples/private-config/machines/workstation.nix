@@ -2,9 +2,14 @@
 # couple of packages that don't belong in any public feature -- too niche,
 # or specific to a workflow only this machine runs.
 #
-# Resolves nix-atelier's hm-compat.nix via $HOME rather than a hardcoded
-# absolute path, so this file works unmodified on any machine that clones
-# nix-atelier to the conventional ~/.nix-atelier location.
+# A module factory, not a plain module: needs nix-atelier's own
+# hm-compat.nix (for gitIdentity's force-override helper), resolved through
+# a path the consuming flake threads in -- typically
+# "${nix-atelier}/modules/lib/hm-compat.nix", the flake input's own store
+# path -- rather than a hardcoded $HOME/.nix-atelier checkout, which breaks
+# for anyone consuming nix-atelier as a pure flake input with no local
+# checkout at all.
+{ hmCompatPath }:
 {
   lib,
   options,
@@ -12,9 +17,7 @@
   ...
 }:
 let
-  compat = import (builtins.getEnv "HOME" + "/.nix-atelier/modules/lib/hm-compat.nix") {
-    inherit lib options;
-  };
+  compat = import hmCompatPath { inherit lib options; };
 in
 {
   # force = true is required: base.nix sets its own identity at a real
