@@ -2,7 +2,7 @@
 
 ## This repo is a consumable framework, not a fork-and-edit config
 
-Two kinds of contributions make sense here, and it helps to know the difference before opening a PR.
+Two kinds of contributions make sense here, and it helps to know the difference before opening a PR. See [ARCHITECTURE.md](ARCHITECTURE.md) for how the framework itself is put together (the compositor model, extension points, the eval-time checks that fail loudly rather than drift silently) before proposing a framework change.
 
 ### Consume it for personal preferences
 
