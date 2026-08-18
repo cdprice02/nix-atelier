@@ -20,5 +20,5 @@ Scaffolded by `nix flake init -t github:cdprice02/nix-atelier`.
   lists every named feature you can add via `features.extra`.
 - [`modules/machine.nix`](https://github.com/cdprice02/nix-atelier/blob/main/modules/machine.nix)
   documents `atelier.*` options (AWS profile, native installers, private
-  config repo clones, sops secrets) — set any of them per-config via
+  config repo clones, sops secrets): set any of them per-config via
   `configs.home.<name>.extraConfig`.
