@@ -29,3 +29,5 @@
 // import ./symlinks.nix { inherit system; }
 // import ./tmux.nix
 // import ./gui-absent.nix
+// import ./activation.nix
+// import ./ssh-config.nix { inherit system; }
