@@ -100,3 +100,12 @@ just --list        # everything else
 | [docs/troubleshooting.md](docs/troubleshooting.md)   | Common first-boot failures                                           |
 | [examples/private-config/](examples/private-config/) | Worked example: identity overrides, private packages, secrets        |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                   | Consuming vs. contributing, local validation, PR standards           |
+
+## Contributing
+
+New to the codebase? Issues labeled
+[`good first issue`](https://github.com/cdprice02/nix-atelier/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+are small and self-contained. For the bigger picture of where this is
+heading, see the [milestones](https://github.com/cdprice02/nix-atelier/milestones).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for what kind of change belongs in a
+PR here versus in your own `flake.nix`.
