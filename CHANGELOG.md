@@ -11,6 +11,20 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v3.0.0](https://github.com/cdprice02/nix-atelier/releases/tag/v3.0.0) -- consumable
+
+2026-08-18
+
+The point this stopped being something you fork, and became something you
+depend on: `lib.mkConfigs`, called from your own `flake.nix`, is now the
+only path. `user.nix` and `--impure` are gone entirely,
+`templates/default/flake.nix` (`nix flake init -t github:cdprice02/nix-atelier`)
+replaces fork-and-edit, NixOS joins as a third config kind, and real
+coverage (activation scripts, a real `darwin-rebuild switch` in CI,
+`secrets-sops.nix`) replaces several previously-unasserted mechanisms. See
+[docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're upgrading a
+v1/v2 fork.
+
 ## [v2.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v2.1.0) -- proven
 
 2026-08-11
