@@ -24,14 +24,14 @@ ______________________________________________________________________
 
 ## Adapting for your own setup
 
-1. `nix flake init -t github:cdprice02/nix-atelier` in a new directory
-2. Fill in `flake.nix`: your identity, and at least one config
-3. `nix flake check`
-4. Apply: `nix run home-manager -- switch --flake .#<name>` (or `sudo darwin-rebuild switch` for a darwin config)
+See the [README's Quick start](README.md#quick-start) and
+[docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup
+checklist.
 
-See [docs/bootstrap.md](docs/bootstrap.md) for the full first-time setup checklist, [templates/default/README.md](templates/default/flake.nix) for what the scaffolded `flake.nix` looks like, and [docs/profiles.md](docs/profiles.md) for the tier/gui/arch axes and the `features.extra`/`features.exclude`/`features.extraModulePaths` customization hooks.
-
-Working inside a clone of this repo itself, to submit a framework improvement, is different: see "Local validation" below, and note this repo's own `flake.nix` builds placeholder-identity configs to prove `lib.mkConfigs` works, not a real machine's config.
+Working inside a clone of this repo itself, to submit a framework
+improvement, is different: see "Local validation" below, and note this
+repo's own `flake.nix` builds placeholder-identity configs to prove
+`lib.mkConfigs` works, not a real machine's config.
 
 ______________________________________________________________________
 

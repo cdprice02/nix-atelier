@@ -37,7 +37,7 @@ nix run home-manager -- switch --flake .#<name> -b bk        # Linux/WSL2
 sudo nix run nix-darwin -- switch --flake .#<name>            # macOS, first apply
 ```
 
-See [templates/default/README.md](templates/default/flake.nix) for what the scaffolded `flake.nix` looks like and where to find every field it accepts.
+See [templates/default/README.md](templates/default/README.md) for what the scaffolded `flake.nix` looks like and where to find every field it accepts.
 
 <!-- TODO: a short terminal recording of `just switch` here, showing nh's
      diff-before-activate output -- the single most distinctive thing to
