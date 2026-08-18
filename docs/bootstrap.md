@@ -1,6 +1,8 @@
 # Bootstrap Guide
 
-First-time setup checklist per target machine.
+First-time setup checklist per target machine. Upgrading an existing v1/v2
+fork instead of starting fresh? See
+[docs/migrating-to-v3.md](migrating-to-v3.md).
 
 **Before you start:** the `full` tier runs a first-party-vendor-hosted
 `curl | bash` install script (`claude.ai/install.sh`) unconditionally on
