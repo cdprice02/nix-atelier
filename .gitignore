@@ -10,3 +10,7 @@ secrets.env
 .claude/*
 !.claude/skills/
 !.claude/skills/**
+
+# Legacy per-machine identity file (pre-#122). No longer read by anything;
+# ignored so a stray copy left over from before v3 can never be committed.
+user.nix
