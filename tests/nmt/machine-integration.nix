@@ -4,6 +4,15 @@
 # default -- user-declared, not framework defaults), so this runs against
 # its own nmt instance layering in fixtures/machine-integration.nix via
 # extraModulePaths, the same real mechanism a private machine module uses.
+#
+# `system` is needed for the submodule-override assertion below: atelier.
+# checkoutPath (#149) defaults to a Nix-computed homeDirectory, which
+# differs between darwin and Linux, same reason symlinks.nix takes it.
+{ system }:
+let
+  isDarwin = builtins.match ".*-darwin" system != null;
+  homeDir = if isDarwin then "/Users/yourusername" else "/home/yourusername";
+in
 {
   generic-native-installer-renders-for-declared-binary = {
     nmt.description = ''
@@ -44,7 +53,7 @@
       real per-name script once one is actually declared.
     '';
     nmt.script = ''
-      assertFileContains activate '_sm_dir="$HOME/.nix-atelier/config/claude"'
+      assertFileContains activate '_sm_dir="${homeDir}/.nix-atelier/config/claude"'
       assertFileContains activate 'remote add private "git@example.com:you/private-claude.git"'
       assertFileContains activate 'checkout -b work --track private/main'
     '';

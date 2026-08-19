@@ -188,16 +188,16 @@ derives from it. sops-nix is opt-in per config, triggered by
 `atelier.submodules` wires a private remote per submodule: `base.nix`'s
 `submoduleOverrides` adds a `private` remote and checks out a local `work` branch
 tracking `private/main`. This is how a private Claude config overlay stays out
-of the public repo. Currently assumes a local `~/.nix-atelier` checkout exists
-(tracked as a gap in issue #149 for a pure flake-input-only consumer).
+of the public repo. Needs a real local checkout to work against, at
+`atelier.checkoutPath` (default `~/.nix-atelier`, #149).
 
 ## Gotchas
 
 - **HM option spellings differ across the two pins.** Where the newer HM renamed
   an option, `base.nix` guards on `options.<path> ? <name>` rather than picking
   one spelling and breaking the other target. Follow that pattern.
-- **`config/` submodules are live paths**, not store copies, and currently
-  assume a local `~/.nix-atelier` checkout (see issue #149). That is why
+- **`config/` submodules are live paths**, not store copies, resolved
+  against `atelier.checkoutPath` (default `~/.nix-atelier`). That is why
   `mkOutOfStoreSymlink` is used for `~/.claude` rather than a store copy.
 - **`claude.nix` installs no packages.** It is activation hooks running vendor
   installers, guarded by a path test, so once `~/.local/bin/claude` exists the

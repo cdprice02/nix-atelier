@@ -7,8 +7,6 @@
   ...
 }:
 let
-  homeDir = config.home.homeDirectory;
-
   # Emits whichever option spelling the evaluating home-manager has: the
   # rolling input (Linux/WSL2 + aarch64-darwin) tracks HM master, which has
   # renamed several of the options set below; x86_64-darwin is pinned to HM
@@ -126,10 +124,10 @@ in
       # atelier.submodules = { claude = "git@github.com:you/private-claude.git"; };
       submoduleOverrides = lib.hm.dag.entryAfter [ "writeBoundary" ] (
         let
-          inherit (config.atelier) submodules;
+          inherit (config.atelier) submodules checkoutPath;
           git = "${pkgs.git}/bin/git";
           mkOverride = name: url: ''
-            _sm_dir="$HOME/.nix-atelier/config/${name}"
+            _sm_dir="${checkoutPath}/config/${name}"
             if [ -e "$_sm_dir/.git" ]; then
               _has_private=$(${git} -C "$_sm_dir" remote get-url private 2>/dev/null && echo yes || echo no)
               if [ "$_has_private" = "no" ]; then
@@ -140,7 +138,7 @@ in
                   echo "submodule ${name}: private remote configured (${url})"
                 else
                   echo "WARNING: submodule ${name}: fetch from private remote failed."
-                  echo "  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier"
+                  echo "  Ensure your SSH key is added to GitHub, then rerun the switch."
                   $DRY_RUN_CMD ${git} -C "$_sm_dir" remote remove private
                 fi
               fi
@@ -292,10 +290,8 @@ in
             # path instead. Just a string here, never dereferenced by Nix itself
             # (only by git, later, at its own runtime), so this needs no
             # impurity at eval time regardless -- unlike extraModulePaths, which
-            # really does import an out-of-store path (see modules/machine.nix,
-            # #149's tracked gap on the hardcoded ~/.nix-atelier assumption
-            # below).
-            { path = "${homeDir}/.nix-atelier/config/git/gitalias/gitalias.txt"; }
+            # really does import an out-of-store path (see modules/machine.nix).
+            { path = "${config.atelier.checkoutPath}/config/git/gitalias/gitalias.txt"; }
           ];
 
           ignores = [
