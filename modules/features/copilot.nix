@@ -6,6 +6,6 @@
   # expected path. mkOutOfStoreSymlink keeps it live-editable (not copied
   # into the Nix store), which is required for a git-managed tool config.
   home.file.".copilot" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.nix-atelier/config/copilot";
+    source = config.lib.file.mkOutOfStoreSymlink "${config.atelier.checkoutPath}/config/copilot";
   };
 }

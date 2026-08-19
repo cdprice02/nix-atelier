@@ -52,9 +52,9 @@ configs.home.full.extraConfig.atelier.submodules = {
 };
 ```
 
-Home Manager activation will automatically add the `private` remote and check out a tracking branch in that submodule on first `switch`, once this repo's own `~/.nix-atelier` checkout exists locally too (see [issue #149](https://github.com/cdprice02/nix-atelier/issues/149): this specific mechanism still assumes one).
+Home Manager activation will automatically add the `private` remote and check out a tracking branch in that submodule on first `switch`, once this repo's own checkout exists locally too, at `atelier.checkoutPath` (default `~/.nix-atelier`; set it via `extraConfig` if your local clone lives elsewhere).
 
-**HTTPS vs SSH:** you don't need to clone this repo at all to consume it (it's a flake input, fetched into the Nix store), but if you also want a local `~/.nix-atelier` checkout (for `claude`/`copilot`/`git-tools`' submodule symlinks, or to contribute to the framework), clone over HTTPS first: a `git@github.com:` remote needs an SSH key already registered with GitHub, and on a new machine you don't have one yet. This config *generates* that key for you, at step 7 below, during the first activation.
+**HTTPS vs SSH:** you don't need to clone this repo at all to consume it (it's a flake input, fetched into the Nix store), but if you also want a local checkout (for `claude`/`copilot`/`git-tools`' submodule symlinks, or to contribute to the framework), clone over HTTPS first: a `git@github.com:` remote needs an SSH key already registered with GitHub, and on a new machine you don't have one yet. This config *generates* that key for you, at step 7 below, during the first activation. If your checkout doesn't live at the default `~/.nix-atelier`, set `atelier.checkoutPath` to match.
 
 ```sh
 git clone --recurse-submodules https://github.com/cdprice02/nix-atelier.git ~/.nix-atelier

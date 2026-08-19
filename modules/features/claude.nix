@@ -13,7 +13,7 @@ in
   # expected path. mkOutOfStoreSymlink keeps it live-editable (not copied
   # into the Nix store), which is required for a git-managed tool config.
   home.file.".claude" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.nix-atelier/config/claude";
+    source = config.lib.file.mkOutOfStoreSymlink "${config.atelier.checkoutPath}/config/claude";
   };
 
   home.activation = {

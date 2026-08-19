@@ -96,6 +96,12 @@ in
       default = { };
       description = "Private remote overrides for config/ submodules, keyed by submodule name. See base.nix's submoduleOverrides activation script.";
     };
+
+    checkoutPath = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.home.homeDirectory}/.nix-atelier";
+      description = "Absolute path to a local checkout of this framework's own repo, if one exists. Backs the claude/copilot symlink targets, the gitalias git include, and the submoduleOverrides activation script (#149) -- all three need real file content from config/, not just the flake input resolved into the Nix store. A pure flake-input-only consumer with no local checkout should drop claude/copilot/git-tools via features.exclude instead of pointing this at a path that doesn't exist.";
+    };
   };
 
   config = {

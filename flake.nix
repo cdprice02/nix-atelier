@@ -666,7 +666,7 @@
               userDataOverrides = {
                 extraModulePaths = [ (toString ./tests/nmt/fixtures/machine-integration.nix) ];
               };
-              tests = import ./tests/nmt/machine-integration.nix;
+              tests = import ./tests/nmt/machine-integration.nix { inherit system; };
             }).build;
 
           # minimal-tier variant (#129): every other instance defaults to

@@ -8,7 +8,7 @@ A Nix framework, consumed rather than forked. `lib.mkConfigs` (`lib/mkConfigs.ni
 
 This repo's own `flake.nix` is the first real caller of `lib.mkConfigs`, using a placeholder identity (not meant to be switched to on a real machine) to prove the entry point works standalone rather than as a special-cased internal path.
 
-Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally (see `modules/features/claude.nix`'s and `modules/base.nix`'s hardcoded `~/.nix-atelier` assumption, tracked as a gap in issue #149 for a pure flake-input-only consumer).
+Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`, #149). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`git-tools` via `features.exclude` instead.
 
 ## Repo Layout
 
