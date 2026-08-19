@@ -11,6 +11,16 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v3.0.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.0.1) -- patch
+
+2026-08-19
+
+Two fixes, no schema change: rust-analyzer can resolve `std` again
+(`RUST_SRC_PATH` points it at the real `rust-src`, not the sysroot's own
+copy, which never ships it), and `build-darwin` retries a transient
+checkout failure instead of going red over a one-off TLS blip on the
+runner.
+
 ## [v3.0.0](https://github.com/cdprice02/nix-atelier/releases/tag/v3.0.0) -- consumable
 
 2026-08-18
