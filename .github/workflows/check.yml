@@ -372,7 +372,27 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.get-profiles.outputs.darwin) }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      # Two full checkout attempts, not one: actions/checkout's own
+      # submodule fetch has no retry option, and it has failed transiently
+      # on this job's macos-14 runners with a spurious TLS error on the
+      # public gitalias submodule (#137). A bare retried `git submodule
+      # update` isn't enough here: checkout's own submodule step rewrites
+      # the private config/claude and config/copilot submodules' git@
+      # remotes to token-authenticated https ones internally, and that
+      # rewrite doesn't happen for a submodule fetch run outside the action
+      # (confirmed directly -- it fails with "Permission denied (publickey)"
+      # against the private repos). Retrying the whole step is what actually
+      # preserves that auth setup on the second attempt.
+      - id: checkout-1
+        uses: actions/checkout@v7.0.1
+        continue-on-error: true
+        with:
+          submodules: recursive
+      - if: steps.checkout-1.outcome == 'failure'
+        run: |
+          echo "First checkout attempt failed (see #137); retrying." >&2
+      - if: steps.checkout-1.outcome == 'failure'
+        uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31.11.0
