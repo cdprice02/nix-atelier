@@ -1,5 +1,19 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
+  # rust-analyzer discovers its sysroot via `rustc --print sysroot`, which
+  # resolves to the stable toolchain (no rust-src there by design, see
+  # below). The real rust-src lives in the nightly bundle's profile symlink;
+  # this points rust-analyzer at it directly rather than relying on sysroot
+  # discovery to find it (#150). The profile symlink is re-pointed on every
+  # switch, so this path stays valid across generations.
+  #
+  # home.sessionVariables only reaches shell-launched tools: a VS Code
+  # instance opened from the Dock/Finder on darwin inherits nothing from it
+  # and needs rust-analyzer.cargo.sysrootSrc set directly in VS Code user
+  # settings as a per-machine workaround (see docs/troubleshooting.md).
+  home.sessionVariables.RUST_SRC_PATH =
+    "${config.home.homeDirectory}/.nix-profile/lib/rustlib/src/rust/library";
+
   home.packages = with pkgs; [
     # Rust: stable toolchain is the daily-driver default. rust-analyzer and
     # rustfmt are pinned to nightly (better proc-macro/type inference;

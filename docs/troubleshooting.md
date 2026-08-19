@@ -210,6 +210,16 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
+## rust-analyzer: "can't load standard library, try installing `rust-src`"
+
+**Symptom:** rust-analyzer logs a sysroot error on every session, and hover/completion/go-to-definition into std types don't work.
+
+**Cause:** `lang-rust` ships `rust-src` only in the nightly rust-analyzer bundle, not the stable toolchain (mixing stable and nightly `rust-src` breaks std-type resolution). rust-analyzer's own sysroot discovery (`rustc --print sysroot`) resolves to the stable toolchain, which has no `rust-src`. `RUST_SRC_PATH` (set in `modules/features/lang-rust.nix`) points rust-analyzer at the real nightly `rust-src` directly, sidestepping sysroot discovery.
+
+**Fix:** Covered automatically for any terminal-launched editor or LSP client after a `switch` that includes this fix. A VS Code instance launched from the Dock/Finder on macOS doesn't inherit `home.sessionVariables` (it never goes through a shell), so it still needs `rust-analyzer.cargo.sysrootSrc` set directly in VS Code's user settings, pointed at `~/.nix-profile/lib/rustlib/src/rust/library`.
+
+______________________________________________________________________
+
 ## `just` or `home-manager` not found during bootstrap
 
 **Symptom:** `just: command not found` or `home-manager: command not found` on the first run.
