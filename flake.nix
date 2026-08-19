@@ -158,7 +158,6 @@
       };
       inherit (systemsLib)
         allSystems
-        isLinux
         isX86Darwin
         pkgsFor
         ;
@@ -180,23 +179,12 @@
         system: treefmt-nix.lib.evalModule nixpkgs-darwin.legacyPackages.${system} ./treefmt.nix
       );
 
-      # ── Feature/tier data model ────────────────────────────────────────────────
-      # features.nix: name -> module path registry. core/env aren't in it: they're
-      # an always-on prefix mkProfile adds unconditionally, not a selectable
-      # feature. Both tiers are derived from that same registry, so a new feature
-      # joins `full` automatically and there is no second list to keep in sync.
+      # features.nix's raw registry: mkProfile and tiers both come from
+      # mkConfigsLib below (the one, single definition, #143), but the
+      # platform-filtering check further down needs the registry itself to
+      # layer a synthetic entry onto for its own test.
       features = import ./modules/features.nix;
-      tiers = {
-        minimal = [ ];
-        full = builtins.attrNames features;
-      };
       toolCatalog = import ./modules/tool-catalog.nix;
-
-      # A features.nix entry is either a bare path or an attrset
-      # { module; unsupported; } (see that file's own comment). These two
-      # accessors are the only place that shape distinction is unwrapped.
-      featureModule = f: if builtins.isAttrs f then f.module else f;
-      featureUnsupported = f: if builtins.isAttrs f then (f.unsupported or [ ]) else [ ];
 
       # ── Docs generation ────────────────────────────────────────────────────
       # Realized package identities (p.pname or p.name) across every already-
@@ -251,126 +239,25 @@
             darwinConfigNames = builtins.attrNames self.darwinConfigurations;
           };
 
-      # ── Profile compositor ────────────────────────────────────────────────────
-      # Produces the ordered module list for a profile.
-      # tier    : "minimal" | "full"
-      # withGui : bool: gui module auto-selected from system
-      # userData / featuresOverride default to the real top-level `user` /
-      # `features` bindings, so every real call site (home/darwin configs) below
-      # is unaffected. The nmt harness overrides both: userData so its fixture is
-      # genuinely identity-independent (previously it silently read whichever
-      # identity happened to be hardcoded in this file at the time -- harmless
-      # today only because this repo's own placeholder identity has empty
-      # extraFeatures/excludeFeatures/extraModulePaths, but a real consumer's
-      # extraModulePaths entry would have had it evaluated into `nix flake
-      # check`), and featuresOverride so the platform-filtering check
-      # (feature-platform-filtering below) can exercise a synthetic unsupported
-      # feature without adding test-only noise to the real, shipped registry.
-      mkProfile =
-        {
-          tier,
-          withGui,
-          system,
-          userData ? user,
-          featuresOverride ? features,
-        }:
-        let
-          resolveFeature =
-            name:
-            featuresOverride.${name} or (throw ''
-              unknown feature "${name}": valid features: ${builtins.concatStringsSep ", " (builtins.attrNames featuresOverride)}
-            '');
-          # Tier defaults plus the caller's extraFeatures (features.extra in a
-          # mkConfigs call), deduplicated (a name in both is not an error: the
-          # module system already dedupes imports by file, so this has always
-          # been silently fine -- unique here just avoids resolving the same
-          # name twice). excludeFeatures (features.exclude) is the inverse
-          # escape hatch: names to drop regardless of where they came from,
-          # and also how a machine silences the unsupported-platform warning
-          # below for a feature it was never going to use anyway.
-          requestedNames = nixpkgs.lib.unique (
-            (tiers.${tier} or (throw "unknown tier \"${tier}\"")) ++ (userData.extraFeatures or [ ])
-          );
-          keptNames = nixpkgs.lib.subtractLists (userData.excludeFeatures or [ ]) requestedNames;
-
-          supportedOn = name: !(builtins.elem system (featureUnsupported (resolveFeature name)));
-          usableNames = builtins.filter supportedOn keptNames;
-          skippedNames = builtins.filter (n: !(supportedOn n)) keptNames;
-
-          featureMods = map (n: featureModule (resolveFeature n)) usableNames;
-
-          # Absolute paths to private, machine-specific modules outside this
-          # repo: a string absolute path imports to a real module, and relative
-          # imports inside it resolve against the real filesystem. Resolving an
-          # absolute path outside the flake's own source needs --impure on
-          # whichever real switch/build actually sets this field; the schema
-          # itself (mkConfigs's features.extraModulePaths) doesn't require it.
-          # See examples/private-config/ for a worked example. Empty by default.
-          privateMods = map import (userData.extraModulePaths or [ ]);
-
-          guiMods =
-            if !withGui then
-              [ ]
-            else if isLinux system then
-              [ ./modules/gui-linux.nix ]
-            else
-              [ ./modules/gui-darwin.nix ];
-
-          # Bridges userData's flat aws/nativeInstallers/configRepos/sopsFile/
-          # secrets fields onto machine.nix's atelier.* options (#120): used
-          # by this repo's own placeholder identity below (all defaults) and
-          # by the nmt harness's testUser. lib.mkDefault, not a plain
-          # assignment: a mkConfigs (#122) caller's own extraConfig setting
-          # the same option is a real, higher-priority definition and must
-          # win outright rather than conflicting with this fallback.
-          machineBridge = {
-            atelier = {
-              aws.profile = nixpkgs.lib.mkDefault (userData.aws.profile or null);
-              nativeInstallers = nixpkgs.lib.mkDefault (userData.nativeInstallers or [ ]);
-              configRepos = nixpkgs.lib.mkDefault (userData.configRepos or { });
-              sops = {
-                file = nixpkgs.lib.mkDefault (userData.sopsFile or null);
-                secrets = nixpkgs.lib.mkDefault (userData.secrets or [ ]);
-              };
-              submodules = nixpkgs.lib.mkDefault (userData.submodules or { });
-            };
-          };
-        in
-        nixpkgs.lib.warnIf (skippedNames != [ ])
-          ''
-            Skipping features unsupported on ${system}: ${nixpkgs.lib.concatStringsSep ", " skippedNames}.
-            Add them to features.exclude in your mkConfigs call to silence this.
-          ''
-          (
-            [
-              ./modules/base.nix
-              ./modules/env.nix
-              ./modules/machine.nix
-              sops-nix.homeManagerModules.sops
-              ./modules/secrets-sops.nix
-              caret.homeManagerModules.default
-              machineBridge
-            ]
-            ++ featureMods
-            ++ privateMods
-            ++ guiMods
-          );
-
       # ── mkConfigs (#122) ─────────────────────────────────────────────────────
       # The pure, consumable entry point: see lib/mkConfigs.nix for the schema
-      # and per-kind builders. This repo's own homeConfigurations/
-      # darwinConfigurations further down are built through it too (see
-      # "This repo's own configs" below): the real proof it works standalone
-      # is this repo depending on it for its own real configs, not a
-      # special-cased internal path that merely looks similar. No --impure
-      # anywhere in this file anymore: identity is a placeholder literal, and
-      # extraModulePaths/extraSystemModulePaths/hardwareModule are empty by
-      # default, so nothing here ever touches an out-of-flake path.
+      # and per-kind builders (it in turn imports lib/mkProfile.nix for the
+      # compositor and the tier registry, #143 -- neither is defined here
+      # anymore). This repo's own homeConfigurations/darwinConfigurations
+      # further down are built through it too (see "This repo's own configs"
+      # below): the real proof it works standalone is this repo depending on
+      # it for its own real configs, not a special-cased internal path that
+      # merely looks similar. No --impure anywhere in this file anymore:
+      # identity is a placeholder literal, and extraModulePaths/
+      # extraSystemModulePaths/hardwareModule are empty by default, so
+      # nothing here ever touches an out-of-flake path.
       mkConfigsLib = import ./lib/mkConfigs.nix {
         inherit (nixpkgs) lib;
         systems = systemsLib;
-        inherit mkProfile;
+        sopsNixModule = sops-nix.homeManagerModules.sops;
+        caretModule = caret.homeManagerModules.default;
       };
+      inherit (mkConfigsLib) mkProfile tiers;
 
       # ── Test harness (nmt) ───────────────────────────────────────────────────
       # See tests/nmt/harness.nix for the harness itself (#117): scrubbed,
