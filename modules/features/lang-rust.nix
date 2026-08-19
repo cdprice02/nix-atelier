@@ -11,8 +11,7 @@
   # instance opened from the Dock/Finder on darwin inherits nothing from it
   # and needs rust-analyzer.cargo.sysrootSrc set directly in VS Code user
   # settings as a per-machine workaround (see docs/troubleshooting.md).
-  home.sessionVariables.RUST_SRC_PATH =
-    "${config.home.homeDirectory}/.nix-profile/lib/rustlib/src/rust/library";
+  home.sessionVariables.RUST_SRC_PATH = "${config.home.homeDirectory}/.nix-profile/lib/rustlib/src/rust/library";
 
   home.packages = with pkgs; [
     # Rust: stable toolchain is the daily-driver default. rust-analyzer and
