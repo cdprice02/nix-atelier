@@ -76,6 +76,20 @@
     '';
   };
 
+  no-kiro-cli-alias-without-nativeinstaller = {
+    nmt.description = ''
+      Under this instance's default fixture, atelier.nativeInstallers is
+      empty, so machine.nix's kiro-cli shellAliases guard must not fire:
+      no dangling alias for a binary nothing here installs. See
+      machine-integration.nix's kiro-cli-alias-only-when-declared for the
+      positive case, under its own fixture that actually declares kiro-cli.
+    '';
+    nmt.script = ''
+      assertFileNotRegex home-files/.zshrc 'kiro-cli'
+      assertFileNotRegex home-files/.bashrc 'kiro-cli'
+    '';
+  };
+
   static-tool-init-captures-are-sourced = {
     nmt.description = ''
       zsh/bash source a build-time capture of `zoxide/fzf/direnv init`

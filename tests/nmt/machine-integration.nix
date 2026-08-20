@@ -43,6 +43,23 @@ in
     '';
   };
 
+  kiro-cli-alias-only-when-declared = {
+    nmt.description = ''
+      machine.nix guards programs.{zsh,bash}.shellAliases.kiro-cli on
+      atelier.nativeInstallers actually containing a kiro-cli entry (the
+      fixture declares one alongside examplebin above), not on
+      nativeInstallers being non-empty at all -- so a config that installs
+      some other native binary doesn't get a dangling alias for a kiro-cli
+      that was never installed. See shell-init.nix's
+      no-kiro-cli-alias-without-nativeinstaller for the negative case, under
+      the default fixture where no kiro-cli entry exists at all.
+    '';
+    nmt.script = ''
+      assertFileRegex home-files/.zshrc 'kiro-cli=.*kiro-cli --v3'
+      assertFileRegex home-files/.bashrc 'kiro-cli=.*kiro-cli --v3'
+    '';
+  };
+
   submodule-override-wires-private-remote = {
     nmt.description = ''
       atelier.submodules (base.nix): adds a private remote to the named

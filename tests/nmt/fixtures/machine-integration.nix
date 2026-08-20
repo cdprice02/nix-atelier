@@ -12,6 +12,15 @@
         binary = "examplebin";
         url = "https://example.com/install.sh";
       }
+      # A second entry alongside examplebin, specifically to exercise
+      # machine.nix's kiro-cli shellAliases guard: examplebin proves the
+      # generic mechanism works for an arbitrary binary, kiro-cli proves the
+      # alias is keyed on binary name and not on nativeInstallers being
+      # non-empty at all (see kiro-cli-alias-only-when-declared below).
+      {
+        binary = "kiro-cli";
+        url = "https://example.com/kiro-install.sh";
+      }
     ];
     configRepos = {
       "repos/private-notes" = "git@example.com:you/private-notes.git";
