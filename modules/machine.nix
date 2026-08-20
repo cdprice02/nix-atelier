@@ -50,6 +50,16 @@ let
       ''
     )
   ) config.atelier.configRepos;
+
+  # Default bare `kiro-cli` invocations to v3: `--v3` is a per-invocation
+  # flag, not a separate install or a settings.json key (kiro-cli 2.14.2
+  # confirmed there is no persistent way to opt in besides this). Only added
+  # when a config actually declares kiro-cli as a nativeInstaller, so a
+  # config that never installs it gets no dangling alias for a binary that
+  # doesn't exist. Lives here rather than in base.nix's always-on shell
+  # config: this is one specific nativeInstaller's own opinion about how it
+  # should be invoked, not a framework-wide default.
+  hasKiroCli = lib.any (spec: spec.binary == "kiro-cli") config.atelier.nativeInstallers;
 in
 {
   options.atelier = {
@@ -106,5 +116,10 @@ in
 
   config = {
     home.activation = nativeInstallerMods // configRepoMods;
+
+    programs.zsh.shellAliases = lib.mkIf hasKiroCli { kiro-cli = "kiro-cli --v3"; };
+    # Kept in sync with the zsh line above deliberately rather than factored
+    # out for one alias; bash is the fallback shell on every profile here.
+    programs.bash.shellAliases = lib.mkIf hasKiroCli { kiro-cli = "kiro-cli --v3"; };
   };
 }
