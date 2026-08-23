@@ -2,13 +2,15 @@
 # argument attrset to { homeConfigurations; darwinConfigurations;
 # nixosConfigurations; }, no getEnv, no --impure.
 #
-# Three dependencies, each a genuinely distinct concern: `lib` (the standard
+# Four dependencies, each a genuinely distinct concern: `lib` (the standard
 # library), `systems` (lib/systems.nix -- which of the two release pairs a
 # system uses, and the resolved pkgs/home-manager/nix-darwin for it), and
-# `mkProfile` (this repo's existing feature compositor, unchanged). Identity
-# handling (mkUser) and the tier registry are self-contained here rather than
-# threaded in: neither has any real dependency on flake.nix beyond a source
-# file this module is exactly as close to.
+# `sopsNixModule`/`caretModule` (flake inputs' own outputs, needed by
+# mkProfile.nix below, which this file imports directly rather than
+# receiving as an injected function -- the entry point owns its own
+# compositor). Identity handling (mkUser) is self-contained here: it has no
+# real dependency on flake.nix beyond a source file this module is exactly
+# as close to.
 #
 # Deliberately does not do matrix generation (tier x gui x arch and similar):
 # that is this repo's own convenience for dogfooding every combination, not
@@ -19,7 +21,8 @@
 {
   lib,
   systems,
-  mkProfile,
+  sopsNixModule,
+  caretModule,
 }:
 let
   inherit (systems)
@@ -33,6 +36,7 @@ let
     hmDarwinModuleFor
     darwinLibFor
     nixosHmModule
+    isLinux
     ;
 
   # Derive SSH key name from email prefix: key file ~/.ssh/<sshKey>. Shared
@@ -42,13 +46,18 @@ let
   # copy.
   mkUser = base: base // { sshKey = builtins.elemAt (builtins.split "@" base.email) 0; };
 
-  # Same registry mkProfile itself resolves feature names against: tier
-  # *names* are all this schema needs (to validate `tier`), not the feature
-  # modules themselves, which mkProfile already owns.
-  tiers = {
-    minimal = [ ];
-    full = builtins.attrNames (import ../modules/features.nix);
+  # The one, single definition of the tier registry and the compositor that
+  # resolves it (#143): imported here rather than each kept as a separate
+  # copy the way flake.nix and this file previously did independently.
+  mkProfileLib = import ./mkProfile.nix {
+    inherit
+      lib
+      isLinux
+      sopsNixModule
+      caretModule
+      ;
   };
+  inherit (mkProfileLib) mkProfile tiers;
 
   # ── Schema ─────────────────────────────────────────────────────────────
   # lib.evalModules, not a hand-rolled validator: this repo's users already
@@ -323,6 +332,13 @@ let
 in
 {
   inherit mkConfigs mkUser;
+
+  # Both re-exported alongside mkConfigs: flake.nix's own matrix generation
+  # (tier x gui x arch for its dogfooded configs) and the nmt harness both
+  # need the compositor and the tier registry directly, not just the
+  # finished mkConfigs entry point. One import (this file) is now the whole
+  # surface; neither has to reach into lib/mkProfile.nix separately.
+  inherit (mkProfileLib) mkProfile tiers;
 
   # Schema validation only, no kind-building: exposed for flake.nix's own
   # checks to prove a misspelled or cross-kind field is rejected, via
