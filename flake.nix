@@ -192,7 +192,11 @@
       # rather than statically re-scanning modules/features/*.nix, so it also
       # catches packages home-manager's own program modules inject implicitly
       # (e.g. programs.git.delta.enable -> the delta package, with no
-      # home.packages entry anywhere in this repo).
+      # home.packages entry anywhere in this repo). Stays here rather than
+      # moving into lib/tool-catalog-drift.nix below: it depends on `self`,
+      # and the nmt harness (tests/nmt/harness.nix) needs this same list
+      # independently for its own package-scrubbing logic, so this is the one
+      # shared computation both consumers read.
       installedPackageNames =
         let
           pkgIdent = p: p.pname or p.name;
@@ -210,23 +214,13 @@
           map pkgIdent (nixpkgs.lib.flatten (homePkgLists ++ darwinPkgLists ++ nixosPkgLists))
         );
 
-      # Bidirectional: every installed package needs a tool-catalog.nix entry
-      # (or an explicit exclusion), and every catalog entry needs to actually
-      # correspond to something installed: fail eval rather than let the two
-      # drift silently.
-      catalogedNames = nixpkgs.lib.concatMap (e: e.matches) toolCatalog.entries;
-      uncatalogedInstalled = nixpkgs.lib.subtractLists (
-        catalogedNames ++ toolCatalog.infraExclude
-      ) installedPackageNames;
-      staleCatalogEntries = nixpkgs.lib.subtractLists installedPackageNames catalogedNames;
-      docsCatalogValid =
-        nixpkgs.lib.throwIf (uncatalogedInstalled != [ ])
-          "modules/tool-catalog.nix is missing entries for installed packages: ${toString uncatalogedInstalled}"
-          (
-            nixpkgs.lib.throwIf (staleCatalogEntries != [ ])
-              "modules/tool-catalog.nix has entries for packages that aren't installed anywhere: ${toString staleCatalogEntries}"
-              true
-          );
+      # lib/tool-catalog-drift.nix (#143, extracted from here): the actual
+      # bidirectional comparison against modules/tool-catalog.nix, collapsed
+      # from four intermediate bindings into one call.
+      docsCatalogValid = import ./lib/tool-catalog-drift.nix {
+        inherit (nixpkgs) lib;
+        inherit toolCatalog installedPackageNames;
+      };
 
       docsGenerated =
         (import ./modules/docs-gen.nix {
