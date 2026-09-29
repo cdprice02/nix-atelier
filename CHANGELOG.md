@@ -11,6 +11,34 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v3.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v3.1.0) -- per-machine
+
+2026-09-29
+
+New capability, no breaking schema change: `configs.<kind>.<name>.features`
+(#171) lets two configs in one `mkConfigs` call diverge (a laptop with k8s
+access, a WSL work machine without) without splitting into separate calls
+or hand re-importing a feature module. `atelier.checkoutPath` (#149) makes
+the local framework checkout path configurable, so `claude`/`copilot`/
+`git-tools` work for a consumer whose checkout isn't at `~/.nix-atelier`.
+
+Rust moves to a single floating nightly toolchain (`rustc`, `cargo`,
+`clippy`, `rustfmt`, `rust-analyzer`, `rust-src`, all one build), replacing
+the stable+nightly split and the `RUST_SRC_PATH` workaround it needed.
+`watchexec`/`cargo-seek`/`cargo-generate`/`cargo-shear` join the Rust
+toolkit; `cargo-watch` drops. `config/skills`, a 4th submodule (a fork of
+mattpocock/skills), adds `just link-skills` to symlink its promoted skills
+in. `websocat` joins the `k8s` feature, for the parts of Home Assistant's
+API that are websocket-only. `kiro-cli` invocations default to `--v3`
+(#172).
+
+Also fixed: the weekly `flake.lock` update had been silently failing for a
+month (`nmt`'s input pinned a tag as a bare ref, which Nix resolves as a
+branch first). A repo-wide structural and comment pass (#143) extracted
+`lib/mkProfile.nix` and `lib/tool-catalog-drift.nix` out of `flake.nix`,
+deleted two blocks of dead code, and trimmed the handful of comments that
+turned out to be genuinely stale rather than load-bearing.
+
 ## [v3.0.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.0.1) -- patch
 
 2026-08-19
