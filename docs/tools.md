@@ -128,14 +128,23 @@ Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as 
 
 ## Rust
 
-### rust-overlay (stable toolchain + nightly rust-analyzer/rustfmt)
-Stable Rust toolchain (`rustc`, `cargo`, `clippy`) via oxalica/rust-overlay is the daily-driver default. `rust-analyzer` and `rustfmt` are pinned to nightly instead, pulled as individual components so nightly never puts a second `rustc`/`cargo` on `PATH`. `rust-src` travels with `rust-analyzer`, not the stable toolchain: stable and nightly `rust-src` have different internal layouts, and a mismatch breaks std-type resolution in the editor. `clippy` stays on stable since it lints whatever's actually compiled and shipped. [github.com/oxalica/rust-overlay](https://github.com/oxalica/rust-overlay)
+### rust-overlay (nightly toolchain)
+Single nightly Rust toolchain via oxalica/rust-overlay: `rustc`, `cargo`, `clippy`, `rustfmt`, `rust-analyzer`, and `rust-src` all from the same build, floating to the newest nightly date with all of those extensions available. [github.com/oxalica/rust-overlay](https://github.com/oxalica/rust-overlay)
 
 ### cargo-edit
 Adds `cargo add`, `cargo rm`, `cargo upgrade` for managing dependencies. [github.com/killercup/cargo-edit](https://github.com/killercup/cargo-edit)
 
-### cargo-watch
-Reruns commands on file change (`cargo watch -x test`). [github.com/watchexec/cargo-watch](https://github.com/watchexec/cargo-watch)
+### watchexec
+General-purpose file-watcher that reruns any command on change, not limited to cargo; supersedes cargo-watch. [github.com/watchexec/watchexec](https://github.com/watchexec/watchexec)
+
+### cargo-seek
+Searches crates.io from the terminal and helps pick a dependency version. [github.com/anlumo/cargo-seek](https://github.com/anlumo/cargo-seek)
+
+### cargo-generate
+Scaffolds a new project from a git-hosted template (`cargo generate --git <repo>`). [github.com/cargo-generate/cargo-generate](https://github.com/cargo-generate/cargo-generate)
+
+### cargo-shear
+Finds and removes unused dependencies across a Cargo workspace. [github.com/Boshen/cargo-shear](https://github.com/Boshen/cargo-shear)
 
 ### cargo-expand
 Shows the output of macro expansion (`cargo expand`). [github.com/dtolnay/cargo-expand](https://github.com/dtolnay/cargo-expand)
