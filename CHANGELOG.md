@@ -11,6 +11,20 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## Unreleased -- neovim
+
+Neovim becomes the daily-driver editor: a new `neovim` feature (in `full`)
+installs it with every language server, formatter and build tool its config
+needs, and links the new `config/nvim` submodule
+([cdprice02/nvim-config](https://github.com/cdprice02/nvim-config), modeled
+on ThePrimeagen's) to `~/.config/nvim`, live-editable like `config/claude`.
+`EDITOR`/`VISUAL` become `nvim` wherever the feature is on. `tmux` turns
+Neovim-friendly (true color, no Esc delay, focus events, OSC 52 clipboard,
+vi copy mode) and gains `tmux-sessionizer` (`prefix f`), a Claude Code split
+(`prefix C`) and a lazygit popup (`prefix g`); `lang-python` adds `jupytext`.
+No schema change: a consumer that doesn't want it drops `neovim` via
+`features.exclude`.
+
 ## [v3.1.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.1.1) -- follow-up
 
 2026-10-01
