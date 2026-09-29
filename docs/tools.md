@@ -271,7 +271,7 @@ Lets rbw prompt for the master password from the terminal (cross-platform; macOS
 Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. tmux-resurrect and tmux-continuum are also installed, so sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other. [github.com/tmux/tmux](https://github.com/tmux/tmux)
 
 ### tmux-sessionizer
-ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo under `$TMUX_SESSIONIZER_DIRS` (colon-separated; default `~/repos` plus this repo's own checkout) and create or switch to a tmux session named after it. [github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)
+ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo and create or switch to a tmux session named after it. Searches `$TMUX_SESSIONIZER_DIRS` (colon-separated), defaulting to `~/repos`, this repo's own checkout plus its `config/` submodules, and every `atelier.configRepos` clone. [github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)
 
 ---
 

@@ -551,7 +551,7 @@
       key = "tmux-sessionizer";
       matches = [ "tmux-sessionizer" ];
       category = "Shell Multiplexing";
-      description = "ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo under `\$TMUX_SESSIONIZER_DIRS` (colon-separated; default `~/repos` plus this repo's own checkout) and create or switch to a tmux session named after it.";
+      description = "ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo and create or switch to a tmux session named after it. Searches `\$TMUX_SESSIONIZER_DIRS` (colon-separated), defaulting to `~/repos`, this repo's own checkout plus its `config/` submodules, and every `atelier.configRepos` clone.";
       link = "[github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)";
     }
 

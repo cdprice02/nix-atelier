@@ -3,32 +3,59 @@
 # hard eval error the instant both are in the same profile -- an int option
 # can't have two definitions at once. One feature, one value, enforces that
 # structurally rather than by convention.
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
+  # Default search roots: ~/repos, this framework's own checkout (whose
+  # config/ submodules come along with it, see below), and every private
+  # config repo machine.nix clones (atelier.configRepos, keyed by the path
+  # under $HOME).
+  defaultRoots = lib.concatStringsSep ":" (
+    [
+      "$HOME/repos"
+      config.atelier.checkoutPath
+    ]
+    ++ map (path: "$HOME/${path}") (builtins.attrNames config.atelier.configRepos)
+  );
+
   # ThePrimeagen's session-per-project flow: fuzzy-pick a project directory,
   # then create-or-attach a session named after it. Each entry of the
-  # colon-separated TMUX_SESSIONIZER_DIRS is offered directly when it is a git
-  # repo itself, otherwise its immediate subdirectories are. An explicit
-  # directory argument skips the picker.
+  # colon-separated TMUX_SESSIONIZER_DIRS is offered directly, along with
+  # every submodule it declares, when it is a git repo itself; otherwise its
+  # immediate subdirectories are. An explicit directory argument skips the
+  # picker.
   sessionizer = pkgs.writeShellApplication {
     name = "tmux-sessionizer";
     runtimeInputs = with pkgs; [
       fd
       fzf
+      git
       tmux
     ];
     text = ''
-      IFS=: read -r -a roots <<< "''${TMUX_SESSIONIZER_DIRS:-$HOME/repos:${config.atelier.checkoutPath}}"
+      IFS=: read -r -a roots <<< "''${TMUX_SESSIONIZER_DIRS:-${defaultRoots}}"
 
       if [[ $# -eq 1 ]]; then
         selected="$1"
       else
         candidates() {
-          local root
+          local root sm_path
           for root in "''${roots[@]}"; do
             [[ -d "$root" ]] || continue
             if [[ -e "$root/.git" ]]; then
               printf '%s\n' "$root"
+              if [[ -f "$root/.gitmodules" ]]; then
+                git config --file "$root/.gitmodules" --get-regexp '\.path$' \
+                  | while read -r _ sm_path; do
+                    if [[ -d "$root/$sm_path" ]]; then
+                      printf '%s\n' "$root/$sm_path"
+                    fi
+                  done
+              fi
             else
               fd --type d --min-depth 1 --max-depth 1 --hidden --exclude .git . "$root"
             fi
