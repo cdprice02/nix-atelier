@@ -105,6 +105,18 @@ Python language server for Neovim (hover, go-to-definition, type checking, inlay
 ### lua-language-server
 Lua language server, for editing the Neovim config itself. [luals.github.io](https://luals.github.io)
 
+### prettierd
+Prettier as a background daemon, so format-on-save in Neovim is instant: formats JSON, YAML and Markdown, with VS Code's `quoteProps`/`trailingComma` settings as the default for projects without their own `.prettierrc`. [github.com/fsouza/prettierd](https://github.com/fsouza/prettierd)
+
+### stylua
+Lua formatter; formats the Neovim config on save. [github.com/JohnnyMorganz/StyLua](https://github.com/JohnnyMorganz/StyLua)
+
+### shfmt
+Shell script formatter (bash, POSIX sh), run by Neovim on save. [github.com/mvdan/sh](https://github.com/mvdan/sh)
+
+### taplo
+TOML formatter (and language server), run by Neovim on save; replaces VS Code's Even Better TOML. [taplo.tamasfe.dev](https://taplo.tamasfe.dev)
+
 ### vim
 Always-present fallback editor, and `$EDITOR` on profiles without the `neovim` feature. [vim.org](https://www.vim.org)
 

@@ -211,6 +211,34 @@
       link = "[luals.github.io](https://luals.github.io)";
     }
     {
+      key = "prettierd";
+      matches = [ "prettierd" ];
+      category = "Editor";
+      description = "Prettier as a background daemon, so format-on-save in Neovim is instant: formats JSON, YAML and Markdown, with VS Code's `quoteProps`/`trailingComma` settings as the default for projects without their own `.prettierrc`.";
+      link = "[github.com/fsouza/prettierd](https://github.com/fsouza/prettierd)";
+    }
+    {
+      key = "stylua";
+      matches = [ "stylua" ];
+      category = "Editor";
+      description = "Lua formatter; formats the Neovim config on save.";
+      link = "[github.com/JohnnyMorganz/StyLua](https://github.com/JohnnyMorganz/StyLua)";
+    }
+    {
+      key = "shfmt";
+      matches = [ "shfmt" ];
+      category = "Editor";
+      description = "Shell script formatter (bash, POSIX sh), run by Neovim on save.";
+      link = "[github.com/mvdan/sh](https://github.com/mvdan/sh)";
+    }
+    {
+      key = "taplo";
+      matches = [ "taplo" ];
+      category = "Editor";
+      description = "TOML formatter (and language server), run by Neovim on save; replaces VS Code's Even Better TOML.";
+      link = "[taplo.tamasfe.dev](https://taplo.tamasfe.dev)";
+    }
+    {
       key = "vim";
       matches = [ "vim" ];
       category = "Editor";

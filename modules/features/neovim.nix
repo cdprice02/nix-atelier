@@ -33,6 +33,12 @@
     # one by name; see its lua/cdprice/lazy/lsp.lua.
     basedpyright
     lua-language-server
+    # Formatters conform.nvim runs on save (lua/cdprice/lazy/format.lua),
+    # beyond the ruff/nixfmt/rustfmt the lang-* features already install.
+    prettierd
+    stylua
+    shfmt
+    taplo
   ];
 
   # base.nix's programs.vim.defaultEditor sets EDITOR/VISUAL=vim for every
