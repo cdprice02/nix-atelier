@@ -93,26 +93,6 @@ in
           [ ../modules/gui-linux.nix ]
         else
           [ ../modules/gui-darwin.nix ];
-
-      # Bridges userData's flat aws/nativeInstallers/configRepos/sopsFile/
-      # secrets fields onto machine.nix's atelier.* options (#120): used
-      # by this repo's own placeholder identity below (all defaults) and
-      # by the nmt harness's testUser. lib.mkDefault, not a plain
-      # assignment: a mkConfigs (#122) caller's own extraConfig setting
-      # the same option is a real, higher-priority definition and must
-      # win outright rather than conflicting with this fallback.
-      machineBridge = {
-        atelier = {
-          aws.profile = lib.mkDefault (userData.aws.profile or null);
-          nativeInstallers = lib.mkDefault (userData.nativeInstallers or [ ]);
-          configRepos = lib.mkDefault (userData.configRepos or { });
-          sops = {
-            file = lib.mkDefault (userData.sopsFile or null);
-            secrets = lib.mkDefault (userData.secrets or [ ]);
-          };
-          submodules = lib.mkDefault (userData.submodules or { });
-        };
-      };
     in
     lib.warnIf (skippedNames != [ ])
       ''
@@ -127,7 +107,6 @@ in
           sopsNixModule
           ../modules/secrets-sops.nix
           caretModule
-          machineBridge
         ]
         ++ featureMods
         ++ privateMods
