@@ -3,20 +3,95 @@
 # hard eval error the instant both are in the same profile -- an int option
 # can't have two definitions at once. One feature, one value, enforces that
 # structurally rather than by convention.
-{ pkgs, ... }:
+{ config, pkgs, ... }:
+let
+  # ThePrimeagen's session-per-project flow: fuzzy-pick a project directory,
+  # then create-or-attach a session named after it. Each entry of the
+  # colon-separated TMUX_SESSIONIZER_DIRS is offered directly when it is a git
+  # repo itself, otherwise its immediate subdirectories are. An explicit
+  # directory argument skips the picker.
+  sessionizer = pkgs.writeShellApplication {
+    name = "tmux-sessionizer";
+    runtimeInputs = with pkgs; [
+      fd
+      fzf
+      tmux
+    ];
+    text = ''
+      IFS=: read -r -a roots <<< "''${TMUX_SESSIONIZER_DIRS:-$HOME/repos:${config.atelier.checkoutPath}}"
+
+      if [[ $# -eq 1 ]]; then
+        selected="$1"
+      else
+        candidates() {
+          local root
+          for root in "''${roots[@]}"; do
+            [[ -d "$root" ]] || continue
+            if [[ -e "$root/.git" ]]; then
+              printf '%s\n' "$root"
+            else
+              fd --type d --min-depth 1 --max-depth 1 --hidden --exclude .git . "$root"
+            fi
+          done
+        }
+        selected="$(candidates | sed 's:/$::' | fzf --prompt 'session> ' || true)"
+      fi
+
+      [[ -n "$selected" ]] || exit 0
+
+      # tmux session names can't contain '.' or ':'.
+      name="$(basename "$selected" | tr '.:' '__')"
+
+      if ! tmux has-session -t "=$name" 2>/dev/null; then
+        tmux new-session -d -s "$name" -c "$selected"
+      fi
+
+      if [[ -n "''${TMUX:-}" ]]; then
+        tmux switch-client -t "=$name"
+      else
+        tmux attach-session -t "=$name"
+      fi
+    '';
+  };
+in
 {
+  home.packages = [ sessionizer ];
+
   programs.tmux = {
     enable = true;
     keyMode = "vi";
     mouse = true;
-    terminal = "screen-256color";
+    # tmux-256color rather than screen-256color: it describes italics and
+    # true color correctly, which Neovim's colorschemes and :checkhealth both
+    # expect inside tmux.
+    terminal = "tmux-256color";
+    # Esc reaches Neovim immediately instead of waiting to see whether it
+    # starts an Alt-key sequence.
+    escapeTime = 0;
+    # Lets Neovim notice focus changes (autoread, gitsigns refresh).
+    focusEvents = true;
     historyLimit = 50000;
     extraConfig = ''
+      # The outer terminal (Windows Terminal, Alacritty) supports 24-bit
+      # color; tmux only passes it through if told so.
+      set -as terminal-features ",xterm-256color:RGB,alacritty:RGB"
+      # Copies in tmux and in Neovim (OSC 52) reach the outer terminal's
+      # system clipboard, including the Windows clipboard from WSL.
+      set -g set-clipboard on
+
       set -g status-style bg=black,fg=white
       set -g status-left  "#[fg=green]#S "
       set -g status-right "#[fg=yellow]%H:%M"
       bind | split-window -h
       bind - split-window -v
+
+      # Vim-style copy mode: v starts a selection, y copies it.
+      bind -T copy-mode-vi v send-keys -X begin-selection
+      bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel
+
+      bind f new-window ${sessionizer}/bin/tmux-sessionizer
+      # Claude Code beside the current pane, in the same directory.
+      bind C split-window -h -c "#{pane_current_path}" claude
     '';
     # tmux-continuum wraps tmux-resurrect for automatic save/restore: both
     # are required; continuum alone does not save/restore sessions itself.

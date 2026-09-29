@@ -47,7 +47,7 @@ Claude Code, Copilot and Neovim configs are submodules under `config/`, provisio
       copilot.nix                 # .copilot symlink, sibling of claude.nix
       neovim.nix                  # nvim + treesitter build deps, ~/.config/nvim symlink, EDITOR=nvim
       k8s.nix                    # kubectl, helm, helmfile
-      tmux.nix                    # sole owner of tmux config, historyLimit=50000
+      tmux.nix                    # sole owner of tmux config, historyLimit=50000, tmux-sessionizer
       git-tools.nix               # gh, glab, difftastic, git-filter-repo, pre-commit
       nix-tools.nix               # nixd, nixfmt-rfc-style
       data.nix                    # duckdb
