@@ -1,109 +1,65 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 {
   # rust-analyzer discovers its sysroot via `rustc --print sysroot`, which
-  # resolves to the stable toolchain (no rust-src there by design, see
-  # below). The real rust-src lives in the nightly bundle's profile symlink;
-  # this points rust-analyzer at it directly rather than relying on sysroot
-  # discovery to find it (#150). The profile symlink is re-pointed on every
-  # switch, so this path stays valid across generations.
-  #
-  # home.sessionVariables only reaches shell-launched tools: a VS Code
-  # instance opened from the Dock/Finder on darwin inherits nothing from it
-  # and needs rust-analyzer.cargo.sysrootSrc set directly in VS Code user
-  # settings as a per-machine workaround (see docs/troubleshooting.md).
-  home.sessionVariables.RUST_SRC_PATH = "${config.home.homeDirectory}/.nix-profile/lib/rustlib/src/rust/library";
+  # resolves to the single nightly toolchain below, and rust-src lives
+  # inside that sysroot. Sysroot discovery finds it on its own; no
+  # RUST_SRC_PATH or per-editor sysrootSrc override is needed. That was
+  # only true under the stable+nightly split this module used before,
+  # where sysroot discovery resolved to the stable toolchain and missed
+  # the nightly-only rust-src entirely.
 
   home.packages = with pkgs; [
-    # Rust: stable toolchain is the daily-driver default. rust-analyzer and
-    # rustfmt are pinned to nightly (better proc-macro/type inference;
-    # unstable formatting options). rust-src travels with rust-analyzer (not
-    # the stable toolchain) since stable/nightly rust-src have different
-    # internal layouts and a mismatch breaks std-type resolution; rustfmt
-    # has no rust-src dependency. clippy stays on stable: it lints
-    # whatever's actually compiled and shipped.
+    # Rust: single nightly toolchain is the daily driver, carrying rustc,
+    # cargo, clippy, rustfmt, rust-analyzer, and rust-src all from the same
+    # build. One toolchain means nothing to reconcile between what's linted
+    # and what's shipped (previously clippy ran on stable while rustfmt/
+    # rust-analyzer ran on nightly; now everything comes from the same
+    # nightly date, so there's no split to keep in sync).
     #
     # Nightly here is deliberately floating, not pinned to a specific date
     # like this repo's other inputs (nixpkgs/home-manager): those are pinned
-    # together because they must stay release-paired, but nightly
-    # rust-analyzer has no such pairing constraint, and floating is the
-    # point, always the newest available build.
+    # together because they must stay release-paired, but nightly rust has
+    # no such pairing constraint, and floating is the point, always the
+    # newest available build.
     #
-    # rust-analyzer/rustfmt/rust-src are pulled from .availableComponents,
-    # NOT via toolchain.minimal.override: every rust-overlay "toolchain"
-    # composite (even `minimal`) unconditionally ships share/doc/rust/
-    # COPYRIGHT.html, so combining a stable and a nightly toolchain in one
-    # profile always collides on that path. The individual components have
-    # no such shared doc path and combine cleanly.
-    (rust-bin.stable.latest.minimal.override {
-      extensions = [ "clippy" ];
-      targets =
-        if pkgs.stdenv.isDarwin then
-          [
-            "x86_64-apple-darwin"
-            "aarch64-apple-darwin"
-          ]
-        else
-          [
-            "x86_64-unknown-linux-gnu"
-            "aarch64-unknown-linux-gnu"
-          ];
-    })
-    (
-      let
-        # Validate against the actual components this bundle consumes, not
-        # just `.minimal` (rustc/cargo/rust-std): some nightly dates are
-        # missing rust-analyzer/rustfmt/rust-src for a given platform, and
-        # `.minimal` alone evaluating successfully says nothing about those.
-        # `.override` with these as extensions forces resolveComponents to
-        # confirm all three exist for this date before selectLatestNightlyWith
-        # accepts it, so a bad date still falls back correctly.
-        nightly = rust-bin.selectLatestNightlyWith (
-          t:
-          t.minimal.override {
-            extensions = [
-              "rust-src"
-              "rustfmt-preview"
-              "rust-analyzer-preview"
+    # Extensions are passed at .override time (not just .minimal alone):
+    # some nightly dates are missing rust-analyzer/rustfmt/rust-src for a
+    # given platform, and requesting all of them up front is what makes
+    # selectLatestNightlyWith correctly reject that date and fall back to an
+    # earlier one that has everything.
+    (rust-bin.selectLatestNightlyWith (
+      t:
+      t.minimal.override {
+        extensions = [
+          "clippy"
+          "rustfmt"
+          "rust-analyzer"
+          "rust-src"
+        ];
+        targets =
+          if pkgs.stdenv.isDarwin then
+            [
+              "x86_64-apple-darwin"
+              "aarch64-apple-darwin"
+            ]
+          else
+            [
+              "x86_64-unknown-linux-gnu"
+              "aarch64-unknown-linux-gnu"
             ];
-          }
-        );
-      in
-      # buildEnv (not symlinkJoin) with an explicit pathsToLink allowlist.
-      # Two reasons this is not a plain symlinkJoin:
-      #   1. The nightly components ship files that also ship in the stable
-      #      toolchain and collide in home-manager's buildEnv (surfaces only
-      #      on a real build, not eval): host linker tools under
-      #      lib/rustlib/<host>/bin (wasm-component-ld, rust-lld, gcc-ld,
-      #      rust-objcopy) and the gdb/lldb pretty-printers under
-      #      lib/rustlib/etc. Restricting pathsToLink to the paths unique to
-      #      this bundle (the rust-analyzer/rustfmt binaries and rust-src)
-      #      structurally excludes them; the stable toolchain stays the
-      #      authoritative source for everything else.
-      #   2. rust-src's top-level `lib` is a symlink, which symlinkJoin
-      #      cannot merge ("lib is a link instead of a directory"): the src
-      #      tree silently goes missing, defeating the point of bundling it.
-      #      buildEnv follows the symlink and links the src tree correctly.
-      pkgs.buildEnv {
-        name = "rust-analyzer-nightly-bundle";
-        paths = with nightly.availableComponents; [
-          rust-analyzer
-          rustfmt
-          rust-src
-        ];
-        pathsToLink = [
-          "/bin"
-          "/lib/rustlib/src"
-        ];
       }
-    )
+    ))
 
     # Cargo tools
     cargo-edit
-    cargo-watch
     cargo-expand
     cargo-audit
     cargo-nextest
     bacon
     samply
+    watchexec
+    cargo-seek
+    cargo-generate
+    cargo-shear
   ];
 }
