@@ -7,3 +7,6 @@
 [submodule "config/copilot"]
 	path = config/copilot
 	url = git@github.com:cdprice02/copilot-config.git
+[submodule "config/skills"]
+	path = config/skills
+	url = git@github.com:cdprice02/skills.git
