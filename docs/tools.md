@@ -87,8 +87,17 @@ Interactive process viewer: an ncurses `top` replacement. [htop.dev](https://hto
 
 ## Editor
 
+### neovim
+Daily-driver editor, and `$EDITOR`/`$VISUAL` wherever the `neovim` feature is on. Config is the `config/nvim` submodule ([cdprice02/nvim-config](https://github.com/cdprice02/nvim-config)), symlinked to `~/.config/nvim`; plugins are pinned by its own `lazy-lock.json`, while language servers and formatters come from Nix. [neovim.io](https://neovim.io)
+
+### tree-sitter
+Parser generator CLI. nvim-treesitter's main branch (Neovim 0.12+) needs it to build syntax parsers locally. [tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/)
+
+### gcc
+C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools). [gcc.gnu.org](https://gcc.gnu.org)
+
 ### vim
-Default `$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback. [vim.org](https://www.vim.org)
+Always-present fallback editor, and `$EDITOR` on profiles without the `neovim` feature. [vim.org](https://www.vim.org)
 
 ### nixd
 Nix language server: completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files. [github.com/nix-community/nixd](https://github.com/nix-community/nixd)

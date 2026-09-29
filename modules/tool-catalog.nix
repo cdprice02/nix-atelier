@@ -169,10 +169,31 @@
 
     # ── Editor ─────────────────────────────────────────────────────────────
     {
+      key = "neovim";
+      matches = [ "neovim" ];
+      category = "Editor";
+      description = "Daily-driver editor, and `\$EDITOR`/`\$VISUAL` wherever the `neovim` feature is on. Config is the `config/nvim` submodule ([cdprice02/nvim-config](https://github.com/cdprice02/nvim-config)), symlinked to `~/.config/nvim`; plugins are pinned by its own `lazy-lock.json`, while language servers and formatters come from Nix.";
+      link = "[neovim.io](https://neovim.io)";
+    }
+    {
+      key = "tree-sitter";
+      matches = [ "tree-sitter" ];
+      category = "Editor";
+      description = "Parser generator CLI. nvim-treesitter's main branch (Neovim 0.12+) needs it to build syntax parsers locally.";
+      link = "[tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/)";
+    }
+    {
+      key = "gcc";
+      matches = [ "gcc-wrapper" ];
+      category = "Editor";
+      description = "C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools).";
+      link = "[gcc.gnu.org](https://gcc.gnu.org)";
+    }
+    {
       key = "vim";
       matches = [ "vim" ];
       category = "Editor";
-      description = "Default `\$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback.";
+      description = "Always-present fallback editor, and `\$EDITOR` on profiles without the `neovim` feature.";
       link = "[vim.org](https://www.vim.org)";
     }
     {
