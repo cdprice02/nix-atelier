@@ -519,6 +519,13 @@
       link = "[ipython.org](https://ipython.org)";
     }
     {
+      key = "jupytext";
+      matches = [ "jupytext" ];
+      category = "Python";
+      description = "Converts Jupyter notebooks to and from plain `# %%` scripts; Neovim opens `.ipynb` files through it, keeping outputs on save.";
+      link = "[jupytext.readthedocs.io](https://jupytext.readthedocs.io)";
+    }
+    {
       key = "ruff";
       matches = [ "ruff" ];
       category = "Python";

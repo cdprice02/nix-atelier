@@ -238,6 +238,9 @@ Browser-based notebooks for interactive computing and data exploration. [jupyter
 ### ipython
 Enhanced interactive Python REPL with tab completion and magic commands. [ipython.org](https://ipython.org)
 
+### jupytext
+Converts Jupyter notebooks to and from plain `# %%` scripts; Neovim opens `.ipynb` files through it, keeping outputs on save. [jupytext.readthedocs.io](https://jupytext.readthedocs.io)
+
 ### ruff
 Extremely fast Python linter and formatter, written in Rust; replaces flake8/black/isort. [docs.astral.sh/ruff](https://docs.astral.sh/ruff/)
 
