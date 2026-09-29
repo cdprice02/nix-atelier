@@ -28,6 +28,11 @@
     tree-sitter
     gcc
     gnumake
+    # Language servers not already provided by a lang-* feature (those
+    # bring rust-analyzer, ruff and nixd). The Neovim config enables each
+    # one by name; see its lua/cdprice/lazy/lsp.lua.
+    basedpyright
+    lua-language-server
   ];
 
   # base.nix's programs.vim.defaultEditor sets EDITOR/VISUAL=vim for every

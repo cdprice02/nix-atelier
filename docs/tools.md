@@ -99,6 +99,12 @@ C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither de
 ### make
 Builds telescope-fzf-native's native sorter when lazy.nvim installs it. [gnu.org/software/make](https://www.gnu.org/software/make/)
 
+### basedpyright
+Python language server for Neovim (hover, go-to-definition, type checking, inlay hints): the open-source Pyright fork standing in for VS Code's Pylance, with the same settings ported. Ruff's own server handles linting alongside it. [docs.basedpyright.com](https://docs.basedpyright.com)
+
+### lua-language-server
+Lua language server, for editing the Neovim config itself. [luals.github.io](https://luals.github.io)
+
 ### vim
 Always-present fallback editor, and `$EDITOR` on profiles without the `neovim` feature. [vim.org](https://www.vim.org)
 

@@ -197,6 +197,20 @@
       link = "[gnu.org/software/make](https://www.gnu.org/software/make/)";
     }
     {
+      key = "basedpyright";
+      matches = [ "basedpyright" ];
+      category = "Editor";
+      description = "Python language server for Neovim (hover, go-to-definition, type checking, inlay hints): the open-source Pyright fork standing in for VS Code's Pylance, with the same settings ported. Ruff's own server handles linting alongside it.";
+      link = "[docs.basedpyright.com](https://docs.basedpyright.com)";
+    }
+    {
+      key = "lua-language-server";
+      matches = [ "lua-language-server" ];
+      category = "Editor";
+      description = "Lua language server, for editing the Neovim config itself.";
+      link = "[luals.github.io](https://luals.github.io)";
+    }
+    {
       key = "vim";
       matches = [ "vim" ];
       category = "Editor";
