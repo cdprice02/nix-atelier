@@ -147,6 +147,50 @@ sync-work:
     git merge origin/main
     echo "Merged. Review, then: git push private work:main"
 
+# Symlinks promoted skills from the config/skills submodule (a fork of
+# mattpocock/skills) into config/claude/skills/ as plain, unnamespaced user
+# skills, so Claude Code's Skill tool reaches them by bare name -- matching
+# how the fork's own skills invoke each other internally (e.g. "Call the
+# Skill tool with grilling"). Only engineering/, productivity/, and atelier/
+# are promoted (atelier may not exist yet, and that's fine); deprecated/,
+# in-progress/, and misc/ are intentionally skipped.
+#
+# Idempotent: re-running regenerates every currently-promoted skill's symlink
+# and prunes any symlink left behind by a since-renamed or removed upstream
+# skill. Never touches vault/ or any other real (non-symlink) directory under
+# config/claude/skills/.
+[group('machine')]
+[doc('Symlink promoted config/skills entries into config/claude/skills/')]
+link-skills:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dest="config/claude/skills"
+    mkdir -p "$dest"
+
+    declare -A wanted=()
+    for bucket in engineering productivity atelier; do
+        src="config/skills/skills/$bucket"
+        [ -d "$src" ] || continue
+        while IFS= read -r -d '' skill_md; do
+            skill_dir="$(dirname "$skill_md")"
+            name="$(basename "$skill_dir")"
+            wanted["$name"]=1
+            ln -sfn "../../skills/skills/$bucket/$name" "$dest/$name"
+        done < <(find "$src" -mindepth 2 -maxdepth 2 -name SKILL.md -print0)
+    done
+
+    for entry in "$dest"/*; do
+        [ -e "$entry" ] || continue
+        [ -L "$entry" ] || continue
+        name="$(basename "$entry")"
+        if [ -z "${wanted[$name]:-}" ]; then
+            echo "removing stale skill symlink: $name"
+            rm "$entry"
+        fi
+    done
+
+    echo "link-skills: done."
+
 # Validate flake without applying. Checks THIS system only by default: the
 # `checks` output still does a handful of *real* small builds (fzf/zoxide/
 # direnv, captured statically by nmt's shell-init tests), so `--all-systems`

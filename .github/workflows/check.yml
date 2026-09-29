@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
@@ -135,12 +135,12 @@ jobs:
         with:
           platforms: arm64
       - if: matrix.extraPlatforms != ''
-        uses: cachix/install-nix-action@v31.11.0
+        uses: cachix/install-nix-action@v31.11.1
         with:
           extra_nix_config: |
             extra-platforms = ${{ matrix.extraPlatforms }}
       - if: matrix.extraPlatforms == ''
-        uses: cachix/install-nix-action@v31.11.0
+        uses: cachix/install-nix-action@v31.11.1
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-checks-${{ matrix.system }}-${{ hashFiles('flake.lock', '**/*.nix') }}
@@ -191,7 +191,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-linux-eval-${{ hashFiles('flake.lock', '**/*.nix') }}
@@ -223,7 +223,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           # Arch-scoped, not shared with build-linux-aarch64 below: this key
@@ -272,7 +272,7 @@ jobs:
       - uses: docker/setup-qemu-action@v4.2.0
         with:
           platforms: arm64
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
         with:
           extra_nix_config: |
             extra-platforms = aarch64-linux
@@ -307,7 +307,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-nixos-build-x86_64-${{ hashFiles('flake.lock', '**/*.nix') }}
@@ -338,7 +338,7 @@ jobs:
       - uses: docker/setup-qemu-action@v4.2.0
         with:
           platforms: arm64
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
         with:
           extra_nix_config: |
             extra-platforms = aarch64-linux
@@ -395,7 +395,7 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31.11.0
+      - uses: cachix/install-nix-action@v31.11.1
         with:
           extra_nix_config: |
             extra-platforms = x86_64-darwin

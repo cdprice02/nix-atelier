@@ -291,28 +291,6 @@
       # same mkConfigs everyone else calls, instead of built by a separate,
       # parallel mkHomeConfig/mkDarwinConfig.
       #
-      # aws/nativeInstallers/configRepos/sops/submodules aren't in mkConfigs's
-      # schema (see machine.nix, #120): every config below carries them
-      # through its own extraConfig instead, translated once here from
-      # userBase's flat shape (all defaults for this repo's own placeholder
-      # identity; a real consumer's own flake.nix would have real values).
-      # Identical in spirit to mkProfile's own machineBridge, but a plain
-      # value, not mkDefault: extraConfig entries are already the real,
-      # single definition for this repo's own configs, nothing else could
-      # override them.
-      atelierExtraConfig = {
-        atelier = {
-          aws.profile = userBase.aws.profile or null;
-          nativeInstallers = userBase.nativeInstallers or [ ];
-          configRepos = userBase.configRepos or { };
-          sops = {
-            file = userBase.sopsFile or null;
-            secrets = userBase.secrets or [ ];
-          };
-          submodules = userBase.submodules or { };
-        };
-      };
-
       homeConfigsAttrs = builtins.listToAttrs (
         nixpkgs.lib.concatMap (
           tierName:
@@ -325,7 +303,6 @@
                   tier = tierName;
                   inherit withGui;
                   system = arch;
-                  extraConfig = atelierExtraConfig;
                 };
               }) systemsLib.linuxSystems
             )
@@ -343,11 +320,9 @@
       darwinConfigsAttrs = {
         "full-darwin" = {
           system = "x86_64-darwin";
-          extraConfig = atelierExtraConfig;
         };
         "full-darwin-aarch64" = {
           system = "aarch64-darwin";
-          extraConfig = atelierExtraConfig;
         };
       };
 
@@ -366,12 +341,10 @@
         "full-nixos" = {
           system = "x86_64-linux";
           hardwareModule = nixosHardwareStub;
-          extraConfig = atelierExtraConfig;
         };
         "full-nixos-aarch64" = {
           system = "aarch64-linux";
           hardwareModule = nixosHardwareStub;
-          extraConfig = atelierExtraConfig;
         };
       };
 
