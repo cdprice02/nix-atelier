@@ -97,7 +97,7 @@
     # so flake = false; pinned to its v0.5.1 tag, the same release the
     # previous fetchTarball pin used.
     nmt = {
-      url = "git+https://git.sr.ht/~rycee/nmt?ref=v0.5.1";
+      url = "git+https://git.sr.ht/~rycee/nmt?ref=refs/tags/v0.5.1";
       flake = false;
     };
   };
