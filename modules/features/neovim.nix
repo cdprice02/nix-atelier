@@ -23,9 +23,11 @@
     neovim
     # nvim-treesitter compiles its parsers locally: the tree-sitter CLI
     # generates them (required on its main branch, Neovim 0.12+) and a C
-    # compiler builds them (required on both branches).
+    # compiler builds them (required on both branches). telescope-fzf-native
+    # builds its sorter with make and the same compiler.
     tree-sitter
     gcc
+    gnumake
   ];
 
   # base.nix's programs.vim.defaultEditor sets EDITOR/VISUAL=vim for every

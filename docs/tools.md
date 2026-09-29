@@ -96,6 +96,9 @@ Parser generator CLI. nvim-treesitter's main branch (Neovim 0.12+) needs it to b
 ### gcc
 C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools). [gcc.gnu.org](https://gcc.gnu.org)
 
+### make
+Builds telescope-fzf-native's native sorter when lazy.nvim installs it. [gnu.org/software/make](https://www.gnu.org/software/make/)
+
 ### vim
 Always-present fallback editor, and `$EDITOR` on profiles without the `neovim` feature. [vim.org](https://www.vim.org)
 

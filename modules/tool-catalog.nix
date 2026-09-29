@@ -190,6 +190,13 @@
       link = "[gcc.gnu.org](https://gcc.gnu.org)";
     }
     {
+      key = "make";
+      matches = [ "gnumake" ];
+      category = "Editor";
+      description = "Builds telescope-fzf-native's native sorter when lazy.nvim installs it.";
+      link = "[gnu.org/software/make](https://www.gnu.org/software/make/)";
+    }
+    {
       key = "vim";
       matches = [ "vim" ];
       category = "Editor";
