@@ -6,6 +6,14 @@
     kubectl
     kubernetes-helm
     helmfile
+
+    # Home Assistant runs on that cluster, and parts of its API are websocket
+    # ONLY with no REST equivalent: the entity and device registries, Lovelace
+    # resource management, and reading persistent notifications (which stopped
+    # being entities, so /api/states cannot see them). Without a websocket
+    # client those operations can only be done by hand in the UI, or by editing
+    # HA's .storage with the pod scaled to zero.
+    websocat
   ];
 
   # helm-diff plugin for `helmfile diff`, pinned to the same nixpkgs revision
