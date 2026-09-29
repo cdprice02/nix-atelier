@@ -480,6 +480,13 @@
       description = "Declarative spec for deploying multiple Helm releases together.";
       link = "[github.com/helmfile/helmfile](https://github.com/helmfile/helmfile)";
     }
+    {
+      key = "websocat";
+      matches = [ "websocat" ];
+      category = "Kubernetes";
+      description = "Websocket client, for the parts of the Home Assistant API with no REST equivalent: entity/device registry edits, Lovelace resource management, and reading persistent notifications (no longer entities, so `/api/states` cannot see them).";
+      link = "[github.com/vi/websocat](https://github.com/vi/websocat)";
+    }
 
     # ── Secrets ────────────────────────────────────────────────────────────
     {

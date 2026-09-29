@@ -235,6 +235,9 @@ Kubernetes package manager: install and manage chart releases. [helm.sh](https:/
 ### helmfile
 Declarative spec for deploying multiple Helm releases together. [github.com/helmfile/helmfile](https://github.com/helmfile/helmfile)
 
+### websocat
+Websocket client, for the parts of the Home Assistant API with no REST equivalent: entity/device registry edits, Lovelace resource management, and reading persistent notifications (no longer entities, so `/api/states` cannot see them). [github.com/vi/websocat](https://github.com/vi/websocat)
+
 ---
 
 ## Secrets
