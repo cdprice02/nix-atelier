@@ -119,6 +119,8 @@ in
       bind f new-window ${sessionizer}/bin/tmux-sessionizer
       # Claude Code beside the current pane, in the same directory.
       bind C split-window -h -c "#{pane_current_path}" claude
+      # lazygit over everything, in the current pane's directory.
+      bind g display-popup -E -w 90% -h 90% -d "#{pane_current_path}" lazygit
     '';
     # tmux-continuum wraps tmux-resurrect for automatic save/restore: both
     # are required; continuum alone does not save/restore sessions itself.

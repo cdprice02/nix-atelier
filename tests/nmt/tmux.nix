@@ -43,6 +43,7 @@
       assertFileContains "$conf" 'bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel'
       assertFileRegex "$conf" '^bind f new-window .*/bin/tmux-sessionizer$'
       assertFileContains "$conf" 'bind C split-window -h -c "#{pane_current_path}" claude'
+      assertFileContains "$conf" 'bind g display-popup -E -w 90% -h 90% -d "#{pane_current_path}" lazygit'
     '';
   };
 }
