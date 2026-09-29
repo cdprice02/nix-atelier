@@ -59,6 +59,39 @@ let
   };
   inherit (mkProfileLib) mkProfile tiers;
 
+  # One type, two use sites (#171): the call-level `features` option below
+  # and each configs.<kind>.<name> entry's own `features` option, so two
+  # configs in the same call can diverge -- e.g. a laptop with k8s access
+  # and a WSL work machine without it, sharing one identity, without
+  # splitting into two mkConfigs calls just to get there. Same shape, same
+  # defaults; mkConfigs' own userDataFor/systemModulesFor below is what
+  # treats call-level and per-config values differently (concatenation, not
+  # override).
+  featuresType = lib.types.submodule {
+    options = {
+      extra = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Extra named features layered onto a config's tier defaults.";
+      };
+      exclude = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Named features to drop regardless of tier or extra.";
+      };
+      extraModulePaths = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Absolute paths to private Home Manager modules, as strings (imported at use time; resolving a path outside the flake's own source needs --impure on whichever real switch/build sets this field, not on mkConfigs itself).";
+      };
+      extraSystemModulePaths = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Absolute paths to private darwin/nixos system modules, same mechanism as extraModulePaths, for extending system/darwin.nix or system/nixos.nix.";
+      };
+    };
+  };
+
   # ── Schema ─────────────────────────────────────────────────────────────
   # lib.evalModules, not a hand-rolled validator: this repo's users already
   # know this idiom from every NixOS/Home Manager module here, it is free
@@ -130,6 +163,11 @@ let
                         default = { };
                         description = "Inline module literal merged into this config only; the generic escape hatch for anything a feature module exposes as an option (atelier.* and similar).";
                       };
+                      features = lib.mkOption {
+                        default = { };
+                        description = "Extra/excluded features for this config only (#171), concatenated with the call-level features option below -- not a replacement for it. A per-config exclude cannot un-exclude something the call level already excluded.";
+                        type = featuresType;
+                      };
                     };
                   }
                 );
@@ -146,6 +184,11 @@ let
                         type = lib.types.attrs;
                         default = { };
                         description = "Inline module literal merged into this config only.";
+                      };
+                      features = lib.mkOption {
+                        default = { };
+                        description = "Extra/excluded features for this config only (#171); see configs.home's own features option for the merge semantics.";
+                        type = featuresType;
                       };
                     };
                   }
@@ -168,6 +211,11 @@ let
                         default = { };
                         description = "Inline module literal merged into this config only.";
                       };
+                      features = lib.mkOption {
+                        default = { };
+                        description = "Extra/excluded features for this config only (#171); see configs.home's own features option for the merge semantics.";
+                        type = featuresType;
+                      };
                     };
                   }
                 );
@@ -178,31 +226,8 @@ let
 
         features = lib.mkOption {
           default = { };
-          description = "Which named features (modules/features.nix) get pulled in, and any additional modules beyond this repo's own.";
-          type = lib.types.submodule {
-            options = {
-              extra = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = "Extra named features layered onto a config's tier defaults.";
-              };
-              exclude = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = "Named features to drop regardless of tier or extra.";
-              };
-              extraModulePaths = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = "Absolute paths to private Home Manager modules, as strings (imported at use time; resolving a path outside the flake's own source needs --impure on whichever real switch/build sets this field, not on mkConfigs itself).";
-              };
-              extraSystemModulePaths = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = "Absolute paths to private darwin/nixos system modules, same mechanism as extraModulePaths, for extending system/darwin.nix or system/nixos.nix.";
-              };
-            };
-          };
+          description = "Which named features (modules/features.nix) get pulled in, and any additional modules beyond this repo's own, shared across every config in this call. A configs.<kind>.<name> entry's own features field (#171) adds to this rather than replacing it -- see mkConfigs' userDataFor/systemModulesFor.";
+          type = featuresType;
         };
       };
     };
@@ -225,14 +250,18 @@ let
       # Feeds mkProfile's existing userData override point (already used by
       # the nmt harness's testUser): no feature-resolution logic duplicated
       # here, just this schema's fields mapped onto the shape mkProfile
-      # already understands.
-      userData = {
-        extraFeatures = cfg.features.extra;
-        excludeFeatures = cfg.features.exclude;
-        inherit (cfg.features) extraModulePaths;
+      # already understands. Per-entry, not call-level (#171): concatenates
+      # the call-level features option with entry's own, so two configs in
+      # one call can diverge (mkProfile's requestedNames/keptNames already
+      # dedupe and subtract, so nothing here needs lib.unique first).
+      userDataFor = entry: {
+        extraFeatures = cfg.features.extra ++ entry.features.extra;
+        excludeFeatures = cfg.features.exclude ++ entry.features.exclude;
+        extraModulePaths = cfg.features.extraModulePaths ++ entry.features.extraModulePaths;
       };
 
-      systemModules = map import cfg.features.extraSystemModulePaths;
+      systemModulesFor =
+        entry: map import (cfg.features.extraSystemModulePaths ++ entry.features.extraSystemModulePaths);
 
       mkHomeConfigFor =
         _name: entry:
@@ -245,7 +274,7 @@ let
               inherit (entry) tier;
               inherit (entry) withGui;
               inherit (entry) system;
-              inherit userData;
+              userData = userDataFor entry;
             })
             ++ [
               entry.extraConfig
@@ -262,7 +291,7 @@ let
           modules = [
             ../system/darwin.nix
           ]
-          ++ systemModules
+          ++ systemModulesFor entry
           ++ [
             (hmDarwinModuleFor entry.system)
             {
@@ -277,7 +306,7 @@ let
                     inherit (entry) system;
                     tier = "full";
                     withGui = true;
-                    inherit userData;
+                    userData = userDataFor entry;
                   })
                   ++ [ entry.extraConfig ];
               };
@@ -294,7 +323,7 @@ let
             ../system/nixos.nix
             (import entry.hardwareModule)
           ]
-          ++ systemModules
+          ++ systemModulesFor entry
           ++ [
             nixosHmModule
             {
@@ -316,7 +345,7 @@ let
                     inherit (entry) system;
                     tier = "full";
                     withGui = true;
-                    inherit userData;
+                    userData = userDataFor entry;
                   })
                   ++ [ entry.extraConfig ];
               };
