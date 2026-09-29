@@ -9,14 +9,11 @@
 #
 # `matches` lists realized package identities, resolved the same way the
 # drift-checker resolves them: `p.pname or p.name`. Usually a real nixpkgs
-# attribute name, but sometimes synthetic (`lang-rust.nix`'s
-# `pkgs.buildEnv { name = "rust-analyzer-nightly-bundle"; ... }` resolves to
-# that literal string, not any real attribute) or HM-module-owned (enabling
-# `programs.bash` realizes as `bash-interactive`, not `bash`). `key` is the
-# doc heading text, independent of `matches`, since one heading sometimes
-# covers several realized names (the stable + nightly Rust bundle) and
-# sometimes reads better than the raw realized name (`bash-interactive` ->
-# "bash").
+# attribute name, but sometimes HM-module-owned (enabling `programs.bash`
+# realizes as `bash-interactive`, not `bash`). `key` is the doc heading text,
+# independent of `matches`, since one heading sometimes covers several
+# realized names and sometimes reads better than the raw realized name
+# (`bash-interactive` -> "bash").
 {
   entries = [
     # ── Shell ──────────────────────────────────────────────────────────────
@@ -278,13 +275,12 @@
 
     # ── Rust ───────────────────────────────────────────────────────────────
     {
-      key = "rust-overlay (stable toolchain + nightly rust-analyzer/rustfmt)";
+      key = "rust-overlay (nightly toolchain)";
       matches = [
         "rust-minimal"
-        "rust-analyzer-nightly-bundle"
       ];
       category = "Rust";
-      description = "Stable Rust toolchain (`rustc`, `cargo`, `clippy`) via oxalica/rust-overlay is the daily-driver default. `rust-analyzer` and `rustfmt` are pinned to nightly instead, pulled as individual components so nightly never puts a second `rustc`/`cargo` on `PATH`. `rust-src` travels with `rust-analyzer`, not the stable toolchain: stable and nightly `rust-src` have different internal layouts, and a mismatch breaks std-type resolution in the editor. `clippy` stays on stable since it lints whatever's actually compiled and shipped.";
+      description = "Single nightly Rust toolchain via oxalica/rust-overlay: `rustc`, `cargo`, `clippy`, `rustfmt`, `rust-analyzer`, and `rust-src` all from the same build, floating to the newest nightly date with all of those extensions available.";
       link = "[github.com/oxalica/rust-overlay](https://github.com/oxalica/rust-overlay)";
     }
     {
@@ -295,11 +291,32 @@
       link = "[github.com/killercup/cargo-edit](https://github.com/killercup/cargo-edit)";
     }
     {
-      key = "cargo-watch";
-      matches = [ "cargo-watch" ];
+      key = "watchexec";
+      matches = [ "watchexec" ];
       category = "Rust";
-      description = "Reruns commands on file change (`cargo watch -x test`).";
-      link = "[github.com/watchexec/cargo-watch](https://github.com/watchexec/cargo-watch)";
+      description = "General-purpose file-watcher that reruns any command on change, not limited to cargo; supersedes cargo-watch.";
+      link = "[github.com/watchexec/watchexec](https://github.com/watchexec/watchexec)";
+    }
+    {
+      key = "cargo-seek";
+      matches = [ "cargo-seek" ];
+      category = "Rust";
+      description = "Searches crates.io from the terminal and helps pick a dependency version.";
+      link = "[github.com/anlumo/cargo-seek](https://github.com/anlumo/cargo-seek)";
+    }
+    {
+      key = "cargo-generate";
+      matches = [ "cargo-generate" ];
+      category = "Rust";
+      description = "Scaffolds a new project from a git-hosted template (`cargo generate --git <repo>`).";
+      link = "[github.com/cargo-generate/cargo-generate](https://github.com/cargo-generate/cargo-generate)";
+    }
+    {
+      key = "cargo-shear";
+      matches = [ "cargo-shear" ];
+      category = "Rust";
+      description = "Finds and removes unused dependencies across a Cargo workspace.";
+      link = "[github.com/Boshen/cargo-shear](https://github.com/Boshen/cargo-shear)";
     }
     {
       key = "cargo-expand";
@@ -462,6 +479,13 @@
       category = "Kubernetes";
       description = "Declarative spec for deploying multiple Helm releases together.";
       link = "[github.com/helmfile/helmfile](https://github.com/helmfile/helmfile)";
+    }
+    {
+      key = "websocat";
+      matches = [ "websocat" ];
+      category = "Kubernetes";
+      description = "Websocket client, for the parts of the Home Assistant API with no REST equivalent: entity/device registry edits, Lovelace resource management, and reading persistent notifications (no longer entities, so `/api/states` cannot see them).";
+      link = "[github.com/vi/websocat](https://github.com/vi/websocat)";
     }
 
     # ── Secrets ────────────────────────────────────────────────────────────

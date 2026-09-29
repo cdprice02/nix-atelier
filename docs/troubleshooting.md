@@ -210,13 +210,13 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## rust-analyzer: "can't load standard library, try installing `rust-src`"
+## VS Code's rust-analyzer stops starting after an extension auto-update
 
-**Symptom:** rust-analyzer logs a sysroot error on every session, and hover/completion/go-to-definition into std types don't work.
+**Symptom:** the rust-analyzer status bar item stays stuck, and the extension's output log shows a `Bootstrap error: rust-analyzer Language Server is not available` on startup, even though the extension is installed and was working moments before.
 
-**Cause:** `lang-rust` ships `rust-src` only in the nightly rust-analyzer bundle, not the stable toolchain (mixing stable and nightly `rust-src` breaks std-type resolution). rust-analyzer's own sysroot discovery (`rustc --print sysroot`) resolves to the stable toolchain, which has no `rust-src`. `RUST_SRC_PATH` (set in `modules/features/lang-rust.nix`) points rust-analyzer at the real nightly `rust-src` directly, sidestepping sysroot discovery.
+**Cause:** the `rust-lang.rust-analyzer` VS Code extension bundles its own standalone server binary under a version-numbered directory (e.g. `rust-lang.rust-analyzer-0.3.3033-darwin-x64/server/rust-analyzer`). When the extension auto-updates, the old version's directory is deleted, but a VS Code window opened before the update keeps running the old extension-host code in memory until the window (or its extension host) restarts. That stale code still looks for the server binary at the old, now-deleted path.
 
-**Fix:** Covered automatically for any terminal-launched editor or LSP client after a `switch` that includes this fix. A VS Code instance launched from the Dock/Finder on macOS doesn't inherit `home.sessionVariables` (it never goes through a shell), so it still needs `rust-analyzer.cargo.sysrootSrc` set directly in VS Code's user settings, pointed at `~/.nix-profile/lib/rustlib/src/rust/library`.
+**Fix:** reload the window (**Developer: Reload Window**) or quit and reopen VS Code. To remove this failure mode rather than just clearing it once, set `rust-analyzer.server.path` in VS Code user settings to `${userHome}/.nix-profile/bin/rust-analyzer`: this points the extension at the nix-managed binary instead of its own bundled one, so an extension update can never strand it again. It also keeps rust-analyzer's proc-macro expansion on the same rustc build that compiles the workspace, since proc-macro ABI is version-sensitive.
 
 ______________________________________________________________________
 
