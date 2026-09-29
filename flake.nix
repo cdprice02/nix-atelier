@@ -625,6 +625,25 @@
               }) true
             )).success;
 
+          # Per-config features (#171): two home configs in one mkConfigs
+          # call, only one excluding tmux via its own configs.home.<name>.
+          # features.exclude, proving mkConfigs' userDataFor/systemModulesFor
+          # actually concatenate call-level and per-config values instead of
+          # every config in a call sharing one call-level-only feature set
+          # (the gap #171 was filed against).
+          perConfigFeaturesConfigs = mkConfigsLib.mkConfigs {
+            identity = mkConfigsTestIdentity;
+            configs.home.with-tmux.system = "x86_64-linux";
+            configs.home.without-tmux = {
+              system = "x86_64-linux";
+              features.exclude = [ "tmux" ];
+            };
+          };
+          perConfigFeaturesWithTmuxOk =
+            perConfigFeaturesConfigs.homeConfigurations.with-tmux.config.programs.tmux.enable;
+          perConfigFeaturesWithoutTmuxOk =
+            !perConfigFeaturesConfigs.homeConfigurations.without-tmux.config.programs.tmux.enable;
+
           # templates/default/flake.nix (#122) stays honest against schema
           # drift: called directly here, the same way a real consumer's
           # flake.nix would (nix-atelier = self simulates the real flake
@@ -804,6 +823,16 @@
                 behaving as designed (dispatchOk=${builtins.toJSON mkConfigsDispatchOk}
                 typoRejected=${builtins.toJSON mkConfigsTypoRejected}
                 crossKindRejected=${builtins.toJSON mkConfigsCrossKindRejected}).
+              '';
+
+          mkconfigs-per-config-features =
+            if perConfigFeaturesWithTmuxOk && perConfigFeaturesWithoutTmuxOk then
+              pkgs.runCommand "check-mkconfigs-per-config-features" { } "touch $out"
+            else
+              throw ''
+                mkconfigs-per-config-features: configs.<kind>.<name>.features
+                (#171) isn't isolated per config -- withTmux=${builtins.toJSON perConfigFeaturesWithTmuxOk}
+                withoutTmux=${builtins.toJSON perConfigFeaturesWithoutTmuxOk}.
               '';
 
           template-default =
