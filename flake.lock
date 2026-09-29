@@ -139,14 +139,14 @@
       "locked": {
         "lastModified": 1705307515,
         "narHash": "sha256-krVKx3/u1mDo8qe5qylYgmwAmlAPHa1BSPDzxq09FmI=",
-        "ref": "v0.5.1",
+        "ref": "refs/tags/v0.5.1",
         "rev": "68747e8116da2ce661d255a3578ef374fb426285",
         "revCount": 29,
         "type": "git",
         "url": "https://git.sr.ht/~rycee/nmt"
       },
       "original": {
-        "ref": "v0.5.1",
+        "ref": "refs/tags/v0.5.1",
         "type": "git",
         "url": "https://git.sr.ht/~rycee/nmt"
       }
