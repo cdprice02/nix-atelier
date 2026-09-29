@@ -38,7 +38,16 @@
     prettierd
     stylua
     shfmt
-    taplo
+    taplo # also the TOML language server
+    # Language servers for the everyday non-core languages: JSON/HTML/CSS
+    # (one package), YAML, Markdown, shell (bash-language-server runs
+    # shellcheck itself), and C for QMK keymaps.
+    vscode-langservers-extracted
+    yaml-language-server
+    marksman
+    bash-language-server
+    shellcheck
+    clang-tools
   ];
 
   # base.nix's programs.vim.defaultEditor sets EDITOR/VISUAL=vim for every

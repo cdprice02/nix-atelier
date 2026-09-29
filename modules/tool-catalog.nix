@@ -235,8 +235,50 @@
       key = "taplo";
       matches = [ "taplo" ];
       category = "Editor";
-      description = "TOML formatter (and language server), run by Neovim on save; replaces VS Code's Even Better TOML.";
+      description = "TOML formatter and language server for Neovim: formats on save, and validates/completes `pyproject.toml`, `Cargo.toml` and friends against SchemaStore. Replaces VS Code's Even Better TOML.";
       link = "[taplo.tamasfe.dev](https://taplo.tamasfe.dev)";
+    }
+    {
+      key = "vscode-langservers-extracted";
+      matches = [ "vscode-langservers-extracted" ];
+      category = "Editor";
+      description = "VS Code's own JSON, HTML and CSS language servers, extracted for other editors. Neovim uses them with SchemaStore's JSON schemas.";
+      link = "[github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)";
+    }
+    {
+      key = "yaml-language-server";
+      matches = [ "yaml-language-server" ];
+      category = "Editor";
+      description = "YAML language server: validation and completion for GitHub workflows, compose files, CI configs and more, against SchemaStore.";
+      link = "[github.com/redhat-developer/yaml-language-server](https://github.com/redhat-developer/yaml-language-server)";
+    }
+    {
+      key = "marksman";
+      matches = [ "marksman" ];
+      category = "Editor";
+      description = "Markdown language server: heading/link completion, go-to-definition across wiki-style links, broken-link diagnostics.";
+      link = "[github.com/artempyanykh/marksman](https://github.com/artempyanykh/marksman)";
+    }
+    {
+      key = "bash-language-server";
+      matches = [ "bash-language-server" ];
+      category = "Editor";
+      description = "Shell language server for Neovim, including Slurm batch scripts; surfaces shellcheck's lints as diagnostics.";
+      link = "[github.com/bash-lsp/bash-language-server](https://github.com/bash-lsp/bash-language-server)";
+    }
+    {
+      key = "shellcheck";
+      matches = [ "ShellCheck" ];
+      category = "Editor";
+      description = "Shell script linter, run by bash-language-server as you edit.";
+      link = "[shellcheck.net](https://www.shellcheck.net)";
+    }
+    {
+      key = "clang-tools (`clangd`)";
+      matches = [ "clang-tools" ];
+      category = "Editor";
+      description = "C/C++ language server for Neovim, mainly for QMK keymaps (`qmk generate-compilation-database` gives it the include paths).";
+      link = "[clangd.llvm.org](https://clangd.llvm.org)";
     }
     {
       key = "vim";
