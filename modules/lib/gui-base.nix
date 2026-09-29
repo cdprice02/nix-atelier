@@ -19,10 +19,7 @@
   alacritty = {
     # Home Manager resolves this against pkgs.alacritty-theme (hardcoded in
     # the module, not itself configurable) and imports it automatically.
-    # Both platforms use it now; previously only darwin did, and Linux
-    # hand-wrote a plain dark gray (#1e1e1e/#d4d4d4) that wasn't actually an
-    # approximation of rose_pine's real colors (#191724/#e0def4) at all,
-    # just an unrelated palette that happened to also be dark.
+    # Both platforms use it.
     theme = "rose_pine";
     # Overrides layered on top of the imported theme (a local `colors` table
     # always wins over an imported one for any key both define): rose_pine's

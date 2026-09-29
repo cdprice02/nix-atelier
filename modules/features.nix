@@ -24,9 +24,6 @@
   # qmk builds fine on x86_64-darwin under the pinned nixpkgs-25.05-darwin
   # input (verified directly: `nix build .#darwinConfigurations.full-darwin.pkgs.qmk`
   # succeeds on this repo's own x86_64-darwin machine) -- no `unsupported`
-  # entry here. tool-catalog.nix previously claimed otherwise; that claim
-  # was checked against `meta.available` only, which doesn't account for a
-  # transitively broken dependency and also doesn't match this repo's own
-  # CI, which has built qmk into the x86_64-darwin full tier all along.
+  # entry here.
   qmk = ./features/qmk.nix;
 }
