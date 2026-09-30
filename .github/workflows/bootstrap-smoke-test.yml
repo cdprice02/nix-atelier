@@ -201,7 +201,19 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
+      # Authenticates Nix's own GitHub API lookups under this job's quota
+      # instead of the shared unauthenticated one: --override-input below
+      # points nix-atelier at this checkout's local path, which forces Nix
+      # to re-resolve nix-atelier's entire transitive input graph from
+      # scratch rather than reusing its committed flake.lock, including a
+      # live API call for nix-darwin's floating (unpinned) ref. That call
+      # intermittently 403s under the unauthenticated per-IP rate limit
+      # shared by every runner on the range -- the same failure mode the
+      # Linux job above already works around, just not yet wired here.
       - uses: cachix/install-nix-action@v31.11.1
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-darwin-switch-${{ hashFiles('flake.lock', '**/*.nix') }}
