@@ -257,7 +257,33 @@ jobs:
           sed -i '' "s/CI_USERNAME_PLACEHOLDER/$(id -un)/" flake.nix
           grep -q "username = \"$(id -un)\";" flake.nix \
             || { echo "flake.nix username substitution failed:"; cat flake.nix; exit 1; }
-          nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"
+
+          # --override-input above forces Nix to re-resolve nix-atelier's
+          # entire transitive input graph from scratch rather than reusing
+          # its committed flake.lock, including a live API call for
+          # nix-darwin's floating (unpinned) ref. access-tokens (set via
+          # this job's own install-nix-action step) raises the *primary*
+          # per-token rate limit, but this job runs concurrently with
+          # several other macOS jobs on push (build-darwin among them,
+          # gated to push/dispatch the same as this one) that make the
+          # identical live lookup within the same few seconds -- a burst
+          # pattern that can still trip GitHub's *secondary* abuse-detection
+          # limit (a 403, same as the primary one, but one authentication
+          # doesn't exempt you from). Confirmed directly: this still failed
+          # once after the access-tokens fix landed. Retried the same way
+          # #137 retries build-darwin's submodule fetch, a transient
+          # network condition outside this repo's own control.
+          for attempt in 1 2 3; do
+            if nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"; then
+              break
+            elif [ "$attempt" = 3 ]; then
+              echo "nix flake check failed after 3 attempts"
+              exit 1
+            else
+              echo "nix flake check failed (attempt $attempt/3), retrying in 30s..."
+              sleep 30
+            fi
+          done
 
           # First-activation-only (docs/troubleshooting.md documents this for
           # real users too): the persistent macos-14 runner already has its
