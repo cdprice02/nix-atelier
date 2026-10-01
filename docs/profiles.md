@@ -125,6 +125,12 @@ The framework makes most decisions for you; three escape hatches in a
   entirely (identity overrides, extra secrets, anything that shouldn't
   be public).
 
+Each can be set at the top of a `lib.mkConfigs` call, applying to every
+config it produces, or on an individual `configs.<kind>.<name>` entry,
+applying to that machine alone. A per-config block adds to the
+call-level one rather than replacing it, so several machines can share
+one identity and still want different things.
+
 Regenerate this file and commit the result after any change that affects
 it (a new feature, a renamed tier); the `docs-drift` check fails
 otherwise, since this table is generated from the same data `flake.nix`
