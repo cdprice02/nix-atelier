@@ -30,7 +30,7 @@ concurrency:
 
 permissions:
   contents: read
-  # cache-nix-action's purge (#112) needs this scope to delete old cache
+  # cache-nix-action's purge needs this scope to delete old cache
   # generations via the Actions API. See check.yml's identical block for the
   # same reasoning: fork PRs get a read-only token regardless.
   actions: write
@@ -38,7 +38,7 @@ permissions:
 jobs:
   # Proves the literal command sequence docs/bootstrap.md's WSL2/Linux
   # section tells a new user to type still works, starting from nothing:
-  # a template scaffold (#122), not a clone of this repo. Different from
+  # a template scaffold, not a clone of this repo. Different from
   # check.yml's build-linux, which already proves every profile builds, but
   # does so via cachix/install-nix-action (not the curl-piped installer the
   # docs use) on a fully-provisioned ubuntu-latest runner (not a bare
@@ -55,7 +55,7 @@ jobs:
   # (the old rationale for it, exercising sshKey/submoduleOverrides twice)
   # since a fresh scaffold only ever starts from one config.
   #
-  # macOS gets its own sibling job below (darwin-switch-smoke-test, #101)
+  # macOS gets its own sibling job below (darwin-switch-smoke-test)
   # rather than a variant of this one: GitHub Actions has no bare/ephemeral
   # macOS container the way ubuntu:24.04 is for Linux (macos-14 is a
   # persistent pre-provisioned VM), so it can't reuse the useradd/container
@@ -100,7 +100,7 @@ jobs:
           primary-key: nix-bootstrap-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-bootstrap-
           gc-max-store-size-linux: 2147483648
-          # This is the cache #112 found fully evicted: small and refreshed
+          # This is the cache that was found fully evicted: small and refreshed
           # less often than the build/eval caches, so it's first collateral
           # damage from their bloat under GitHub's single global 10 GB LRU,
           # not a problem of its own. Pruned the same way regardless, so it
@@ -120,7 +120,7 @@ jobs:
           chown -R ciuser:ciuser "$GITHUB_WORKSPACE"
 
       # Mirrors docs/bootstrap.md's WSL2 steps 1-3 and 6: scaffold via
-      # templates.default (#122), fill in identity, apply. `--override-input
+      # templates.default, fill in identity, apply. `--override-input
       # nix-atelier "path:$GITHUB_WORKSPACE"` points the scaffolded flake at
       # this PR's own checkout rather than the published github: URL, so the
       # job tests the code under review, not the last release. Steps 4-5
@@ -170,10 +170,10 @@ jobs:
           chown ciuser:ciuser /tmp/bootstrap-test.sh
           su - ciuser -c "GITHUB_WORKSPACE='$GITHUB_WORKSPACE' GITHUB_TOKEN='$GITHUB_TOKEN' /tmp/bootstrap-test.sh"
 
-  # Real activation, not just a closure build (#101): check.yml's
+  # Real activation, not just a closure build: check.yml's
   # build-darwin only proves darwinConfigurations.<name>.system builds,
   # never that an activation script actually runs on a real macOS system --
-  # the same gap the job above closed for Linux (#43). No `needs:` between
+  # the same gap the job above closed for Linux. No `needs:` between
   # the two jobs in this file: they run concurrently, same as the rest of
   # this workflow's jobs.
   #
@@ -183,7 +183,7 @@ jobs:
   # every darwin config), real network calls, real disk usage -- matching
   # build-darwin's own push/dispatch gating in check.yml.
   #
-  # Scaffolds via templates.default (#122) with the runner's own real
+  # Scaffolds via templates.default with the runner's own real
   # $(id -un), not this repo's own placeholder-identity matrix:
   # darwinConfigurations.full-darwin-aarch64 uses "yourusername", which has
   # no corresponding real macOS account for system/darwin.nix's
@@ -271,7 +271,7 @@ jobs:
           # limit (a 403, same as the primary one, but one authentication
           # doesn't exempt you from). Confirmed directly: this still failed
           # once after the access-tokens fix landed. Retried the same way
-          # #137 retries build-darwin's submodule fetch, a transient
+          # build-darwin's own submodule fetch is retried, a transient
           # network condition outside this repo's own control.
           for attempt in 1 2 3; do
             if nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"; then

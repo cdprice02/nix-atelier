@@ -74,7 +74,7 @@ cadence, and not every merged PR needs one. `CHANGELOG.md` gets a new entry,
 and a GitHub Release with the real substance, when a tag actually goes out.
 
 Version numbers follow semver against `lib.mkConfigs`'s public contract,
-since #122 made that contract the thing consumers actually depend on:
+since that contract is the thing consumers actually depend on:
 
 - **Major**: a breaking change to `lib.mkConfigs`'s schema, or to what a
   `configs.home`/`.darwin`/`.nixos` entry accepts (a field renamed or

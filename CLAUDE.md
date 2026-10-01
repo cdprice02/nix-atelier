@@ -8,7 +8,7 @@ A Nix framework, consumed rather than forked. `lib.mkConfigs` (`lib/mkConfigs.ni
 
 This repo's own `flake.nix` is the first real caller of `lib.mkConfigs`, using a placeholder identity (not meant to be switched to on a real machine) to prove the entry point works standalone rather than as a special-cased internal path.
 
-Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`, #149). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`git-tools` via `features.exclude` instead.
+Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`git-tools` via `features.exclude` instead.
 
 ## Repo Layout
 
@@ -21,18 +21,18 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
   secrets.env.example          # Template for the manual ~/.config/secrets/env
   treefmt.nix                  # nix fmt / CI formatting config: nixfmt-rfc-style, statix, deadnix, mdformat
   lib/
-    mkConfigs.nix               # The consumable entry point (#122): typed schema (lib.evalModules), per-kind builders
+    mkConfigs.nix               # The consumable entry point: typed schema (lib.evalModules), per-kind builders
     systems.nix                 # Which release pair a system uses, and the resolved pkgs/home-manager/nix-darwin for it
   templates/
     default/                    # `nix flake init -t github:cdprice02/nix-atelier` scaffold: a minimal consumer flake.nix
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling, submodule overrides
     env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
-    machine.nix                 # Always on: atelier.* options (aws, nativeInstallers, configRepos, sops, submodules) (#120)
+    machine.nix                 # Always on: atelier.* options (aws, nativeInstallers, configRepos, sops, submodules)
     features.nix                # Feature name -> module path registry; `full` tier is every key in it
     tool-catalog.nix           # Package -> description, for the generated docs/tools.md
     docs-gen.nix                # Generates docs/profiles.md + docs/tools.md
-    secrets-sops.nix            # Always imported, inert unless atelier.sops.file is set (#120)
+    secrets-sops.nix            # Always imported, inert unless atelier.sops.file is set
     lib/
       hm-compat.nix              # Option-name shims across the two home-manager pins
       native-installer.nix       # Shared curl-piped-installer runner, used by claude.nix and machine.nix

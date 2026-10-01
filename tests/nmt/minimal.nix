@@ -1,4 +1,4 @@
-# minimal-tier coverage (#129): every other nmt instance defaults to
+# minimal-tier coverage: every other nmt instance defaults to
 # tier = "full" (mkNmtModules's own default), so minimal (tiers.minimal = []
 # in mkConfigs/mkProfile -- no feature modules at all) had never actually
 # been evaluated through the harness. Confirms both halves: base.nix/env.nix/

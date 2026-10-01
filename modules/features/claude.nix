@@ -21,8 +21,8 @@ in
     # multiple releases a week and self-updates in place (`claude update`);
     # Nix's rebuild-to-update cycle can't keep pace, and nixpkgs's packaged
     # version lags too. Installs to ~/.local/bin/claude, already on PATH via
-    # env.nix's XDG_BIN_HOME. Unlike machine.nix's atelier.nativeInstallers
-    # (#120), this one is not user-declared: every machine with this feature
+    # env.nix's XDG_BIN_HOME. Unlike machine.nix's atelier.nativeInstallers,
+    # this one is not user-declared: every machine with this feature
     # gets Claude Code, the same way any other feature's packages aren't
     # opt-in per-item.
     #

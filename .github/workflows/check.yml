@@ -12,7 +12,7 @@ concurrency:
 
 permissions:
   contents: read
-  # cache-nix-action's purge (#112, every job below) deletes old cache
+  # cache-nix-action's purge (every job below) deletes old cache
   # generations via the Actions API, which needs this scope explicitly --
   # confirmed against the action's own README, not assumed. A fork PR's
   # GITHUB_TOKEN is capped to read-only by GitHub regardless of what a
@@ -47,7 +47,7 @@ jobs:
           # Keeps only the newest generation of this prefix: without this,
           # every commit's hash-keyed cache accumulates until GitHub's global
           # 10 GB LRU evicts something, and what it evicts isn't necessarily
-          # this cache -- see #112. purge-primary-key: never protects the
+          # this cache. purge-primary-key: never protects the
           # generation this same job just saved from its own purge pass.
           #
           # This prefix is still shared with eval-all's identical block below
@@ -148,7 +148,7 @@ jobs:
           gc-max-store-size-linux: 2147483648
           gc-max-store-size-macos: 2147483648
           # Per-system prefix, so this only prunes this matrix entry's own
-          # old generations, never another system's (#112).
+          # old generations, never another system's.
           purge: true
           purge-prefixes: nix-checks-${{ matrix.system }}-
           purge-created: 0
@@ -198,7 +198,7 @@ jobs:
           restore-prefixes-first-match: nix-linux-eval-
           gc-max-store-size-linux: 2147483648
           # See get-profiles' identical block above: same prefix, same
-          # generation-pruning reasoning (#112).
+          # generation-pruning reasoning.
           purge: true
           purge-prefixes: nix-linux-eval-
           purge-created: 0
@@ -228,13 +228,13 @@ jobs:
         with:
           # Arch-scoped, not shared with build-linux-aarch64 below: this key
           # used to be identical across both jobs (nix-linux-build-<hash>,
-          # no arch in it), which isn't the same kind of sharing #74 chose
+          # no arch in it), which isn't the same kind of sharing that made sense
           # for eval/build caches -- that was about profiles within one
           # target system overlapping heavily in Nix's content-addressed
           # store, not two different target systems. Because these two jobs
           # ran in parallel under the same key, whichever job's save landed
           # first silently won it, so the other job's own architecture never
-          # actually persisted; adding purge (#112) on the old shared key
+          # actually persisted; adding purge on the old shared key
           # would also have raced restore against a sibling job's purge for
           # no good reason once that was noticed. Splitting by arch removes
           # both problems: each job now owns its key outright.
@@ -279,7 +279,7 @@ jobs:
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           # Arch-scoped, mirroring build-linux-x86_64 above: see that job's
-          # comment for why this no longer shares a key with it (#112).
+          # comment for why this no longer shares a key with it.
           primary-key: nix-linux-build-aarch64-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-linux-build-aarch64-
           gc-max-store-size-linux: 4294967296
@@ -289,7 +289,7 @@ jobs:
           purge-primary-key: never
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
-  # ── Full system.build.toplevel, native x86_64 NixOS profiles (#5) ────────────
+  # ── Full system.build.toplevel, native x86_64 NixOS profiles ─────────────────
   # Build-verified only: full-nixos/full-nixos-aarch64 build against a
   # synthetic hardware fixture (tests/fixtures/nixos-hardware-stub.nix), not
   # real hardware -- there is none in this loop. Same gating and cache-key
@@ -319,7 +319,7 @@ jobs:
           purge-primary-key: never
       - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
 
-  # ── Full system.build.toplevel, QEMU-emulated aarch64 NixOS profiles (#5) ────
+  # ── Full system.build.toplevel, QEMU-emulated aarch64 NixOS profiles ─────────
   # Same QEMU setup and gating as build-linux-aarch64 above; same
   # build-verified-only scope as build-nixos-x86_64 above.
   build-nixos-aarch64:
@@ -375,7 +375,7 @@ jobs:
       # Two full checkout attempts, not one: actions/checkout's own
       # submodule fetch has no retry option, and it has failed transiently
       # on this job's macos-14 runners with a spurious TLS error on the
-      # public gitalias submodule (#137). A bare retried `git submodule
+      # public gitalias submodule. A bare retried `git submodule
       # update` isn't enough here: checkout's own submodule step rewrites
       # the private config/claude and config/copilot submodules' git@
       # remotes to token-authenticated https ones internally, and that
@@ -390,7 +390,7 @@ jobs:
           submodules: recursive
       - if: steps.checkout-1.outcome == 'failure'
         run: |
-          echo "First checkout attempt failed (see #137); retrying." >&2
+          echo "First checkout attempt failed; retrying." >&2
       - if: steps.checkout-1.outcome == 'failure'
         uses: actions/checkout@v7.0.1
         with:
@@ -404,7 +404,7 @@ jobs:
           primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
           restore-prefixes-first-match: nix-macos-build-
           gc-max-store-size-macos: 4294967296
-          # The single biggest contributor to the quota pressure in #112:
+          # The single biggest contributor to the cache quota pressure:
           # two full generations of this cache alone measured ~4.7 GB before
           # this. Same generation-pruning reasoning as the other caches here.
           purge: true

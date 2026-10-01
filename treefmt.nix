@@ -13,7 +13,7 @@
   # this repo has exactly one.
   projectRootFile = "flake.nix";
   # treefmt-nix's own `programs.nixfmt` formatter defaults its package to
-  # bare `pkgs.nixfmt`, the trap #54 documented: on the pinned nixpkgs-darwin
+  # bare `pkgs.nixfmt`, which is a real trap here: on the pinned nixpkgs-darwin
   # input this flake sources every formatter from, bare `nixfmt` resolves to
   # the OLD classic 0.6.0 formatter, a genuinely different tool from
   # `nixfmt-rfc-style` (1.1.0 on this same pin). The override below is

@@ -25,7 +25,7 @@
       AWS_VAULT_BACKEND = "file";
     }
     // lib.optionalAttrs (config.atelier.aws.profile != null) {
-      # Left unset by default (see machine.nix, #120): a hardcoded default
+      # Left unset by default (see machine.nix): a hardcoded default
       # here risks accidentally running a command against the wrong AWS
       # account. Set atelier.aws.profile to opt in on a given machine.
       AWS_PROFILE = config.atelier.aws.profile;

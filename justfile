@@ -1,5 +1,5 @@
 # Default profile when `just switch` is called with no argument. This repo's
-# own configs are a placeholder identity (#122): there is no per-machine
+# own configs are a placeholder identity: there is no per-machine
 # user.nix anymore to read a preferred default from, so "full" is simply the
 # literal default -- pass an explicit profile name to override it.
 default_profile := "full"
@@ -294,7 +294,7 @@ _list-darwin-profiles:
     @nix eval --json .#darwinConfigurations --apply builtins.attrNames
 
 # Same arch-suffix split as _list-linux-profiles-x86_64/-aarch64 above, for
-# CI's build-nixos-x86_64/build-nixos-aarch64 jobs (#5).
+# CI's build-nixos-x86_64/build-nixos-aarch64 jobs.
 [private]
 _list-nixos-profiles:
     @nix eval --json .#nixosConfigurations --apply builtins.attrNames
@@ -315,7 +315,7 @@ _build-linux PROFILE:
 _build-darwin PROFILE:
     nix build .#darwinConfigurations.{{ PROFILE }}.system
 
-# Build-verified only (#5): system.build.toplevel proves the config
+# Build-verified only: system.build.toplevel proves the config
 # evaluates and builds, not that it has run on real hardware.
 [private]
 _build-nixos PROFILE:

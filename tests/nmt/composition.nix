@@ -1,4 +1,4 @@
-# Composition variant (issue #53): runs against an nmt instance built with
+# Composition variant: runs against an nmt instance built with
 # userDataOverrides = { excludeFeatures = ["tmux"]; extraModulePaths =
 # [fixtures/private-identity.nix]; } (flake.nix's nmt-composition-* checks),
 # proving the two escape hatches actually work rather than just evaluating

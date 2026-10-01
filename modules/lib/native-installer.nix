@@ -1,5 +1,5 @@
 # Shared by claude.nix's own hardcoded claudeCode hook and machine.nix's
-# user-declared atelier.nativeInstallers (#120): running an arbitrary vendor
+# user-declared atelier.nativeInstallers: running an arbitrary vendor
 # curl-piped install script during Home Manager activation. Extracted so
 # there's one copy of the hermetic-PATH handling, not two kept in sync by
 # hand.

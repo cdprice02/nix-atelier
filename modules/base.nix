@@ -117,7 +117,7 @@ in
         fi
       '';
 
-      # For each entry in atelier.submodules (#120), wire up a private remote
+      # For each entry in atelier.submodules, wire up a private remote
       # in the corresponding config/ submodule and check out a tracking
       # branch. Idempotent: skips if the remote already exists.
       # entryAfter writeBoundary: submodule dirs must be cloned before we can add remotes.

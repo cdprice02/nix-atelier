@@ -1,4 +1,4 @@
-# Activation script coverage (#129): base.nix's sshKey hook, and the
+# Activation script coverage: base.nix's sshKey hook, and the
 # mkNativeInstaller/awsConfigSkeleton hooks already exercised by the default
 # full/headless fixture (claude.nix's claudeCode entry, cloud.nix's
 # awsConfigSkeleton -- cloud is part of the full tier, so both are already

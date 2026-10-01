@@ -1,4 +1,4 @@
-# Positive half of the GUI/headless pair (issue #53): runs against a
+# Positive half of the GUI/headless pair: runs against a
 # withGui = true nmt instance (flake.nix's nmt-gui-* checks), which
 # mkProfile resolves to gui-darwin.nix on a darwin system and gui-linux.nix
 # otherwise. Paired with gui-absent.nix's negative assertion in the default

@@ -1,4 +1,4 @@
-# Coverage (#129) for the user-declared atelier.* activation mechanisms
+# Coverage for the user-declared atelier.* activation mechanisms
 # (machine.nix, base.nix): nativeInstallers, configRepos, submodules. All
 # three render nothing under the harness's default fixture (empty by
 # default -- user-declared, not framework defaults), so this runs against
@@ -6,7 +6,7 @@
 # extraModulePaths, the same real mechanism a private machine module uses.
 #
 # `system` is needed for the submodule-override assertion below: atelier.
-# checkoutPath (#149) defaults to a Nix-computed homeDirectory, which
+# checkoutPath defaults to a Nix-computed homeDirectory, which
 # differs between darwin and Linux, same reason symlinks.nix takes it.
 { system }:
 let

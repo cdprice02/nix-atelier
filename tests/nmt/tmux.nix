@@ -1,4 +1,4 @@
-# tmux is a single-owner contract now (issue #53): features/tmux.nix is the
+# tmux is a single-owner contract now: features/tmux.nix is the
 # only feature allowed to touch programs.tmux, replacing the old two-tier
 # (dev-tools.nix/ops.nix) split that carried two different historyLimit
 # values -- a hard eval error the instant both landed in the same profile.

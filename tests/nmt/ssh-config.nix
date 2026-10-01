@@ -1,4 +1,4 @@
-# Generated ~/.ssh/config content (#129). The most fragile compatibility
+# Generated ~/.ssh/config content. The most fragile compatibility
 # shim in the repo sits behind this file: hm-compat.nix's sshBlocks converts
 # this repo's own upstream-directive-named blocks into whichever shape the
 # evaluating home-manager pin wants (typed matchBlocks on 25.05, freeform
