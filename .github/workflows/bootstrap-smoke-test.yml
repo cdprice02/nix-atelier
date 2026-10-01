@@ -202,14 +202,13 @@ jobs:
         with:
           submodules: recursive
       # Authenticates Nix's own GitHub API lookups under this job's quota
-      # instead of the shared unauthenticated one: --override-input below
-      # points nix-atelier at this checkout's local path, which forces Nix
-      # to re-resolve nix-atelier's entire transitive input graph from
-      # scratch rather than reusing its committed flake.lock, including a
-      # live API call for nix-darwin's floating (unpinned) ref. That call
-      # intermittently 403s under the unauthenticated per-IP rate limit
-      # shared by every runner on the range -- the same failure mode the
-      # Linux job above already works around, just not yet wired here.
+      # instead of the shared unauthenticated per-IP one. Note where this
+      # lands: install-nix-action writes extra_nix_config to
+      # /etc/nix/nix.conf, and the switch step below has to move that exact
+      # file aside before nix-darwin will activate -- so this setting covers
+      # the `nix flake check` that runs before the move and nothing after
+      # it. The switch itself re-supplies the token via NIX_CONFIG; see the
+      # comment there.
       - uses: cachix/install-nix-action@v31.11.1
         with:
           extra_nix_config: |
@@ -234,6 +233,8 @@ jobs:
       # points the scaffold at this PR's own checkout rather than the
       # published github: URL, so this tests the code under review.
       - name: Scaffold and switch a real darwin config
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p ~/my-config && cd ~/my-config
           nix flake init -t "$GITHUB_WORKSPACE#default"
@@ -258,21 +259,15 @@ jobs:
           grep -q "username = \"$(id -un)\";" flake.nix \
             || { echo "flake.nix username substitution failed:"; cat flake.nix; exit 1; }
 
-          # --override-input above forces Nix to re-resolve nix-atelier's
-          # entire transitive input graph from scratch rather than reusing
-          # its committed flake.lock, including a live API call for
-          # nix-darwin's floating (unpinned) ref. access-tokens (set via
-          # this job's own install-nix-action step) raises the *primary*
-          # per-token rate limit, but this job runs concurrently with
-          # several other macOS jobs on push (build-darwin among them,
-          # gated to push/dispatch the same as this one) that make the
-          # identical live lookup within the same few seconds -- a burst
-          # pattern that can still trip GitHub's *secondary* abuse-detection
-          # limit (a 403, same as the primary one, but one authentication
-          # doesn't exempt you from). Confirmed directly: this still failed
-          # once after the access-tokens fix landed. Retried the same way
-          # build-darwin's own submodule fetch is retried, a transient
-          # network condition outside this repo's own control.
+          # --override-input forces Nix to re-resolve nix-atelier's entire
+          # transitive input graph from scratch rather than reusing its
+          # committed flake.lock, so this makes real GitHub API calls even
+          # though it runs authenticated (access-tokens is still in
+          # /etc/nix/nix.conf at this point). Retried purely as cheap
+          # insurance against a transient failure on those calls, the same
+          # way build-darwin's own submodule fetch is retried. Safe to retry
+          # because it is read-only: it is the activation below, not this,
+          # that must not run twice.
           for attempt in 1 2 3; do
             if nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"; then
               break
@@ -295,5 +290,27 @@ jobs:
             [ -e "$f" ] && sudo mv "$f" "$f.before-nix-darwin"
           done
 
-          sudo nix --extra-experimental-features "nix-command flakes" \
+          # Re-supplies access-tokens, which the loop above just moved out
+          # of reach: install-nix-action wrote it to /etc/nix/nix.conf, and
+          # that is the file nix-darwin needs renamed, so without this the
+          # switch runs unauthenticated. It needs a token at all because
+          # `nix run nix-darwin` resolves nix-darwin from the flake
+          # registry, whose entry is an unpinned github: ref -- a live
+          # api.github.com/.../commits/HEAD lookup on every run, which
+          # unauthenticated 403s under the per-IP limit shared by every
+          # runner on the range. (That per-IP 403, not a secondary
+          # abuse-detection limit, is what the response body actually
+          # reported.)
+          #
+          # Via the environment rather than a file, so there is nothing to
+          # clean up before nix-darwin takes ownership of /etc/nix/nix.conf.
+          # `sudo env VAR=...` rather than `sudo VAR=...`: the latter asks
+          # sudo itself to set the variable, which sudoers can refuse
+          # without a SETENV tag, while the former makes it an argument to
+          # env and bypasses sudo's environment handling entirely. Only
+          # access-tokens goes in NIX_CONFIG -- experimental-features stays
+          # a CLI flag, because a multi-line NIX_CONFIG would carry this
+          # block's YAML indentation into the setting values.
+          sudo env NIX_CONFIG="access-tokens = github.com=$GITHUB_TOKEN" \
+            nix --extra-experimental-features "nix-command flakes" \
             run nix-darwin -- switch --flake .#full --override-input nix-atelier "path:$GITHUB_WORKSPACE"
