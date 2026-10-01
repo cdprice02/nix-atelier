@@ -11,6 +11,25 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v3.1.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.1.1) -- follow-up
+
+2026-10-01
+
+One real bug, found by reviewing v3.1.0 after it shipped:
+`features.extraSystemModulePaths` was accepted on a `configs.home` entry
+and then silently ignored (#187). A standalone Home Manager config has no
+system module layer for it to extend, so a path set there went nowhere; it
+is now a hard evaluation error instead. Tagged patch rather than major
+despite removing a field from the schema: the field only existed on that
+kind for two days, never had any effect, and any call that set it was
+already not getting what it asked for.
+
+Also: inline issue-number references are gone from code comments and docs
+(#188), where they read as framework-internal history to anyone consuming
+this as a flake input, and three documentation gaps v3.1.0 left behind are
+closed (#189) -- `config/skills` in the repo layout, and per-config
+`features` in both `docs/profiles.md` and `templates/default/flake.nix`.
+
 ## [v3.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v3.1.0) -- per-machine
 
 2026-09-29
