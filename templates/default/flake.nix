@@ -29,13 +29,24 @@
         # darwin.full = {
         #   system = "aarch64-darwin"; # or x86_64-darwin
         # };
+
+        # Add as many machines as you like under one identity. Each can
+        # carry its own `features`, so they don't all have to want the same
+        # things -- e.g. only the machine with cluster access gets k8s:
+        # home.work = {
+        #   system = "x86_64-linux";
+        #   features.exclude = [ "k8s" ];
+        # };
       };
 
-      # Everything below is optional and can be left out entirely.
+      # Everything below is optional and can be left out entirely. These
+      # apply to every config above; a config's own `features` block adds to
+      # these rather than replacing them.
       # features = {
       #   extra = [ "lang-rust" ];
       #   exclude = [ ];
       #   extraModulePaths = [ ];
+      #   # darwin/nixos only: extends system/darwin.nix or system/nixos.nix.
       #   extraSystemModulePaths = [ ];
       # };
     };

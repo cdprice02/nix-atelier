@@ -8,7 +8,7 @@ A Nix framework, consumed rather than forked. `lib.mkConfigs` (`lib/mkConfigs.ni
 
 This repo's own `flake.nix` is the first real caller of `lib.mkConfigs`, using a placeholder identity (not meant to be switched to on a real machine) to prove the entry point works standalone rather than as a special-cased internal path.
 
-Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`git-tools` via `features.exclude` instead.
+Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`git-tools` via `features.exclude` instead. `config/skills` is a fourth submodule, not symlinked anywhere: `just link-skills` promotes its skills into `config/claude/skills/` as plain unnamespaced user skills.
 
 ## Repo Layout
 
@@ -61,6 +61,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       gitalias/                # git submodule (fork of GitAlias/gitalias)
     claude/                    # git submodule, symlinked to ~/.claude by Home Manager
     copilot/                   # git submodule, symlinked to ~/.copilot by Home Manager
+    skills/                    # git submodule (fork of mattpocock/skills); `just link-skills` symlinks promoted skills into config/claude/skills/
   docs/                        # profiles.md and tools.md are GENERATED; edit docs-gen.nix
     bootstrap.md               # First-time setup per target
     profiles.md                # Profile reference (generated)
