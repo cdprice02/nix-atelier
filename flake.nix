@@ -644,6 +644,37 @@
           perConfigFeaturesWithoutTmuxOk =
             !perConfigFeaturesConfigs.homeConfigurations.without-tmux.config.programs.tmux.enable;
 
+          # extraSystemModulePaths extends system/darwin.nix or
+          # system/nixos.nix, so only systemModulesFor (darwin/nixos) reads
+          # it: a configs.home entry setting it must be a real schema error,
+          # not accepted-and-ignored. The same cross-kind rule
+          # mkConfigsCrossKindRejected above asserts for `tier` on darwin,
+          # in the other direction -- v3.1.0 shipped this field reachable on
+          # configs.home, where it silently did nothing.
+          perConfigFeaturesHomeRejectsSystemPaths =
+            !(builtins.tryEval (
+              builtins.deepSeq (mkConfigsLib.evalConfig {
+                identity = mkConfigsTestIdentity;
+                configs.home.test = {
+                  system = "x86_64-linux";
+                  features.extraSystemModulePaths = [ "/does/not/exist.nix" ];
+                };
+              }) true
+            )).success;
+          # The same field on a darwin entry is genuinely load-bearing, so it
+          # must still be accepted there: this half keeps the fix above from
+          # "passing" by rejecting the field everywhere.
+          perConfigFeaturesDarwinAcceptsSystemPaths =
+            (builtins.tryEval (
+              builtins.deepSeq (mkConfigsLib.evalConfig {
+                identity = mkConfigsTestIdentity;
+                configs.darwin.test = {
+                  system = "aarch64-darwin";
+                  features.extraSystemModulePaths = [ "/does/not/exist.nix" ];
+                };
+              }) true
+            )).success;
+
           # templates/default/flake.nix (#122) stays honest against schema
           # drift: called directly here, the same way a real consumer's
           # flake.nix would (nix-atelier = self simulates the real flake
@@ -826,13 +857,20 @@
               '';
 
           mkconfigs-per-config-features =
-            if perConfigFeaturesWithTmuxOk && perConfigFeaturesWithoutTmuxOk then
+            if
+              perConfigFeaturesWithTmuxOk
+              && perConfigFeaturesWithoutTmuxOk
+              && perConfigFeaturesHomeRejectsSystemPaths
+              && perConfigFeaturesDarwinAcceptsSystemPaths
+            then
               pkgs.runCommand "check-mkconfigs-per-config-features" { } "touch $out"
             else
               throw ''
                 mkconfigs-per-config-features: configs.<kind>.<name>.features
-                (#171) isn't isolated per config -- withTmux=${builtins.toJSON perConfigFeaturesWithTmuxOk}
-                withoutTmux=${builtins.toJSON perConfigFeaturesWithoutTmuxOk}.
+                (#171) isn't behaving as designed -- withTmux=${builtins.toJSON perConfigFeaturesWithTmuxOk}
+                withoutTmux=${builtins.toJSON perConfigFeaturesWithoutTmuxOk}
+                homeRejectsSystemPaths=${builtins.toJSON perConfigFeaturesHomeRejectsSystemPaths}
+                darwinAcceptsSystemPaths=${builtins.toJSON perConfigFeaturesDarwinAcceptsSystemPaths}.
               '';
 
           template-default =

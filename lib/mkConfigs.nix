@@ -59,37 +59,52 @@ let
   };
   inherit (mkProfileLib) mkProfile tiers;
 
-  # One type, two use sites (#171): the call-level `features` option below
-  # and each configs.<kind>.<name> entry's own `features` option, so two
-  # configs in the same call can diverge -- e.g. a laptop with k8s access
-  # and a WSL work machine without it, sharing one identity, without
-  # splitting into two mkConfigs calls just to get there. Same shape, same
-  # defaults; mkConfigs' own userDataFor/systemModulesFor below is what
-  # treats call-level and per-config values differently (concatenation, not
-  # override).
-  featuresType = lib.types.submodule {
-    options = {
-      extra = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Extra named features layered onto a config's tier defaults.";
-      };
-      exclude = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Named features to drop regardless of tier or extra.";
-      };
-      extraModulePaths = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Absolute paths to private Home Manager modules, as strings (imported at use time; resolving a path outside the flake's own source needs --impure on whichever real switch/build sets this field, not on mkConfigs itself).";
-      };
-      extraSystemModulePaths = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Absolute paths to private darwin/nixos system modules, same mechanism as extraModulePaths, for extending system/darwin.nix or system/nixos.nix.";
-      };
+  # The feature-selection options, shared by the call-level `features`
+  # option and each configs.<kind>.<name> entry's own `features` option
+  # (#171), so two configs in the same call can diverge -- e.g. a laptop
+  # with k8s access and a WSL work machine without it, sharing one identity,
+  # without splitting into two mkConfigs calls just to get there. mkConfigs'
+  # own userDataFor/systemModulesFor below is what treats call-level and
+  # per-config values differently (concatenation, not override).
+  #
+  # Two types, not one shared everywhere: extraSystemModulePaths extends
+  # system/darwin.nix or system/nixos.nix, which a standalone Home Manager
+  # config has no equivalent of at all, so only systemModulesFor
+  # (darwin/nixos) ever reads it. Offering it on configs.home.<name> would
+  # accept a field that silently does nothing there -- both the cross-kind
+  # leak the configs.home/.darwin/.nixos split exists to prevent, and the
+  # silent no-op this whole lib.evalModules-with-no-freeformType schema
+  # exists to turn into a real error.
+  homeFeaturesOptions = {
+    extra = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Extra named features layered onto a config's tier defaults.";
     };
+    exclude = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Named features to drop regardless of tier or extra.";
+    };
+    extraModulePaths = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Absolute paths to private Home Manager modules, as strings (imported at use time; resolving a path outside the flake's own source needs --impure on whichever real switch/build sets this field, not on mkConfigs itself).";
+    };
+  };
+  extraSystemModulePathsOption.extraSystemModulePaths = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = "Absolute paths to private darwin/nixos system modules, same mechanism as extraModulePaths, for extending system/darwin.nix or system/nixos.nix. Not offered on a configs.home entry: a standalone Home Manager config has no system module layer to extend.";
+  };
+
+  # Standalone Home Manager configs: no system module layer, so no
+  # extraSystemModulePaths.
+  homeFeaturesType = lib.types.submodule { options = homeFeaturesOptions; };
+  # darwin/nixos configs, and the call level (which legitimately spans every
+  # kind, so it carries the union).
+  systemFeaturesType = lib.types.submodule {
+    options = homeFeaturesOptions // extraSystemModulePathsOption;
   };
 
   # ── Schema ─────────────────────────────────────────────────────────────
@@ -166,7 +181,7 @@ let
                       features = lib.mkOption {
                         default = { };
                         description = "Extra/excluded features for this config only (#171), concatenated with the call-level features option below -- not a replacement for it. A per-config exclude cannot un-exclude something the call level already excluded.";
-                        type = featuresType;
+                        type = homeFeaturesType;
                       };
                     };
                   }
@@ -188,7 +203,7 @@ let
                       features = lib.mkOption {
                         default = { };
                         description = "Extra/excluded features for this config only (#171); see configs.home's own features option for the merge semantics.";
-                        type = featuresType;
+                        type = systemFeaturesType;
                       };
                     };
                   }
@@ -214,7 +229,7 @@ let
                       features = lib.mkOption {
                         default = { };
                         description = "Extra/excluded features for this config only (#171); see configs.home's own features option for the merge semantics.";
-                        type = featuresType;
+                        type = systemFeaturesType;
                       };
                     };
                   }
@@ -227,7 +242,7 @@ let
         features = lib.mkOption {
           default = { };
           description = "Which named features (modules/features.nix) get pulled in, and any additional modules beyond this repo's own, shared across every config in this call. A configs.<kind>.<name> entry's own features field (#171) adds to this rather than replacing it -- see mkConfigs' userDataFor/systemModulesFor.";
-          type = featuresType;
+          type = systemFeaturesType;
         };
       };
     };
