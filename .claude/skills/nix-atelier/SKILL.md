@@ -116,7 +116,7 @@ file in this repo: it's an absolute path in a `mkConfigs` call's
 `features.extraModulePaths`, pointing at a private modules repo. `claude` and
 `copilot` (each owning one agent's installer/symlink) are ordinary features
 in `full`, gated on nothing; the generic `nativeInstallers`/`configRepos`
-mechanism they used to own directly moved to `modules/machine.nix` (#120).
+mechanism they used to own directly moved to `modules/machine.nix`.
 
 ## Consuming this framework
 
@@ -189,7 +189,7 @@ derives from it. sops-nix is opt-in per config, triggered by
 `submoduleOverrides` adds a `private` remote and checks out a local `work` branch
 tracking `private/main`. This is how a private Claude config overlay stays out
 of the public repo. Needs a real local checkout to work against, at
-`atelier.checkoutPath` (default `~/.nix-atelier`, #149).
+`atelier.checkoutPath` (default `~/.nix-atelier`).
 
 ## Gotchas
 

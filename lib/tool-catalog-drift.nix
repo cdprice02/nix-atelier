@@ -1,4 +1,4 @@
-# Bidirectional modules/tool-catalog.nix check (#143, extracted from
+# Bidirectional modules/tool-catalog.nix check (extracted from
 # flake.nix, where it sat as five separate bindings alongside docs
 # generation despite being a distinct concern): every installed package
 # needs a catalog entry (or an explicit exclusion), and every catalog entry

@@ -1,4 +1,4 @@
-# Out-of-store agent config symlinks (issue #53): claude.nix and copilot.nix
+# Out-of-store agent config symlinks: claude.nix and copilot.nix
 # each own one symlink, neither gated on anything -- both are in the default
 # full/headless fixture, so this runs against the harness's baseline instance.
 #

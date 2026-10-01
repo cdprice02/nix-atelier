@@ -1,5 +1,5 @@
 # Framework-level, always-on (like base.nix/env.nix): machine-specific
-# integration that isn't tied to any one feature (#120). Previously
+# integration that isn't tied to any one feature. Previously
 # nativeInstallers/configRepos lived entirely inside claude.nix, the first
 # and only consumer, which meant excludeFeatures = ["claude"] silently
 # disabled both mechanisms for anyone using them for something unrelated to
@@ -7,7 +7,7 @@
 # reason: they're machine-level settings, not feature-gated ones (cloud.nix
 # and secrets-sops.nix only consume them, they don't own them).
 #
-# mkConfigs (#122) callers set these through a config's own extraConfig; this
+# mkConfigs callers set these through a config's own extraConfig; this
 # repo's own placeholder identity sets them (all defaults) through the
 # bridge module in flake.nix's mkProfile (translating userData's flat
 # aws/nativeInstallers/configRepos/sops fields into these options via
@@ -110,7 +110,7 @@ in
     checkoutPath = lib.mkOption {
       type = lib.types.str;
       default = "${config.home.homeDirectory}/.nix-atelier";
-      description = "Absolute path to a local checkout of this framework's own repo, if one exists. Backs the claude/copilot symlink targets, the gitalias git include, and the submoduleOverrides activation script (#149) -- all three need real file content from config/, not just the flake input resolved into the Nix store. A pure flake-input-only consumer with no local checkout should drop claude/copilot/git-tools via features.exclude instead of pointing this at a path that doesn't exist.";
+      description = "Absolute path to a local checkout of this framework's own repo, if one exists. Backs the claude/copilot symlink targets, the gitalias git include, and the submoduleOverrides activation script -- all three need real file content from config/, not just the flake input resolved into the Nix store. A pure flake-input-only consumer with no local checkout should drop claude/copilot/git-tools via features.exclude instead of pointing this at a path that doesn't exist.";
     };
   };
 

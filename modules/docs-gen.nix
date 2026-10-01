@@ -13,7 +13,7 @@
 {
   lib,
   # The one, single definition of the homeConfigurations naming scheme
-  # (lib/systems.nix, #118): calling it directly here, the same function
+  # (lib/systems.nix): calling it directly here, the same function
   # flake.nix's own matrix construction calls, means this table can no
   # longer disagree with the real homeConfigurations attrset -- there is
   # nothing left to reconcile with an eval-time throw.
@@ -33,7 +33,7 @@ let
   # arbitrary sort. Genuinely hand-authored, not derivable from tiers (an
   # unordered attrset): still validated against its real keys below, since
   # that's a real check (a renamed/removed tier), just not one a shared
-  # function could eliminate the way homeConfigNamesOk/darwinNamesOk (#118)
+  # function could eliminate the way homeConfigNamesOk/darwinNamesOk
   # were eliminated below.
   tierOrder = [
     "minimal"
@@ -78,7 +78,7 @@ let
     ) tierOrder
   );
 
-  # Reads darwinConfigNames directly (#118) rather than a hardcoded parallel
+  # Reads darwinConfigNames directly rather than a hardcoded parallel
   # list reconciled by a throw: this table can no longer render a name that
   # doesn't exist in the real darwinConfigurations, because it never had its
   # own idea of what the names are.

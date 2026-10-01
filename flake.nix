@@ -62,7 +62,7 @@
       url = "github:cdprice02/caret";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
-    # Always imported (#120), inert unless atelier.sops.file is set: see
+    # Always imported, inert unless atelier.sops.file is set: see
     # modules/secrets-sops.nix. Follows nixpkgs (not nixpkgs-darwin): unlike
     # caret, sops-nix has no x86_64-darwin-specific build concern, so it
     # doesn't need the same override.
@@ -121,7 +121,7 @@
     let
       # ── Identity ────────────────────────────────────────────────────────────
       # A placeholder, deliberately: this repo is consumed, not forked and
-      # edited (see templates/default/flake.nix, #122, which is the real
+      # edited (see templates/default/flake.nix, which is the real
       # example now). homeConfigurations/darwinConfigurations/
       # nixosConfigurations below exist to prove lib.mkConfigs works
       # standalone (this repo is the first real caller of its own library),
@@ -140,7 +140,7 @@
       # Which of the two release pairs a system uses, and the resolved
       # pkgs/home-manager/nix-darwin for it: one cohesive unit (lib/systems.nix)
       # instead of half a dozen separate bindings, shared between this file's
-      # own config construction below and lib/mkConfigs.nix (#122). Fails
+      # own config construction below and lib/mkConfigs.nix. Fails
       # evaluation on a release-pair mismatch rather than
       # warning (HM's own home.enableNixpkgsReleaseCheck only warns, which is
       # easy to miss); update both inputs of the offending pair together
@@ -163,7 +163,7 @@
         ;
 
       # user is threaded into every module via specialArgs. mkUser lives in
-      # lib/mkConfigs.nix (#122) rather than here: it has no real dependency
+      # lib/mkConfigs.nix rather than here: it has no real dependency
       # on this file beyond a source location, and the nmt harness's testUser
       # goes through the same derivation.
       user = mkConfigsLib.mkUser userBase;
@@ -180,7 +180,7 @@
       );
 
       # features.nix's raw registry: mkProfile and tiers both come from
-      # mkConfigsLib below (the one, single definition, #143), but the
+      # mkConfigsLib below (the one, single definition), but the
       # platform-filtering check further down needs the registry itself to
       # layer a synthetic entry onto for its own test.
       features = import ./modules/features.nix;
@@ -214,7 +214,7 @@
           map pkgIdent (nixpkgs.lib.flatten (homePkgLists ++ darwinPkgLists ++ nixosPkgLists))
         );
 
-      # lib/tool-catalog-drift.nix (#143, extracted from here): the actual
+      # lib/tool-catalog-drift.nix (extracted from here): the actual
       # bidirectional comparison against modules/tool-catalog.nix, collapsed
       # from four intermediate bindings into one call.
       docsCatalogValid = import ./lib/tool-catalog-drift.nix {
@@ -233,10 +233,10 @@
             darwinConfigNames = builtins.attrNames self.darwinConfigurations;
           };
 
-      # ── mkConfigs (#122) ─────────────────────────────────────────────────────
+      # ── mkConfigs ────────────────────────────────────────────────────────────
       # The pure, consumable entry point: see lib/mkConfigs.nix for the schema
       # and per-kind builders (it in turn imports lib/mkProfile.nix for the
-      # compositor and the tier registry, #143 -- neither is defined here
+      # compositor and the tier registry -- neither is defined here
       # anymore). This repo's own homeConfigurations/darwinConfigurations
       # further down are built through it too (see "This repo's own configs"
       # below): the real proof it works standalone is this repo depending on
@@ -254,7 +254,7 @@
       inherit (mkConfigsLib) mkProfile tiers;
 
       # ── Test harness (nmt) ───────────────────────────────────────────────────
-      # See tests/nmt/harness.nix for the harness itself (#117): scrubbed,
+      # See tests/nmt/harness.nix for the harness itself: scrubbed,
       # build-free module composition plus the nmt test-runner wiring. Only
       # testUser and mkNmtTests cross back into this file; the rest
       # (nmtSrc, scrubDerivation, mustStayReal, mkScrubbedPkgs,
@@ -276,7 +276,7 @@
       };
       inherit (nmtHarness) testUser mkNmtTests;
 
-      # ── This repo's own configs, through mkConfigs (#122) ───────────────────
+      # ── This repo's own configs, through mkConfigs ───────────────────────────
       # This repo is the first real caller of its own lib.mkConfigs, not a
       # special-cased internal path: the matrix generation below (tier x gui
       # x arch for home, the two darwin arches) is this repo's own
@@ -320,7 +320,7 @@
         };
       };
 
-      # Ships build-verified only (#5): there's no NixOS hardware in this
+      # Ships build-verified only: there's no NixOS hardware in this
       # loop to run a real `nixos-rebuild switch` end to end. hardwareModule
       # points at a synthetic fixture (sibling to the nmt fixtures) with just
       # enough (fileSystems."/", a grub device) for system.build.toplevel to
@@ -366,7 +366,7 @@
     in
     {
       # ── lib ──────────────────────────────────────────────────────────────────
-      # The consumable entry point (#122): a flake input elsewhere calls
+      # The consumable entry point: a flake input elsewhere calls
       # `nix-atelier.lib.mkConfigs { ... }`. See lib/mkConfigs.nix.
       lib = {
         inherit (mkConfigsLib) mkConfigs;
@@ -375,7 +375,7 @@
       # ── templates ────────────────────────────────────────────────────────────
       # `nix flake init -t github:cdprice02/nix-atelier` scaffolds a ~15-line
       # consumer flake.nix that already calls lib.mkConfigs, replacing fork-
-      # and-edit entirely (#122). See templates/default/flake.nix; kept in
+      # and-edit entirely. See templates/default/flake.nix; kept in
       # sync with the real schema by the template-default check below.
       templates.default = {
         path = ./templates/default;
@@ -401,7 +401,7 @@
       inherit (thisRepoConfigs) darwinConfigurations;
 
       # ── nixosConfigurations ─────────────────────────────────────────────────
-      # Build-verified only (#5): see nixosConfigsAttrs above for why. No
+      # Build-verified only: see nixosConfigsAttrs above for why. No
       # bootstrap command here the way homeConfigurations/darwinConfigurations
       # have one -- full-nixos/full-nixos-aarch64 build against a synthetic
       # hardware fixture and were never meant to run `nixos-rebuild switch`
@@ -508,7 +508,7 @@
               tests = import ./tests/nmt/composition.nix;
             }).build;
 
-          # Machine-integration variant (#129): layers in
+          # Machine-integration variant: layers in
           # fixtures/machine-integration.nix, the same extraModulePaths
           # mechanism a real private machine module uses, to give
           # atelier.nativeInstallers/configRepos/submodules (empty and
@@ -523,7 +523,7 @@
               tests = import ./tests/nmt/machine-integration.nix { inherit system; };
             }).build;
 
-          # minimal-tier variant (#129): every other instance defaults to
+          # minimal-tier variant: every other instance defaults to
           # tier = "full"; this is the only one that actually evaluates
           # tiers.minimal's empty feature list through the harness.
           minimalNmtBuild =
@@ -567,7 +567,7 @@
             platformFilteringModsFor platformFilteringOtherSystem
           );
 
-          # mkConfigs (#122) proof, pure eval-level like the check above: no
+          # mkConfigs proof, pure eval-level like the check above: no
           # real config gets built through here, this is entirely about the
           # schema and per-kind dispatch in lib/mkConfigs.nix.
           mkConfigsTestIdentity = {
@@ -593,7 +593,7 @@
             && (mkConfigsValid.nixosConfigurations == { });
 
           # A misspelled field (here "tierr") must be rejected rather than
-          # silently ignored -- the actual problem #122 set out to fix.
+          # silently ignored -- the actual problem the typed schema set out to fix.
           # builtins.deepSeq forces the whole config tree: attrNames alone
           # would only force the outer configs.home attrset's keys, not each
           # named entry's own fields, and the module system's "option does
@@ -625,12 +625,12 @@
               }) true
             )).success;
 
-          # Per-config features (#171): two home configs in one mkConfigs
+          # Per-config features: two home configs in one mkConfigs
           # call, only one excluding tmux via its own configs.home.<name>.
           # features.exclude, proving mkConfigs' userDataFor/systemModulesFor
           # actually concatenate call-level and per-config values instead of
           # every config in a call sharing one call-level-only feature set
-          # (the gap #171 was filed against).
+          # (the gap this closes).
           perConfigFeaturesConfigs = mkConfigsLib.mkConfigs {
             identity = mkConfigsTestIdentity;
             configs.home.with-tmux.system = "x86_64-linux";
@@ -675,7 +675,7 @@
               }) true
             )).success;
 
-          # templates/default/flake.nix (#122) stays honest against schema
+          # templates/default/flake.nix stays honest against schema
           # drift: called directly here, the same way a real consumer's
           # flake.nix would (nix-atelier = self simulates the real flake
           # input), no nix flake init round-trip needed to catch a stale
@@ -683,7 +683,7 @@
           templateOutputs = (import ./templates/default/flake.nix).outputs { nix-atelier = self; };
           templateDispatchOk = builtins.attrNames templateOutputs.homeConfigurations == [ "full" ];
 
-          # examples/private-config (#129) was previously never evaluated by
+          # examples/private-config was previously never evaluated by
           # anything in CI -- only its general shape was loosely mirrored by
           # tests/nmt/fixtures/private-identity.nix. Wired through the real
           # consumer mechanism its own README documents (a config's
@@ -726,7 +726,7 @@
             && examplesGitName == "Your Workstation Name"
             && examplesGitEmail == "you@workstation.example.com";
 
-          # modules/secrets-sops.nix coverage (#130): no fixture, test, or CI
+          # modules/secrets-sops.nix coverage: no fixture, test, or CI
           # path had ever set atelier.sops.file, so the module was
           # unreachable code as far as CI was concerned. A pure eval-level
           # check, not nmt: sops-nix's actual secret decryption is a
@@ -867,7 +867,7 @@
             else
               throw ''
                 mkconfigs-per-config-features: configs.<kind>.<name>.features
-                (#171) isn't behaving as designed -- withTmux=${builtins.toJSON perConfigFeaturesWithTmuxOk}
+                isn't behaving as designed -- withTmux=${builtins.toJSON perConfigFeaturesWithTmuxOk}
                 withoutTmux=${builtins.toJSON perConfigFeaturesWithoutTmuxOk}
                 homeRejectsSystemPaths=${builtins.toJSON perConfigFeaturesHomeRejectsSystemPaths}
                 darwinAcceptsSystemPaths=${builtins.toJSON perConfigFeaturesDarwinAcceptsSystemPaths}.

@@ -1,7 +1,7 @@
 # The nmt test harness: builds the scrubbed, build-free module list and nmt
 # test-runner wiring flake.nix's `checks` output evaluates every nmt
 # instance (default, GUI, composition) through. Moved out of flake.nix
-# itself (see #117) so the production entry point isn't three-quarters test
+# itself so the production entry point isn't three-quarters test
 # infrastructure; imported from there the same way tests/nmt/*.nix already
 # are for their own assertions.
 {

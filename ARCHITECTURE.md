@@ -120,7 +120,7 @@ most common surprise when touching a feature module -- see "Adding a
 package" above.
 
 **Unknown feature names.** A typo in `features.extra`/`features.exclude`
-(or, before #122, `user.nix`'s equivalent fields) is looked up against
+(or, in the pre-v3 `user.nix` shape, its equivalent fields) is looked up against
 `modules/features.nix`'s registry and fails rather than silently doing
 nothing. Tiers themselves can't have this problem: `full` is derived from
 the registry, not hand-listed, so there's no second file that could

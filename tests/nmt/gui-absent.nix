@@ -1,4 +1,4 @@
-# Negative half of the GUI/headless pair (issue #53): the harness's default
+# Negative half of the GUI/headless pair: the harness's default
 # instance is withGui = false, so this runs for free against the existing
 # baseline fixture. The positive half (alacritty present on a GUI build) is
 # in gui.nix, which needs its own withGui = true nmt instance -- see

@@ -1,4 +1,4 @@
-# The profile compositor (#122), extracted from flake.nix (#143): produces
+# The profile compositor, extracted from flake.nix: produces
 # the ordered module list for a config. Owns the tier registry too
 # (features.nix -> tiers), the one place it's computed -- lib/mkConfigs.nix
 # imports both mkProfile and tiers from here instead of each keeping its own

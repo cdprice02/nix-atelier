@@ -1,4 +1,4 @@
-# Per-shell init contracts (issue #52): zsh, bash, and fish are deliberately
+# Per-shell init contracts: zsh, bash, and fish are deliberately
 # *not* configured identically (base.nix and lang-node.nix explain why in
 # prose). These pin each asymmetry as an assertion so a change to any of them
 # is a deliberate test edit, not a silent drift.

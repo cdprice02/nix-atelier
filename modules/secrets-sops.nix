@@ -1,4 +1,4 @@
-# Always imported (#120), like caret: inert whenever atelier.sops.file is
+# Always imported, like caret: inert whenever atelier.sops.file is
 # unset, so the manual ~/.config/secrets/env path (copy
 # secrets.env.example, fill it in) stays fully supported with zero Nix
 # involvement. atelier.sops.file's presence is the on/off switch, no

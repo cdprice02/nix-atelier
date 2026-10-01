@@ -1,10 +1,10 @@
-# Dotfile content assertions (issue #42): a config can build cleanly and
+# Dotfile content assertions: a config can build cleanly and
 # still render the wrong thing. Two precedents motivate this file: the
 # cached-compinit logic (tests/nmt/shell-init.nix) once shipped silently
 # inert, and a shallow merge once produced a darwin generation with *no git
 # config at all* -- `programs.git.enable` had been clobbered, and the build
 # was green. Folded into nmt rather than the standalone `checks` grep
-# originally proposed in #42, since nmt already builds the same tree.
+# originally proposed, since nmt already builds the same tree.
 {
   npmrc-has-writable-prefix = {
     nmt.description = ''

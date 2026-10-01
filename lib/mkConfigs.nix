@@ -1,4 +1,4 @@
-# The pure, consumable entry point (#122). A plain function of a typed
+# The pure, consumable entry point. A plain function of a typed
 # argument attrset to { homeConfigurations; darwinConfigurations;
 # nixosConfigurations; }, no getEnv, no --impure.
 #
@@ -47,7 +47,7 @@ let
   mkUser = base: base // { sshKey = builtins.elemAt (builtins.split "@" base.email) 0; };
 
   # The one, single definition of the tier registry and the compositor that
-  # resolves it (#143): imported here rather than each kept as a separate
+  # resolves it: imported here rather than each kept as a separate
   # copy the way flake.nix and this file previously did independently.
   mkProfileLib = import ./mkProfile.nix {
     inherit
@@ -60,8 +60,8 @@ let
   inherit (mkProfileLib) mkProfile tiers;
 
   # The feature-selection options, shared by the call-level `features`
-  # option and each configs.<kind>.<name> entry's own `features` option
-  # (#171), so two configs in the same call can diverge -- e.g. a laptop
+  # option and each configs.<kind>.<name> entry's own `features` option, so
+  # two configs in the same call can diverge -- e.g. a laptop
   # with k8s access and a WSL work machine without it, sharing one identity,
   # without splitting into two mkConfigs calls just to get there. mkConfigs'
   # own userDataFor/systemModulesFor below is what treats call-level and
@@ -180,7 +180,7 @@ let
                       };
                       features = lib.mkOption {
                         default = { };
-                        description = "Extra/excluded features for this config only (#171), concatenated with the call-level features option below -- not a replacement for it. A per-config exclude cannot un-exclude something the call level already excluded.";
+                        description = "Extra/excluded features for this config only, concatenated with the call-level features option below -- not a replacement for it. A per-config exclude cannot un-exclude something the call level already excluded.";
                         type = homeFeaturesType;
                       };
                     };
@@ -202,7 +202,7 @@ let
                       };
                       features = lib.mkOption {
                         default = { };
-                        description = "Extra/excluded features for this config only (#171); see configs.home's own features option for the merge semantics.";
+                        description = "Extra/excluded features for this config only; see configs.home's own features option for the merge semantics.";
                         type = systemFeaturesType;
                       };
                     };
@@ -212,7 +212,7 @@ let
 
               nixos = lib.mkOption {
                 default = { };
-                description = "NixOS + Home Manager configs (#5). Ships build-verified only in this repo; a real deployment needs a real hardwareModule.";
+                description = "NixOS + Home Manager configs. Ships build-verified only in this repo; a real deployment needs a real hardwareModule.";
                 type = lib.types.attrsOf (
                   lib.types.submodule {
                     options = {
@@ -228,7 +228,7 @@ let
                       };
                       features = lib.mkOption {
                         default = { };
-                        description = "Extra/excluded features for this config only (#171); see configs.home's own features option for the merge semantics.";
+                        description = "Extra/excluded features for this config only; see configs.home's own features option for the merge semantics.";
                         type = systemFeaturesType;
                       };
                     };
@@ -241,7 +241,7 @@ let
 
         features = lib.mkOption {
           default = { };
-          description = "Which named features (modules/features.nix) get pulled in, and any additional modules beyond this repo's own, shared across every config in this call. A configs.<kind>.<name> entry's own features field (#171) adds to this rather than replacing it -- see mkConfigs' userDataFor/systemModulesFor.";
+          description = "Which named features (modules/features.nix) get pulled in, and any additional modules beyond this repo's own, shared across every config in this call. A configs.<kind>.<name> entry's own features field adds to this rather than replacing it -- see mkConfigs' userDataFor/systemModulesFor.";
           type = systemFeaturesType;
         };
       };
@@ -265,7 +265,7 @@ let
       # Feeds mkProfile's existing userData override point (already used by
       # the nmt harness's testUser): no feature-resolution logic duplicated
       # here, just this schema's fields mapped onto the shape mkProfile
-      # already understands. Per-entry, not call-level (#171): concatenates
+      # already understands. Per-entry, not call-level: concatenates
       # the call-level features option with entry's own, so two configs in
       # one call can diverge (mkProfile's requestedNames/keptNames already
       # dedupe and subtract, so nothing here needs lib.unique first).

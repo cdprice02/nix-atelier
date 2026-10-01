@@ -326,7 +326,7 @@ ______________________________________________________________________
 
 ## NixOS
 
-Supported as a config kind (#5), build-verified only: this repo's own
+Supported as a config kind, build-verified only: this repo's own
 `nixosConfigurations.full-nixos`/`full-nixos-aarch64` build against a
 synthetic hardware fixture (`tests/fixtures/nixos-hardware-stub.nix`), not
 real hardware -- there is none in this loop to test against, and these two

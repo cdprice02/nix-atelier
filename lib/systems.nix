@@ -1,7 +1,7 @@
 # Everything about "which of the two release pairs does this system use, and
 # what are the resolved tools for it": one cohesive unit instead of the same
 # x86_64-darwin-vs-rolling dispatch spread across half a dozen separate
-# bindings. flake.nix's own (still impure, pre-#122) config construction and
+# bindings. flake.nix's own config construction and
 # lib/mkConfigs.nix both import this rather than each carrying their own copy.
 {
   nixpkgs,
@@ -89,7 +89,7 @@ let
   darwinLibFor = system: if isX86Darwin system then nix-darwin-x86 else nix-darwin;
 
   # The one, single definition of this repo's homeConfigurations naming
-  # scheme (#118): flake.nix's own matrix construction and docs-gen.nix's
+  # scheme: flake.nix's own matrix construction and docs-gen.nix's
   # profile table both call this directly now, instead of docs-gen.nix
   # carrying a second copy reconciled by an eval-time throw. A renamed
   # scheme can no longer make the two disagree; there is only one function.

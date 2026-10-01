@@ -1,5 +1,5 @@
 # Synthetic hardware-configuration.nix, for CI build-verification of the
-# NixOS kind only (#5). There is no NixOS hardware in this loop to generate a
+# NixOS kind only. There is no NixOS hardware in this loop to generate a
 # real one from, and this repo's own nixosConfigurations entry ships build-
 # verified only: this fixture exists so `nix build` can prove a NixOS config
 # evaluates and produces a real system.build.toplevel, not so anything ever
