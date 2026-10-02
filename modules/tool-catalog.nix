@@ -186,7 +186,7 @@
       key = "gcc";
       matches = [ "gcc-wrapper" ];
       category = "Editor";
-      description = "C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools).";
+      description = "C compiler for nvim-treesitter's parsers and telescope-fzf-native. Linux only: macOS already has clang at /usr/bin/cc via the Xcode Command Line Tools, and installing gcc there shadowed it for every `cc` caller on the machine.";
       link = "[gcc.gnu.org](https://gcc.gnu.org)";
     }
     {
