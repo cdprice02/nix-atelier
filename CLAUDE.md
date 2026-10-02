@@ -8,7 +8,7 @@ A Nix framework, consumed rather than forked. `lib.mkConfigs` (`lib/mkConfigs.ni
 
 This repo's own `flake.nix` is the first real caller of `lib.mkConfigs`, using a placeholder identity (not meant to be switched to on a real machine) to prove the entry point works standalone rather than as a special-cased internal path.
 
-Claude Code and Copilot configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`git-tools` via `features.exclude` instead. `config/skills` is a fourth submodule, not symlinked anywhere: `just link-skills` promotes its skills into `config/claude/skills/` as plain unnamespaced user skills.
+Claude Code, Copilot and Neovim configs are submodules under `config/`, provisioned automatically by Home Manager on first activation for a machine that has this repo checked out locally, at `atelier.checkoutPath` (default `~/.nix-atelier`). A pure flake-input-only consumer with no local checkout should drop `claude`/`copilot`/`neovim`/`git-tools` via `features.exclude` instead. `config/skills` is a further submodule, not symlinked anywhere: `just link-skills` promotes its skills into `config/claude/skills/` as plain unnamespaced user skills.
 
 ## Repo Layout
 
@@ -45,8 +45,9 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       cloud.nix                 # AWS tooling; reads atelier.aws.profile
       claude.nix                 # claude-code (native installer), .claude symlink
       copilot.nix                 # .copilot symlink, sibling of claude.nix
+      neovim.nix                  # nvim + treesitter build deps, ~/.config/nvim symlink, EDITOR=nvim
       k8s.nix                    # kubectl, helm, helmfile
-      tmux.nix                    # sole owner of tmux config, historyLimit=50000
+      tmux.nix                    # sole owner of tmux config, historyLimit=50000, tmux-sessionizer
       git-tools.nix               # gh, glab, difftastic, git-filter-repo, pre-commit
       nix-tools.nix               # nixd, nixfmt-rfc-style
       data.nix                    # duckdb
@@ -61,6 +62,7 @@ Claude Code and Copilot configs are submodules under `config/`, provisioned auto
       gitalias/                # git submodule (fork of GitAlias/gitalias)
     claude/                    # git submodule, symlinked to ~/.claude by Home Manager
     copilot/                   # git submodule, symlinked to ~/.copilot by Home Manager
+    nvim/                      # git submodule (cdprice02/nvim-config), symlinked to ~/.config/nvim
     skills/                    # git submodule (fork of mattpocock/skills); `just link-skills` symlinks promoted skills into config/claude/skills/
   docs/                        # profiles.md and tools.md are GENERATED; edit docs-gen.nix
     bootstrap.md               # First-time setup per target

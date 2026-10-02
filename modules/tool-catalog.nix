@@ -169,10 +169,122 @@
 
     # ── Editor ─────────────────────────────────────────────────────────────
     {
+      key = "neovim";
+      matches = [ "neovim" ];
+      category = "Editor";
+      description = "Daily-driver editor, and `\$EDITOR`/`\$VISUAL` wherever the `neovim` feature is on. Config is the `config/nvim` submodule ([cdprice02/nvim-config](https://github.com/cdprice02/nvim-config)), symlinked to `~/.config/nvim`; plugins are pinned by its own `lazy-lock.json`, while language servers and formatters come from Nix.";
+      link = "[neovim.io](https://neovim.io)";
+    }
+    {
+      key = "tree-sitter";
+      matches = [ "tree-sitter" ];
+      category = "Editor";
+      description = "Parser generator CLI. nvim-treesitter's main branch (Neovim 0.12+) needs it to build syntax parsers locally.";
+      link = "[tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/)";
+    }
+    {
+      key = "gcc";
+      matches = [ "gcc-wrapper" ];
+      category = "Editor";
+      description = "C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools).";
+      link = "[gcc.gnu.org](https://gcc.gnu.org)";
+    }
+    {
+      key = "make";
+      matches = [ "gnumake" ];
+      category = "Editor";
+      description = "Builds telescope-fzf-native's native sorter when lazy.nvim installs it.";
+      link = "[gnu.org/software/make](https://www.gnu.org/software/make/)";
+    }
+    {
+      key = "basedpyright";
+      matches = [ "basedpyright" ];
+      category = "Editor";
+      description = "Python language server for Neovim (hover, go-to-definition, type checking, inlay hints): the open-source Pyright fork standing in for VS Code's Pylance, with the same settings ported. Ruff's own server handles linting alongside it.";
+      link = "[docs.basedpyright.com](https://docs.basedpyright.com)";
+    }
+    {
+      key = "lua-language-server";
+      matches = [ "lua-language-server" ];
+      category = "Editor";
+      description = "Lua language server, for editing the Neovim config itself.";
+      link = "[luals.github.io](https://luals.github.io)";
+    }
+    {
+      key = "prettierd";
+      matches = [ "prettierd" ];
+      category = "Editor";
+      description = "Prettier as a background daemon, so format-on-save in Neovim is instant: formats JSON, YAML and Markdown, with VS Code's `quoteProps`/`trailingComma` settings as the default for projects without their own `.prettierrc`.";
+      link = "[github.com/fsouza/prettierd](https://github.com/fsouza/prettierd)";
+    }
+    {
+      key = "stylua";
+      matches = [ "stylua" ];
+      category = "Editor";
+      description = "Lua formatter; formats the Neovim config on save.";
+      link = "[github.com/JohnnyMorganz/StyLua](https://github.com/JohnnyMorganz/StyLua)";
+    }
+    {
+      key = "shfmt";
+      matches = [ "shfmt" ];
+      category = "Editor";
+      description = "Shell script formatter (bash, POSIX sh), run by Neovim on save.";
+      link = "[github.com/mvdan/sh](https://github.com/mvdan/sh)";
+    }
+    {
+      key = "taplo";
+      matches = [ "taplo" ];
+      category = "Editor";
+      description = "TOML formatter and language server for Neovim: formats on save, and validates/completes `pyproject.toml`, `Cargo.toml` and friends against SchemaStore. Replaces VS Code's Even Better TOML.";
+      link = "[taplo.tamasfe.dev](https://taplo.tamasfe.dev)";
+    }
+    {
+      key = "vscode-langservers-extracted";
+      matches = [ "vscode-langservers-extracted" ];
+      category = "Editor";
+      description = "VS Code's own JSON, HTML and CSS language servers, extracted for other editors. Neovim uses them with SchemaStore's JSON schemas.";
+      link = "[github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)";
+    }
+    {
+      key = "yaml-language-server";
+      matches = [ "yaml-language-server" ];
+      category = "Editor";
+      description = "YAML language server: validation and completion for GitHub workflows, compose files, CI configs and more, against SchemaStore.";
+      link = "[github.com/redhat-developer/yaml-language-server](https://github.com/redhat-developer/yaml-language-server)";
+    }
+    {
+      key = "marksman";
+      matches = [ "marksman" ];
+      category = "Editor";
+      description = "Markdown language server: heading/link completion, go-to-definition across wiki-style links, broken-link diagnostics.";
+      link = "[github.com/artempyanykh/marksman](https://github.com/artempyanykh/marksman)";
+    }
+    {
+      key = "bash-language-server";
+      matches = [ "bash-language-server" ];
+      category = "Editor";
+      description = "Shell language server for Neovim, including Slurm batch scripts; surfaces shellcheck's lints as diagnostics.";
+      link = "[github.com/bash-lsp/bash-language-server](https://github.com/bash-lsp/bash-language-server)";
+    }
+    {
+      key = "shellcheck";
+      matches = [ "ShellCheck" ];
+      category = "Editor";
+      description = "Shell script linter, run by bash-language-server as you edit.";
+      link = "[shellcheck.net](https://www.shellcheck.net)";
+    }
+    {
+      key = "clang-tools (`clangd`)";
+      matches = [ "clang-tools" ];
+      category = "Editor";
+      description = "C/C++ language server for Neovim, mainly for QMK keymaps (`qmk generate-compilation-database` gives it the include paths).";
+      link = "[clangd.llvm.org](https://clangd.llvm.org)";
+    }
+    {
       key = "vim";
       matches = [ "vim" ];
       category = "Editor";
-      description = "Default `\$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback.";
+      description = "Always-present fallback editor, and `\$EDITOR` on profiles without the `neovim` feature.";
       link = "[vim.org](https://www.vim.org)";
     }
     {
@@ -407,6 +519,13 @@
       link = "[ipython.org](https://ipython.org)";
     }
     {
+      key = "jupytext";
+      matches = [ "jupytext" ];
+      category = "Python";
+      description = "Converts Jupyter notebooks to and from plain `# %%` scripts; Neovim opens `.ipynb` files through it, keeping outputs on save.";
+      link = "[jupytext.readthedocs.io](https://jupytext.readthedocs.io)";
+    }
+    {
       key = "ruff";
       matches = [ "ruff" ];
       category = "Python";
@@ -525,6 +644,13 @@
       category = "Shell Multiplexing";
       description = "Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. tmux-resurrect and tmux-continuum are also installed, so sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other.";
       link = "[github.com/tmux/tmux](https://github.com/tmux/tmux)";
+    }
+    {
+      key = "tmux-sessionizer";
+      matches = [ "tmux-sessionizer" ];
+      category = "Shell Multiplexing";
+      description = "ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo and create or switch to a tmux session named after it. Searches `\$TMUX_SESSIONIZER_DIRS` (colon-separated), defaulting to `~/repos`, this repo's own checkout plus its `config/` submodules, and every `atelier.configRepos` clone.";
+      link = "[github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)";
     }
 
     # ── Firmware ───────────────────────────────────────────────────────────

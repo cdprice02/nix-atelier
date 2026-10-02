@@ -18,6 +18,7 @@
   copilot = ./features/copilot.nix;
   k8s = ./features/k8s.nix;
   tmux = ./features/tmux.nix;
+  neovim = ./features/neovim.nix;
   git-tools = ./features/git-tools.nix;
   nix-tools = ./features/nix-tools.nix;
   data = ./features/data.nix;

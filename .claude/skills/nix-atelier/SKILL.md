@@ -99,12 +99,12 @@ modules/
   features.nix         feature name -> module path registry; full tier = every key in it
   tool-catalog.nix     package -> description (see drift check)
   secrets-sops.nix      always imported, inert unless atelier.sops.file is set
-  features/            shell-tools, lang-{rust,node,python}, cloud, claude, copilot, k8s, tmux, git-tools, nix-tools, data, qmk
+  features/            shell-tools, lang-{rust,node,python}, cloud, claude, copilot, k8s, tmux, neovim, git-tools, nix-tools, data, qmk
   gui-{linux,darwin}.nix
 system/
   darwin.nix            macOS settings + Homebrew
   nixos.nix             NixOS settings; used by lib/mkConfigs.nix's nixos kind
-config/                 git submodules: claude, copilot, git/gitalias
+config/                 git submodules: claude, copilot, nvim, git/gitalias
 ```
 
 `mkProfile { tier, withGui, system, userData, featuresOverride }` composes:

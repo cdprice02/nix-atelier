@@ -24,4 +24,26 @@
       assertFileContains home-files/.config/tmux/tmux.conf "set -g @continuum-restore 'on'"
     '';
   };
+
+  tmux-neovim-friendly = {
+    nmt.description = ''
+      The settings Neovim's :checkhealth asks for inside tmux: a terminal
+      type that describes true color, RGB passthrough for the outer
+      terminal, no Esc delay, and focus events. Plus the clipboard and
+      sessionizer bindings the neovim feature's workflow relies on.
+    '';
+    nmt.script = ''
+      conf=home-files/.config/tmux/tmux.conf
+      assertFileRegex "$conf" 'default-terminal[[:space:]][[:space:]]*"tmux-256color"'
+      assertFileContains "$conf" 'set -as terminal-features ",xterm-256color:RGB,alacritty:RGB"'
+      assertFileRegex "$conf" 'escape-time[[:space:]][[:space:]]*0$'
+      assertFileRegex "$conf" 'focus-events[[:space:]][[:space:]]*on'
+      assertFileContains "$conf" 'set -g set-clipboard on'
+      assertFileContains "$conf" 'bind -T copy-mode-vi v send-keys -X begin-selection'
+      assertFileContains "$conf" 'bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel'
+      assertFileRegex "$conf" '^bind f new-window .*/bin/tmux-sessionizer$'
+      assertFileContains "$conf" 'bind C split-window -h -c "#{pane_current_path}" claude'
+      assertFileContains "$conf" 'bind g display-popup -E -w 90% -h 90% -d "#{pane_current_path}" lazygit'
+    '';
+  };
 }

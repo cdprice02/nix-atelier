@@ -10,3 +10,6 @@
 [submodule "config/skills"]
 	path = config/skills
 	url = git@github.com:cdprice02/skills.git
+[submodule "config/nvim"]
+	path = config/nvim
+	url = git@github.com:cdprice02/nvim-config.git

@@ -87,8 +87,56 @@ Interactive process viewer: an ncurses `top` replacement. [htop.dev](https://hto
 
 ## Editor
 
+### neovim
+Daily-driver editor, and `$EDITOR`/`$VISUAL` wherever the `neovim` feature is on. Config is the `config/nvim` submodule ([cdprice02/nvim-config](https://github.com/cdprice02/nvim-config)), symlinked to `~/.config/nvim`; plugins are pinned by its own `lazy-lock.json`, while language servers and formatters come from Nix. [neovim.io](https://neovim.io)
+
+### tree-sitter
+Parser generator CLI. nvim-treesitter's main branch (Neovim 0.12+) needs it to build syntax parsers locally. [tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/)
+
+### gcc
+C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools). [gcc.gnu.org](https://gcc.gnu.org)
+
+### make
+Builds telescope-fzf-native's native sorter when lazy.nvim installs it. [gnu.org/software/make](https://www.gnu.org/software/make/)
+
+### basedpyright
+Python language server for Neovim (hover, go-to-definition, type checking, inlay hints): the open-source Pyright fork standing in for VS Code's Pylance, with the same settings ported. Ruff's own server handles linting alongside it. [docs.basedpyright.com](https://docs.basedpyright.com)
+
+### lua-language-server
+Lua language server, for editing the Neovim config itself. [luals.github.io](https://luals.github.io)
+
+### prettierd
+Prettier as a background daemon, so format-on-save in Neovim is instant: formats JSON, YAML and Markdown, with VS Code's `quoteProps`/`trailingComma` settings as the default for projects without their own `.prettierrc`. [github.com/fsouza/prettierd](https://github.com/fsouza/prettierd)
+
+### stylua
+Lua formatter; formats the Neovim config on save. [github.com/JohnnyMorganz/StyLua](https://github.com/JohnnyMorganz/StyLua)
+
+### shfmt
+Shell script formatter (bash, POSIX sh), run by Neovim on save. [github.com/mvdan/sh](https://github.com/mvdan/sh)
+
+### taplo
+TOML formatter and language server for Neovim: formats on save, and validates/completes `pyproject.toml`, `Cargo.toml` and friends against SchemaStore. Replaces VS Code's Even Better TOML. [taplo.tamasfe.dev](https://taplo.tamasfe.dev)
+
+### vscode-langservers-extracted
+VS Code's own JSON, HTML and CSS language servers, extracted for other editors. Neovim uses them with SchemaStore's JSON schemas. [github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)
+
+### yaml-language-server
+YAML language server: validation and completion for GitHub workflows, compose files, CI configs and more, against SchemaStore. [github.com/redhat-developer/yaml-language-server](https://github.com/redhat-developer/yaml-language-server)
+
+### marksman
+Markdown language server: heading/link completion, go-to-definition across wiki-style links, broken-link diagnostics. [github.com/artempyanykh/marksman](https://github.com/artempyanykh/marksman)
+
+### bash-language-server
+Shell language server for Neovim, including Slurm batch scripts; surfaces shellcheck's lints as diagnostics. [github.com/bash-lsp/bash-language-server](https://github.com/bash-lsp/bash-language-server)
+
+### shellcheck
+Shell script linter, run by bash-language-server as you edit. [shellcheck.net](https://www.shellcheck.net)
+
+### clang-tools (`clangd`)
+C/C++ language server for Neovim, mainly for QMK keymaps (`qmk generate-compilation-database` gives it the include paths). [clangd.llvm.org](https://clangd.llvm.org)
+
 ### vim
-Default `$EDITOR` for commit messages and quick edits. vscode is the daily-driver editor on GUI profiles; vim is the always-present fallback. [vim.org](https://www.vim.org)
+Always-present fallback editor, and `$EDITOR` on profiles without the `neovim` feature. [vim.org](https://www.vim.org)
 
 ### nixd
 Nix language server: completions, go-to-definition, and diagnostics for editing this repo's own `.nix` files. [github.com/nix-community/nixd](https://github.com/nix-community/nixd)
@@ -190,6 +238,9 @@ Browser-based notebooks for interactive computing and data exploration. [jupyter
 ### ipython
 Enhanced interactive Python REPL with tab completion and magic commands. [ipython.org](https://ipython.org)
 
+### jupytext
+Converts Jupyter notebooks to and from plain `# %%` scripts; Neovim opens `.ipynb` files through it, keeping outputs on save. [jupytext.readthedocs.io](https://jupytext.readthedocs.io)
+
 ### ruff
 Extremely fast Python linter and formatter, written in Rust; replaces flake8/black/isort. [docs.astral.sh/ruff](https://docs.astral.sh/ruff/)
 
@@ -260,6 +311,9 @@ Lets rbw prompt for the master password from the terminal (cross-platform; macOS
 
 ### tmux
 Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. tmux-resurrect and tmux-continuum are also installed, so sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other. [github.com/tmux/tmux](https://github.com/tmux/tmux)
+
+### tmux-sessionizer
+ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo and create or switch to a tmux session named after it. Searches `$TMUX_SESSIONIZER_DIRS` (colon-separated), defaulting to `~/repos`, this repo's own checkout plus its `config/` submodules, and every `atelier.configRepos` clone. [github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)
 
 ---
 

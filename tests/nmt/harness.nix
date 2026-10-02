@@ -115,6 +115,9 @@ let
     "fish"
     "lndir"
     "bash"
+    # neovim.nix installs make for telescope-fzf-native, but it is also
+    # every stdenv's own build tool: scrubbing it breaks stdenv itself.
+    "gnumake"
   ];
   mkScrubbedPkgs =
     realPkgs:

@@ -1,5 +1,5 @@
-# Out-of-store agent config symlinks: claude.nix and copilot.nix
-# each own one symlink, neither gated on anything -- both are in the default
+# Out-of-store config symlinks: claude.nix, copilot.nix and neovim.nix
+# each own one symlink, none gated on anything -- all are in the default
 # full/headless fixture, so this runs against the harness's baseline instance.
 #
 # The expected target embeds base.nix's own homeDirectory derivation
@@ -16,9 +16,9 @@ in
 {
   agent-symlinks-present = {
     nmt.description = ''
-      features/claude.nix and features/copilot.nix each point their symlink
+      features/claude.nix, copilot.nix and neovim.nix each point their symlink
       at this repo's own config/ submodules via mkOutOfStoreSymlink. Confirms
-      both resolve to the expected target rather than, say, silently pointing
+      each resolves to the expected target rather than, say, silently pointing
       at the Nix store (which would defeat the whole point of an
       out-of-store symlink for a git-managed tool config).
     '';
@@ -41,6 +41,13 @@ in
       target="$(readlink "$hop1")"
       [[ "$target" == "${homeDir}/.nix-atelier/config/copilot" ]] \
         || fail ".copilot should resolve to ${homeDir}/.nix-atelier/config/copilot, got: $target (via $hop1)"
+
+      # features/neovim.nix: same pattern, one directory deeper in HOME.
+      assertLinkExists home-files/.config/nvim
+      hop1="$(readlink "$(_abs home-files/.config/nvim)")"
+      target="$(readlink "$hop1")"
+      [[ "$target" == "${homeDir}/.nix-atelier/config/nvim" ]] \
+        || fail ".config/nvim should resolve to ${homeDir}/.nix-atelier/config/nvim, got: $target (via $hop1)"
     '';
   };
 }
