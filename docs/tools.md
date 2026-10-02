@@ -94,7 +94,7 @@ Daily-driver editor, and `$EDITOR`/`$VISUAL` wherever the `neovim` feature is on
 Parser generator CLI. nvim-treesitter's main branch (Neovim 0.12+) needs it to build syntax parsers locally. [tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/)
 
 ### gcc
-C compiler for nvim-treesitter's parsers and telescope-fzf-native, so neither depends on a system compiler being present (none on a fresh macOS without the Xcode tools). [gcc.gnu.org](https://gcc.gnu.org)
+C compiler for nvim-treesitter's parsers and telescope-fzf-native. Linux only: macOS already has clang at /usr/bin/cc via the Xcode Command Line Tools, and installing gcc there shadowed it for every `cc` caller on the machine. [gcc.gnu.org](https://gcc.gnu.org)
 
 ### make
 Builds telescope-fzf-native's native sorter when lazy.nvim installs it. [gnu.org/software/make](https://www.gnu.org/software/make/)
