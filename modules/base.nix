@@ -77,7 +77,7 @@ in
       # comfort layer. These have genuine bootstrap/scripting/ops value
       # independent of an interactive session -- a headless `minimal`
       # machine wants them exactly as much as a daily driver does. The
-      # nicer-but-optional layer (fonts, ripgrep/fd/bat/eza/lazygit/btop/
+      # nicer-but-optional layer (ripgrep/fd/bat/eza/lazygit/btop/
       # fastfetch, zoxide/fzf/direnv) lives in the shell-tools feature
       # instead, which `minimal` doesn't pull in.
       jq

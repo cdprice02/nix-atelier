@@ -38,10 +38,6 @@ let
 in
 {
   home.packages = with pkgs; [
-    # Fonts: terminal rendering, not needed on a headless box
-    fira-code
-    nerd-fonts.fira-code
-
     # CLI essentials: nicer/faster alternatives to what's already available
     # (grep/find/cat/ls/htop), not new capability
     ripgrep
