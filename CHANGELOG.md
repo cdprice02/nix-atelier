@@ -11,7 +11,9 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
-## Unreleased -- neovim
+## [v3.2.0](https://github.com/cdprice02/nix-atelier/releases/tag/v3.2.0) -- neovim
+
+2026-10-05
 
 Neovim becomes the daily-driver editor: a new `neovim` feature (in `full`)
 installs it with every language server, formatter and build tool its config
@@ -21,9 +23,34 @@ on ThePrimeagen's) to `~/.config/nvim`, live-editable like `config/claude`.
 `EDITOR`/`VISUAL` become `nvim` wherever the feature is on. `tmux` turns
 Neovim-friendly (true color, no Esc delay, focus events, OSC 52 clipboard,
 vi copy mode) and gains `tmux-sessionizer` (`prefix f`), a Claude Code split
-(`prefix C`) and a lazygit popup (`prefix g`); `lang-python` adds `jupytext`.
-No schema change: a consumer that doesn't want it drops `neovim` via
+(`prefix C`) and a lazygit popup (`prefix g`); `lang-python` adds `jupytext`
+(#175). No schema change: a consumer that doesn't want it drops `neovim` via
 `features.exclude`.
+
+Two macOS fixes found by actually switching a real Mac to this release
+rather than trusting the build. `brew bundle --cleanup`, which
+`homebrew.onActivation.cleanup = "zap"` compiles down to, was removed in
+Homebrew 7.0, and since `autoUpdate` is on, Homebrew updated itself
+mid-activation and then rejected the flag; `cleanup` is now `"none"` (#194).
+That failure aborted activation near its end, which advanced the system
+profile while leaving `/run/current-system` on the old closure and skipping
+Home Manager's user activation entirely, so `docs/troubleshooting.md`
+describes the half-applied state too. The cost is that Homebrew is no longer
+declarative: `brew bundle cleanup --force` is the manual equivalent.
+
+`gcc` is now Linux-only in the `neovim` feature (#192). Installing it
+unconditionally put `cc`/`c++`/`gcc`/`g++` in the profile, and because the
+Nix profile precedes `/usr/bin` on `PATH`, every `cc` caller on a Mac
+silently moved from Apple clang to GCC 14 on a platform whose SDK expects
+clang. macOS uses the clang the Xcode Command Line Tools provide instead,
+which also drops 297 MB; tree-sitter parsers were confirmed compiling
+against it on a real Intel Mac.
+
+Also: the `claude` and `skills` config submodules move forward (permission
+rules culled, auto mode, a context/cache statusline, upstream skills merged),
+and `just link-skills` now prunes skill symlinks left dangling by an
+upstream removal, which its `-e` guard had been skipping precisely because
+they were broken.
 
 ## [v3.1.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.1.1) -- follow-up
 
