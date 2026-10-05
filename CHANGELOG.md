@@ -11,6 +11,29 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v3.2.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.2.1) -- remote
+
+2026-10-05
+
+Two small changes found by moving four real machines (a Mac, a WSL
+instance, an HPC login node and two Raspberry Pis) onto v3.2.0.
+
+Fira Code and its Nerd Font variant move from `shell-tools` to `gui-base`,
+so only GUI profiles install them (#196). A headless `minimal` +
+`shell-tools` config (an SSH-only Pi, a WSL instance whose terminal is on
+the Windows side) previously could only drop them by excluding
+`shell-tools` entirely; the terminal that renders the glyphs is on the
+client anyway.
+
+caret's directory segment turns magenta in an SSH session, in bash, zsh and
+fish, and stays blue locally (#199). caret shows no hostname by design, so a
+remote prompt used to look identical to a local one. An explicit
+`CARET_COLOR_DIR` still wins, and an nmt test pins the setting ahead of
+caret's own source, since caret reads it only once.
+
+Patch rather than minor: no new option and no `lib.mkConfigs` schema
+change. A headless profile does lose two packages it had no use for.
+
 ## [v3.2.0](https://github.com/cdprice02/nix-atelier/releases/tag/v3.2.0) -- neovim
 
 2026-10-05
