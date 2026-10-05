@@ -180,7 +180,8 @@ link-skills:
     done
 
     for entry in "$dest"/*; do
-        [ -e "$entry" ] || continue
+        # -L, not -e: a link whose skill was removed upstream is dangling, and
+        # -e is false for exactly the links this loop exists to remove.
         [ -L "$entry" ] || continue
         name="$(basename "$entry")"
         if [ -z "${wanted[$name]:-}" ]; then
