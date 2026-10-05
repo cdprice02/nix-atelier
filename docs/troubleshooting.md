@@ -200,6 +200,35 @@ nix-darwin regenerates all three from your config on the switch that follows. Th
 
 ______________________________________________________________________
 
+## `darwin-rebuild switch` fails at "Homebrew bundle" with "Calling the `--cleanup` switch is disabled"
+
+**Symptom:** activation runs most of the way (`setting up /etc`, `system defaults`, `restarting Dock`, `setting up launchd services`) and then stops at the Homebrew step:
+
+```text
+Homebrew bundle...
+Error: Calling the `--cleanup` switch is disabled! There is no replacement.
+```
+
+Afterwards the machine is in a half-applied state that is easy to misread as a no-op: `/nix/var/nix/profiles/system` has already advanced to the new generation, but `/run/current-system` still points at the old one, and **Home Manager's user activation never ran** -- so none of your packages or dotfile symlinks are in place even though the system-level settings were applied.
+
+**Cause:** Homebrew 7.0 removed the `--cleanup` switch from `brew bundle`. nix-darwin's `homebrew.onActivation.cleanup = "uninstall"` and `"zap"` both compile down to that switch, so any darwin config setting either one aborts on Homebrew 7 or newer. Nothing to do with your config's correctness, and not fixable by moving the nix-darwin pin: Homebrew is an unpinned external that updates itself during activation (`autoUpdate = true`).
+
+**Fix:** this framework now ships `cleanup = "none"` in `system/darwin.nix`, so an up-to-date nix-atelier does not hit it. If you override that option in your own config, set it to `"none"` as well, then rerun the switch:
+
+```sh
+sudo darwin-rebuild switch --flake .#<name>
+```
+
+The rerun builds a fresh generation and completes activation, including the Home Manager step that was skipped.
+
+**What you give up:** Homebrew is no longer declarative. A formula or cask removed from `brews`/`casks` stays installed rather than being uninstalled. The equivalent is a deliberate manual step, since it uninstalls anything not in the Brewfile:
+
+```sh
+brew bundle cleanup --force
+```
+
+______________________________________________________________________
+
 ## SSL errors from curl, AWS CLI, Python requests, or npm behind a TLS-inspecting proxy
 
 **Symptom:** certificate-verification failures from Nix-managed tools specifically (system-packaged tools work fine), typically on a corporate network.
