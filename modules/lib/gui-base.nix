@@ -6,7 +6,15 @@
 # the rest.
 { pkgs }:
 {
-  packages = [ pkgs.obsidian ];
+  # Fira Code lives here rather than in shell-tools: a font only matters
+  # where a terminal renders it, which is a GUI machine. A headless box
+  # (an SSH-only server, a WSL instance whose terminal is Windows-side)
+  # never draws a glyph with it, so it was pure closure weight there.
+  packages = with pkgs; [
+    obsidian
+    fira-code
+    nerd-fonts.fira-code
+  ];
   vscodeEnable = true;
 
   git = {
