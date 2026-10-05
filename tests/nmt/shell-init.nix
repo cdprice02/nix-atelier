@@ -122,4 +122,23 @@
       assertFileNotRegex home-files/.bashrc 'options\[zle\]'
     '';
   };
+
+  caret-ssh-color-precedes-caret = {
+    nmt.description = ''
+      Every shell sets the SSH directory color, and sets it before sourcing
+      caret: caret reads CARET_COLOR_DIR once, at source time, so the other
+      order would silently never take effect.
+    '';
+    nmt.script = ''
+      for f in .zshrc .bashrc .config/fish/config.fish; do
+        file=$TESTED/home-files/$f
+        assertFileContains "home-files/$f" 'SSH_CONNECTION'
+        ssh=$(grep -n 'SSH_CONNECTION' "$file" | head -1 | cut -d: -f1)
+        caret=$(grep -n 'share/caret/caret\.' "$file" | head -1 | cut -d: -f1)
+        if [ -z "$caret" ] || [ "$ssh" -ge "$caret" ]; then
+          fail "$f: SSH color (line $ssh) must precede caret's source (line $caret)"
+        fi
+      done
+    '';
+  };
 }

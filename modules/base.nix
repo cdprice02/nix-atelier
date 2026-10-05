@@ -27,6 +27,31 @@ let
     fi
   '';
 
+  # caret takes its colors from CARET_* at source time and, by design, shows
+  # no hostname. Over SSH the directory turns magenta instead of blue, so a
+  # remote shell is recognisable at a glance on every machine without any
+  # per-machine setting; a local terminal is unchanged. `:=` keeps an
+  # explicit CARET_COLOR_DIR winning. Each must run before caret's own
+  # source, which caret's module adds with mkAfter: these sit at the default
+  # priority, so they do. bash takes an ANSI code, zsh and fish a name.
+  caretSshInit = {
+    bash = ''
+      if [ -n "''${SSH_CONNECTION:-}" ]; then
+        : "''${CARET_COLOR_DIR:=35}"
+      fi
+    '';
+    zsh = ''
+      if [[ -n ''${SSH_CONNECTION:-} ]]; then
+        : "''${CARET_COLOR_DIR:=magenta}"
+      fi
+    '';
+    fish = ''
+      if set -q SSH_CONNECTION; and not set -q CARET_COLOR_DIR
+        set -g CARET_COLOR_DIR magenta
+      end
+    '';
+  };
+
   envLocalInit = ''
     if [ -f "$HOME/.config/secrets/env" ]; then
       source "$HOME/.config/secrets/env"
@@ -195,22 +220,25 @@ in
         # envExtra → .zshenv (sourced first, before .zshrc). Nix must be on
         # PATH before any other module's tool-integration init hooks run.
         envExtra = nixProfileInit;
-        initContent = envLocalInit + ''
-          # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
-          # xterm-style sequences on macOS; Linux terminals send the same sequences.
-          bindkey '^[[1;3D' backward-word
-          bindkey '^[[1;3C' forward-word
-          # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
-          bindkey '^[[H' beginning-of-line
-          bindkey '^[[F' end-of-line
-        '';
+        initContent =
+          envLocalInit
+          + caretSshInit.zsh
+          + ''
+            # Word navigation: Alt/Option+arrow. Alacritty with option_as_alt sends
+            # xterm-style sequences on macOS; Linux terminals send the same sequences.
+            bindkey '^[[1;3D' backward-word
+            bindkey '^[[1;3C' forward-word
+            # Home/End keys (also covers Cmd+Left/Right via Alacritty keybindings.toml)
+            bindkey '^[[H' beginning-of-line
+            bindkey '^[[F' end-of-line
+          '';
       };
 
       bash = {
         enable = true;
         enableCompletion = true;
         profileExtra = nixProfileInit;
-        initExtra = envLocalInit;
+        initExtra = envLocalInit + caretSshInit.bash;
       };
 
       # fish is available alongside zsh/bash; fzf/zoxide fish integration is
@@ -220,7 +248,10 @@ in
       # sourcing / secrets-env parsing in fish's own dialect isn't wired here
       # (fish can't `source` the POSIX ~/.config/secrets/env directly; zsh/
       # bash always initialize first).
-      fish.enable = true;
+      fish = {
+        enable = true;
+        interactiveShellInit = caretSshInit.fish;
+      };
 
       # ── Prompt ────────────────────────────────────────────────────────────────
       # caret: zero-subprocess prompt (directory + git branch + exit-status
