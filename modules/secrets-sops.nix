@@ -15,7 +15,7 @@
 # The age private key at sops.age.keyFile below is NOT provisioned by this
 # module: deliberately manual, not an activation-script fetch from any
 # particular password manager. Two reasons:
-#   1. Chicken-and-egg: sops/age/rbw only land on PATH after a completed
+#   1. Chicken-and-egg: sops/age/bw only land on PATH after a completed
 #      `home-manager switch`, so an activation hook can't lean on them
 #      during the very first switch on a new machine anyway.
 #   2. Portability: this repo is public and meant to be forkable (see
