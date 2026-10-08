@@ -58,20 +58,23 @@ let
   # prebuilt release binary instead; Linux keeps nixpkgs' build. The `oss`
   # build is the GPL-only one nixpkgs also packages. Bump on darwin: version
   # plus both hashes (set one to "" and build; Nix prints the right one).
+  # Held at 2026.8.0: 2026.9.x runs a user-key-id backfill on unlock that
+  # dies on any API error, including bitwarden.com's 400 "User key id is
+  # already set" when another client recorded it first. Retest on bump.
   bitwarden-cli =
     if pkgs.stdenv.isDarwin then
       let
-        version = "2026.9.1";
+        version = "2026.8.0";
         asset =
           if pkgs.stdenv.hostPlatform.isAarch64 then
             {
               name = "bw-oss-macos-arm64";
-              hash = "sha256-tdSt4/clbwIQ6Oy/VWEJ08ZQiaoK9Q0UfoytaqlRqPE=";
+              hash = "sha256-QVkZqT+St5Bms5MPtywPbK4nn1QT7RRf3IPYCch+q2I=";
             }
           else
             {
               name = "bw-oss-macos";
-              hash = "sha256-iZ44vG6XkBsvg9IB6l3quHWMX2HB6CTvd7TUegJQ1Zs=";
+              hash = "sha256-Rrw5/gKOsbOmfMnGDB3E/zpM7s1gkdMvM1oVdR995rA=";
             };
       in
       pkgs.stdenvNoCC.mkDerivation {
