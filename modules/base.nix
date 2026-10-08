@@ -52,6 +52,60 @@ let
     '';
   };
 
+  # The official Bitwarden CLI. nixpkgs builds it from source, and on
+  # x86_64-darwin that build fails (the native lmdb module won't configure
+  # under the 25.05 toolchain), so on macOS this wraps Bitwarden's own
+  # prebuilt release binary instead; Linux keeps nixpkgs' build. The `oss`
+  # build is the GPL-only one nixpkgs also packages. Bump on darwin: version
+  # plus both hashes (set one to "" and build; Nix prints the right one).
+  # Held at 2026.8.0: 2026.9.x runs a user-key-id backfill on unlock that
+  # dies on any API error, including bitwarden.com's 400 "User key id is
+  # already set" when another client recorded it first. Retest on bump.
+  bitwarden-cli =
+    if pkgs.stdenv.isDarwin then
+      let
+        version = "2026.8.0";
+        asset =
+          if pkgs.stdenv.hostPlatform.isAarch64 then
+            {
+              name = "bw-oss-macos-arm64";
+              hash = "sha256-QVkZqT+St5Bms5MPtywPbK4nn1QT7RRf3IPYCch+q2I=";
+            }
+          else
+            {
+              name = "bw-oss-macos";
+              hash = "sha256-Rrw5/gKOsbOmfMnGDB3E/zpM7s1gkdMvM1oVdR995rA=";
+            };
+      in
+      pkgs.stdenvNoCC.mkDerivation {
+        pname = "bitwarden-cli";
+        inherit version;
+        src = pkgs.fetchzip {
+          url = "https://github.com/bitwarden/clients/releases/download/cli-v${version}/${asset.name}-${version}.zip";
+          inherit (asset) hash;
+          stripRoot = false;
+        };
+        # A single-executable bundle: stripping or patching it breaks the
+        # payload appended to the binary.
+        dontFixup = true;
+        installPhase = "install -Dm755 bw $out/bin/bw";
+        meta = {
+          description = "Official Bitwarden CLI (prebuilt release binary)";
+          homepage = "https://github.com/bitwarden/clients";
+          license = lib.licenses.gpl3Only;
+          sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
+          # Spelled out: the rolling input's lib.platforms.darwin no longer
+          # lists x86_64-darwin, which would refuse this package on Intel.
+          platforms = [
+            "x86_64-darwin"
+            "aarch64-darwin"
+          ];
+          mainProgram = "bw";
+        };
+      }
+    else
+      pkgs.bitwarden-cli;
+
   envLocalInit = ''
     if [ -f "$HOME/.config/secrets/env" ]; then
       source "$HOME/.config/secrets/env"
@@ -116,16 +170,12 @@ in
       # Secrets: sops/age for the opt-in sops-nix secrets management
       # (modules/secrets-sops.nix; the age private key itself is placed
       # manually, not retrieved automatically: see that module's own
-      # comment for why). rbw is independent of sops: a general password-
-      # manager CLI, not part of the sops key-retrieval path.
-      # rbw = maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked
-      # broken in the current nixpkgs pin); its agent caches unlock for scripting.
-      # pinentry-tty lets rbw prompt for the master password from the terminal
-      # (cross-platform; macOS has no pinentry by default).
+      # comment for why). bitwarden-cli is independent of sops: a general
+      # password-manager CLI, not part of the sops key-retrieval path. It has
+      # no agent: `export BW_SESSION="$(bw unlock --raw)"` per shell.
       sops
       age
-      rbw
-      pinentry-tty
+      bitwarden-cli
     ];
 
     activation = {
