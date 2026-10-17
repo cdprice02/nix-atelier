@@ -1,6 +1,5 @@
 # Neovim, with its config as the config/nvim submodule (cdprice02/nvim-config)
-# symlinked to ~/.config/nvim -- the same live-editable pattern as claude.nix
-# and copilot.nix. Plugins are the config's own business (lazy.nvim, pinned
+# symlinked to ~/.config/nvim -- the same live-editable pattern as claude.nix. Plugins are the config's own business (lazy.nvim, pinned
 # by its committed lazy-lock.json); everything a plugin shells out to
 # (language servers, formatters, tree-sitter, a C compiler) comes from Nix
 # here instead, so there is no Mason.

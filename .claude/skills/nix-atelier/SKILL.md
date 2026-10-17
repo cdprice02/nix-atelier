@@ -99,12 +99,12 @@ modules/
   features.nix         feature name -> module path registry; full tier = every key in it
   tool-catalog.nix     package -> description (see drift check)
   secrets-sops.nix      always imported, inert unless atelier.sops.file is set
-  features/            shell-tools, lang-{rust,node,python}, cloud, claude, copilot, k8s, tmux, neovim, git-tools, nix-tools, data, qmk
+  features/            shell-tools, lang-{rust,node,python}, cloud, claude, k8s, tmux, neovim, git-tools, nix-tools, data, qmk
   gui-{linux,darwin}.nix
 system/
   darwin.nix            macOS settings + Homebrew
   nixos.nix             NixOS settings; used by lib/mkConfigs.nix's nixos kind
-config/                 git submodules: claude, copilot, nvim, git/gitalias
+config/                 git submodules: claude, nvim, skills, git/gitalias
 ```
 
 `mkProfile { tier, withGui, system, userData, featuresOverride }` composes:
@@ -113,10 +113,10 @@ config/                 git submodules: claude, copilot, nvim, git/gitalias
 `tier` is `minimal` or `full`; there is no third axis. Machine-specific,
 non-public config (identity overrides, private SSH stubs) is not a tracked
 file in this repo: it's an absolute path in a `mkConfigs` call's
-`features.extraModulePaths`, pointing at a private modules repo. `claude` and
-`copilot` (each owning one agent's installer/symlink) are ordinary features
-in `full`, gated on nothing; the generic `nativeInstallers`/`configRepos`
-mechanism they used to own directly moved to `modules/machine.nix`.
+`features.extraModulePaths`, pointing at a private modules repo. `claude` (the
+agent's installer and symlink) is an ordinary feature in `full`, gated on
+nothing; the generic `nativeInstallers`/`configRepos` mechanism lives in
+`modules/machine.nix`.
 
 ## Consuming this framework
 
