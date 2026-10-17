@@ -112,10 +112,22 @@ in
       default = "${config.home.homeDirectory}/.nix-atelier";
       description = "Absolute path to a local checkout of this framework's own repo, if one exists. Backs the claude/nvim symlink targets, the gitalias git include, and the submoduleOverrides activation script -- all three need real file content from config/, not just the flake input resolved into the Nix store. A pure flake-input-only consumer with no local checkout should drop claude/neovim/git-tools via features.exclude instead of pointing this at a path that doesn't exist.";
     };
+
+    # Exported from Nix rather than settings.json's env block, which cannot
+    # expand $HOME and differs per machine anyway.
+    obsidianVault = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = "${config.home.homeDirectory}/repos/obsidian";
+      description = "Absolute path to the Obsidian vault, exported as OBSIDIAN_VAULT for Claude Code's vault skill. null leaves it unset.";
+    };
   };
 
   config = {
     home.activation = nativeInstallerMods // configRepoMods;
+
+    home.sessionVariables = lib.mkIf (config.atelier.obsidianVault != null) {
+      OBSIDIAN_VAULT = config.atelier.obsidianVault;
+    };
 
     programs.zsh.shellAliases = lib.mkIf hasKiroCli { kiro-cli = "kiro-cli --v3"; };
     # Kept in sync with the zsh line above deliberately rather than factored

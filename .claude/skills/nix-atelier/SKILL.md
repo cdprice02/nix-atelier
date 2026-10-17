@@ -95,7 +95,7 @@ templates/default/      `nix flake init -t` scaffold: a minimal consumer flake.n
 modules/
   base.nix             always on: shell, git, ssh, submodule overrides, noreply git email
   env.nix              always on: PATH / writable-prefix policy
-  machine.nix           always on: atelier.* options (aws, nativeInstallers, configRepos, sops, submodules)
+  machine.nix           always on: atelier.* options (aws, nativeInstallers, configRepos, sops, submodules, obsidianVault)
   features.nix         feature name -> module path registry; full tier = every key in it
   tool-catalog.nix     package -> description (see drift check)
   secrets-sops.nix      always imported, inert unless atelier.sops.file is set
