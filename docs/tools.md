@@ -176,8 +176,11 @@ Large collection of git aliases (e.g. `git la` for log, `git undo`). Managed as 
 
 ## Rust
 
-### rust-overlay (nightly toolchain)
-Single nightly Rust toolchain via oxalica/rust-overlay: `rustc`, `cargo`, `clippy`, `rustfmt`, `rust-analyzer`, and `rust-src` all from the same build, floating to the newest nightly date with all of those extensions available. [github.com/oxalica/rust-overlay](https://github.com/oxalica/rust-overlay)
+### rustup
+Rust toolchain manager: the channels in `atelier.rust.toolchains` (stable by default) are installed at activation when missing, each with `clippy`, `rustfmt`, `rust-src`, and `rust-analyzer`. Its proxies honor a project's `rust-toolchain.toml`; `rustup update` moves the channels forward. [rust-lang.github.io/rustup](https://rust-lang.github.io/rustup/)
+
+### rust-analyzer
+Language server, always the `atelier.rust.defaultToolchain` build regardless of what a project pins, so a pin without the rust-analyzer component still gets an editor. Standard library sources come from the project's own toolchain. [rust-analyzer.github.io](https://rust-analyzer.github.io)
 
 ### cargo-edit
 Adds `cargo add`, `cargo rm`, `cargo upgrade` for managing dependencies. [github.com/killercup/cargo-edit](https://github.com/killercup/cargo-edit)

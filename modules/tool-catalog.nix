@@ -387,13 +387,18 @@
 
     # ── Rust ───────────────────────────────────────────────────────────────
     {
-      key = "rust-overlay (nightly toolchain)";
-      matches = [
-        "rust-minimal"
-      ];
+      key = "rustup";
+      matches = [ "rustup" ];
       category = "Rust";
-      description = "Single nightly Rust toolchain via oxalica/rust-overlay: `rustc`, `cargo`, `clippy`, `rustfmt`, `rust-analyzer`, and `rust-src` all from the same build, floating to the newest nightly date with all of those extensions available.";
-      link = "[github.com/oxalica/rust-overlay](https://github.com/oxalica/rust-overlay)";
+      description = "Rust toolchain manager: the channels in `atelier.rust.toolchains` (stable by default) are installed at activation when missing, each with `clippy`, `rustfmt`, `rust-src`, and `rust-analyzer`. Its proxies honor a project's `rust-toolchain.toml`; `rustup update` moves the channels forward.";
+      link = "[rust-lang.github.io/rustup](https://rust-lang.github.io/rustup/)";
+    }
+    {
+      key = "rust-analyzer";
+      matches = [ "rust-analyzer" ];
+      category = "Rust";
+      description = "Language server, always the `atelier.rust.defaultToolchain` build regardless of what a project pins, so a pin without the rust-analyzer component still gets an editor. Standard library sources come from the project's own toolchain.";
+      link = "[rust-analyzer.github.io](https://rust-analyzer.github.io)";
     }
     {
       key = "cargo-edit";

@@ -10,7 +10,6 @@
   home-manager-darwin,
   nix-darwin,
   nix-darwin-x86,
-  rust-overlay,
 }:
 let
   inherit (nixpkgs) lib;
@@ -42,14 +41,12 @@ let
     import nixpkgs {
       inherit system;
       config = pkgsConfig;
-      overlays = [ rust-overlay.overlays.default ];
     };
   mkPkgsDarwin =
     system:
     import nixpkgs-darwin {
       inherit system;
       config = pkgsConfig;
-      overlays = [ rust-overlay.overlays.default ];
     };
   # Right package set for any system: pinned nixpkgs-darwin for x86_64-darwin,
   # rolling nixpkgs for everything else (Linux + aarch64-darwin).

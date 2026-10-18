@@ -25,6 +25,14 @@
     configRepos = {
       "repos/private-notes" = "git@example.com:you/private-notes.git";
     };
+    rust = {
+      toolchains = [
+        "stable"
+        "beta"
+        "nightly"
+      ];
+      defaultToolchain = "nightly";
+    };
     submodules = {
       claude = "git@example.com:you/private-claude.git";
     };

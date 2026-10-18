@@ -75,4 +75,16 @@ in
       assertFileContains activate 'checkout -b work --track private/main'
     '';
   };
+
+  rustup-toolchains-follow-declared-channels = {
+    nmt.description = ''
+      atelier.rust (machine.nix) as a consumer sets it: every declared
+      channel is installed when missing, and `rustup default` follows
+      defaultToolchain rather than stable.
+    '';
+    nmt.script = ''
+      assertFileContains activate 'for _tc in "stable" "beta" "nightly"; do'
+      assertFileContains activate '_rustup default "nightly" >/dev/null'
+    '';
+  };
 }
