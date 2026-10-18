@@ -59,14 +59,18 @@
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
     # Always imported, inert unless atelier.sops.file is set: see
-    # modules/secrets-sops.nix. Follows nixpkgs (not nixpkgs-darwin).
-    # Pinned to the last commit that builds sops-install-secrets with
-    # buildGo125Module: later ones use the default buildGoModule and need
-    # go 1.26, which x86_64-darwin's 25.05 pin (go 1.24) can't provide.
-    # Lift the pin when x86_64-darwin moves off 25.05.
+    # modules/secrets-sops.nix. Two inputs, picked per system like the other
+    # release pairs: current sops-nix needs go 1.26, which x86_64-darwin's
+    # 25.05 pin (go 1.24) lacks, while rolling nixpkgs has removed the
+    # buildGo125Module that the last compatible commit uses. Drop
+    # sops-nix-darwin when x86_64-darwin moves off 25.05.
     sops-nix = {
-      url = "github:Mic92/sops-nix/13616fff713a9f94055c66f15687ebdc17a335df";
+      url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    sops-nix-darwin = {
+      url = "github:Mic92/sops-nix/13616fff713a9f94055c66f15687ebdc17a335df";
+      inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
     # Follows nixpkgs-darwin (not rolling nixpkgs), deliberately, on every
     # system including the three that aren't x86_64-darwin. The instinct is
@@ -111,6 +115,7 @@
       home-manager-darwin,
       caret,
       sops-nix,
+      sops-nix-darwin,
       treefmt-nix,
       nmt,
       ...
@@ -244,7 +249,12 @@
       mkConfigsLib = import ./lib/mkConfigs.nix {
         inherit (nixpkgs) lib;
         systems = systemsLib;
-        sopsNixModule = sops-nix.homeManagerModules.sops;
+        sopsNixModuleFor =
+          system:
+          if systemsLib.isX86Darwin system then
+            sops-nix-darwin.homeManagerModules.sops
+          else
+            sops-nix.homeManagerModules.sops;
         caretModule = caret.homeManagerModules.default;
       };
       inherit (mkConfigsLib) mkProfile tiers;
@@ -791,6 +801,22 @@
             secrets = [ "GITHUB_PERSONAL_ACCESS_TOKEN" ];
           };
           secretsSopsOffWithSecretsDeclaredOk = secretsSopsOffWithSecretsDeclared.secrets == { };
+
+          # The checks above only read option values, which never force the
+          # sops-install-secrets derivation. Forcing its drvPath catches a
+          # sops-nix input whose Go builder this system's nixpkgs lacks (an
+          # eval error). Only x86_64-darwin also builds it: a go.mod that
+          # outruns its go (a build error) needs sops-nix pinned against an
+          # older nixpkgs, which only sops-nix-darwin is, and a Go build
+          # under aarch64-linux's emulation overruns the CI job timeout.
+          sopsInstallSecrets =
+            (mkConfigsLib.mkConfigs {
+              identity = mkConfigsTestIdentity;
+              configs.home.sops-package-check = {
+                inherit system;
+                extraConfig.atelier.sops.file = secretsSopsFixtureFile;
+              };
+            }).homeConfigurations.sops-package-check.config.sops.package;
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -901,6 +927,15 @@
                 to (on=${builtins.toJSON secretsSopsOnOk}
                 off=${builtins.toJSON secretsSopsOffOk}
                 offWithSecretsDeclared=${builtins.toJSON secretsSopsOffWithSecretsDeclaredOk}).
+              '';
+
+          sops-install-secrets =
+            if systemsLib.isX86Darwin system then
+              sopsInstallSecrets
+            else
+              pkgs.runCommand "check-sops-install-secrets-eval" { } ''
+                # ${builtins.unsafeDiscardStringContext sopsInstallSecrets.drvPath}
+                touch $out
               '';
 
           formatting = treefmtEval.${system}.config.build.check self;
