@@ -59,11 +59,13 @@
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
     # Always imported, inert unless atelier.sops.file is set: see
-    # modules/secrets-sops.nix. Follows nixpkgs (not nixpkgs-darwin): unlike
-    # caret, sops-nix has no x86_64-darwin-specific build concern, so it
-    # doesn't need the same override.
+    # modules/secrets-sops.nix. Follows nixpkgs (not nixpkgs-darwin).
+    # Pinned to the last commit that builds sops-install-secrets with
+    # buildGo125Module: later ones use the default buildGoModule and need
+    # go 1.26, which x86_64-darwin's 25.05 pin (go 1.24) can't provide.
+    # Lift the pin when x86_64-darwin moves off 25.05.
     sops-nix = {
-      url = "github:Mic92/sops-nix";
+      url = "github:Mic92/sops-nix/13616fff713a9f94055c66f15687ebdc17a335df";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # Follows nixpkgs-darwin (not rolling nixpkgs), deliberately, on every
