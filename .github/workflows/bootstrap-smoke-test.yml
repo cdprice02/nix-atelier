@@ -189,10 +189,9 @@ jobs:
   # no corresponding real macOS account for system/darwin.nix's
   # users.users.${user.username} to manage. Runs natively on macos-14's own
   # architecture (aarch64-darwin, Apple Silicon): the x86_64-darwin pair
-  # only exists for this repo's own Intel dogfooding machine, and a real
-  # activation exercised through Rosetta emulation would prove less about a
-  # typical user's Mac than a native run does -- check.yml's build-darwin
-  # matrix already covers x86_64-darwin's build correctness via Rosetta.
+  # only exists for this repo's own Intel dogfooding machine, and is frozen
+  # best-effort (docs/adr/0002); check.yml's build-darwin matrix covers its
+  # build correctness on a native Intel runner.
   darwin-switch-smoke-test:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: macos-14
