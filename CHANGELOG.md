@@ -11,6 +11,20 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.0.2](https://github.com/cdprice02/nix-atelier/releases/tag/v4.0.2) -- sops-pair
+
+2026-10-17
+
+v4.0.1's single sops-nix pin fixed x86_64-darwin but broke every other
+system with `atelier.sops.file` set: that commit builds with
+`buildGo125Module`, which rolling nixpkgs has removed. sops-nix is now a
+release pair like nixpkgs and home-manager: x86_64-darwin gets the pinned
+`sops-nix-darwin` (following `nixpkgs-darwin`), every other system the
+rolling `sops-nix`. A new `sops-install-secrets` check builds the package
+on each system, so either mismatch now fails `flake-check`.
+
+Patch: no option or schema change.
+
 ## [v4.0.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.0.1) -- sops
 
 2026-10-17
