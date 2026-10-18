@@ -180,15 +180,23 @@ in
 
     activation = {
       # entryAfter writeBoundary: ~/.ssh must exist (written by HM) before ssh-keygen runs.
+      # A failed ssh-keygen warns rather than aborting the switch: the key is
+      # a convenience nothing later in activation depends on, and Nix's
+      # ssh-keygen can't resolve users that come from the host's NSS (LDAP,
+      # sssd), since Nix's glibc never loads the host's NSS modules.
       sshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ ! -f "$HOME/.ssh/${user.sshKey}" ]; then
           $DRY_RUN_CMD mkdir -p "$HOME/.ssh"
           $DRY_RUN_CMD chmod 700 "$HOME/.ssh"
-          $DRY_RUN_CMD ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -C "${user.email}" \
-            -f "$HOME/.ssh/${user.sshKey}" -N ""
-          echo "SSH key generated: ~/.ssh/${user.sshKey}"
-          echo "Add to GitHub: https://github.com/settings/keys"
-          cat "$HOME/.ssh/${user.sshKey}.pub"
+          if $DRY_RUN_CMD ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -C "${user.email}" \
+            -f "$HOME/.ssh/${user.sshKey}" -N ""; then
+            echo "SSH key generated: ~/.ssh/${user.sshKey}"
+            echo "Add to GitHub: https://github.com/settings/keys"
+            cat "$HOME/.ssh/${user.sshKey}.pub"
+          else
+            echo "warning: could not generate ~/.ssh/${user.sshKey} (ssh-keygen failed);" >&2
+            echo "  create it yourself or symlink an existing key there, then re-run" >&2
+          fi
         fi
       '';
 

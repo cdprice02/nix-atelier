@@ -29,6 +29,18 @@
     '';
   };
 
+  sshkey-activation-failure-is-non-fatal = {
+    nmt.description = ''
+      ssh-keygen runs as an `if` condition, so under activation's `set -e` a
+      failure (Nix's ssh-keygen can't resolve an LDAP/sssd user) reaches the
+      warning branch instead of aborting the whole switch.
+    '';
+    nmt.script = ''
+      assertFileRegex activate '^ *if .*ssh-keygen -t ed25519'
+      assertFileContains activate 'warning: could not generate ~/.ssh/you (ssh-keygen failed);'
+    '';
+  };
+
   native-installer-renders-both-root-and-non-root-branches = {
     nmt.description = ''
       mkNativeInstaller's `sudo -u` root-elevation branch (darwin-rebuild
