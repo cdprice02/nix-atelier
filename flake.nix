@@ -801,6 +801,20 @@
             secrets = [ "GITHUB_PERSONAL_ACCESS_TOKEN" ];
           };
           secretsSopsOffWithSecretsDeclaredOk = secretsSopsOffWithSecretsDeclared.secrets == { };
+
+          # The checks above only read option values, which never force the
+          # sops-install-secrets derivation. Building it per system is what
+          # catches a sops-nix input whose Go builder this system's nixpkgs
+          # lacks (an eval error) or whose go.mod outruns its go (a build
+          # error).
+          sopsInstallSecrets =
+            (mkConfigsLib.mkConfigs {
+              identity = mkConfigsTestIdentity;
+              configs.home.sops-package-check = {
+                inherit system;
+                extraConfig.atelier.sops.file = secretsSopsFixtureFile;
+              };
+            }).homeConfigurations.sops-package-check.config.sops.package;
         in
         (nixpkgs.lib.mapAttrs' (name: drv: {
           name = "nmt-${name}";
@@ -912,6 +926,8 @@
                 off=${builtins.toJSON secretsSopsOffOk}
                 offWithSecretsDeclared=${builtins.toJSON secretsSopsOffWithSecretsDeclaredOk}).
               '';
+
+          sops-install-secrets = sopsInstallSecrets;
 
           formatting = treefmtEval.${system}.config.build.check self;
         }
