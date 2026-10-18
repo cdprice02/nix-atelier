@@ -11,6 +11,46 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.0.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.0.0) -- toolchains
+
+2026-10-17
+
+Rust toolchains move from rust-overlay into rustup (#205). `lang-rust` now
+installs rustup, whose proxies honor a project's `rust-toolchain.toml` and
+keep several channels side by side; a floating overlay nightly did neither.
+Two new options choose what activation installs: `atelier.rust.toolchains`
+(default `[ "stable" ]`) and `atelier.rust.defaultToolchain` (default
+`"stable"`). A missing toolchain is installed with clippy, rustfmt, rust-src
+and rust-analyzer; an installed one is never updated on switch
+(`rustup update` does that), and a failed download warns instead of
+aborting. `rust-analyzer` is a wrapper that always runs the default
+toolchain's analyzer, so a project whose pin omits the component still gets
+one. `docs/adr/0001-rustup-manages-rust-toolchains.md` records the
+trade-off: toolchains now live in `~/.rustup`, outside the store.
+
+The official Bitwarden CLI, `bw`, replaces `rbw` in `base` (#203), after
+rbw stopped logging in to bitwarden.com. On darwin it wraps Bitwarden's
+prebuilt `bw-oss` binary, held at 2026.8.0 because 2026.9.x crashes on
+unlock against bitwarden.com; Linux keeps nixpkgs' build. `bw` has no
+agent: `export BW_SESSION="$(bw unlock --raw)"` per shell, and
+`rbw get <item>` becomes `bw get password <item>`.
+
+The `copilot` feature and its `config/copilot` submodule are gone (#204). A
+new `atelier.obsidianVault` option (default `~/repos/obsidian`, `null`
+unsets) exports `OBSIDIAN_VAULT`, which moves out of Claude Code's
+`settings.json`, where `$HOME` never expanded. The `claude` and `skills`
+submodules move forward (em-dash and commit-message hooks, tiered skill
+visibility, the commit and vault skills in the fork), and `just sync` now
+relinks skills afterwards.
+
+Major, for three breaking changes: a config listing `copilot` in
+`features.extra` fails evaluation (`features.exclude` entries are
+harmless, but dead); `pkgs.rust-bin` is no longer in the package set; and
+the default Rust toolchain is stable, not nightly. Set
+`atelier.rust.defaultToolchain = "nightly"` (and list it in
+`atelier.rust.toolchains`) to keep the old default. Also: `flake.lock`
+moves forward (#193).
+
 ## [v3.2.1](https://github.com/cdprice02/nix-atelier/releases/tag/v3.2.1) -- remote
 
 2026-10-05
