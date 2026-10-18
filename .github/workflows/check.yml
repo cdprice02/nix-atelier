@@ -72,9 +72,7 @@ jobs:
           LINUX=$(nix shell nixpkgs#just -c just _list-linux-profiles)
           echo "linux-x86_64=$(echo "$LINUX" | jq -c '[.[] | select(endswith("-aarch64") | not)]')" >> "$GITHUB_OUTPUT"
           echo "linux-aarch64=$(echo "$LINUX" | jq -c '[.[] | select(endswith("-aarch64"))]')" >> "$GITHUB_OUTPUT"
-          DARWIN=$(nix shell nixpkgs#just -c just _list-darwin-profiles | jq -c '[.[] | if endswith("-aarch64")
-            then {config: ., os: "macos-14", arch: "aarch64", nixpkgs: "nixpkgs"}
-            else {config: ., os: "macos-15-intel", arch: "x86_64", nixpkgs: "nixpkgs-darwin"} end]')
+          DARWIN=$(nix shell nixpkgs#just -c just _list-darwin-profiles | jq -c '[.[] | {config: .}]')
           echo "darwin=$DARWIN" >> "$GITHUB_OUTPUT"
           NIXOS=$(nix shell nixpkgs#just -c just _list-nixos-profiles)
           echo "nixos-x86_64=$(echo "$NIXOS" | jq -c '[.[] | select(endswith("-aarch64") | not)]')" >> "$GITHUB_OUTPUT"
@@ -94,13 +92,16 @@ jobs:
   # today, but that's exactly the kind of gap that reopens silently later --
   # cheap enough to just always check).
   #
-  # Every entry runs on a runner of its own system, no QEMU or Rosetta:
-  # ubuntu-24.04-arm for aarch64-linux, macos-15-intel (GitHub's last Intel
-  # image) for x86_64-darwin. `--system` is still passed explicitly, so an
-  # entry can never silently re-check some other system.
+  # `just flake-check` defaults to `--system builtins.currentSystem`, which is
+  # right for local use but wrong here: the x86_64-darwin entry runs on an
+  # aarch64 runner (Rosetta only adds *build* capability, it doesn't change
+  # what `currentSystem` reports), so it needs `--system` passed explicitly
+  # rather than silently re-checking the runner's native system. Passed for
+  # every entry, for uniformity.
   #
-  # `just` comes from the flake's own nixpkgs-darwin pin on x86_64-darwin:
-  # the registry's nixpkgs-unstable no longer supports that system.
+  # aarch64-linux runs on a native arm64 runner (see build-linux-aarch64);
+  # x86_64-darwin stays on Rosetta, which measured faster than GitHub's
+  # macos-15-intel runner. Rosetta setup mirrors build-darwin below.
   flake-check:
     name: flake-check (${{ matrix.system }})
     runs-on: ${{ matrix.os }}
@@ -111,21 +112,27 @@ jobs:
         include:
           - system: x86_64-linux
             os: ubuntu-latest
-            nixpkgs: nixpkgs
+            extraPlatforms: ""
           - system: aarch64-linux
             os: ubuntu-24.04-arm
-            nixpkgs: nixpkgs
+            extraPlatforms: ""
           - system: aarch64-darwin
             os: macos-14
-            nixpkgs: nixpkgs
+            extraPlatforms: ""
           - system: x86_64-darwin
-            os: macos-15-intel
-            nixpkgs: nixpkgs-darwin
+            os: macos-14
+            extraPlatforms: "x86_64-darwin"
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: cachix/install-nix-action@v31.11.1
+      - if: matrix.extraPlatforms != ''
+        uses: cachix/install-nix-action@v31.11.1
+        with:
+          extra_nix_config: |
+            extra-platforms = ${{ matrix.extraPlatforms }}
+      - if: matrix.extraPlatforms == ''
+        uses: cachix/install-nix-action@v31.11.1
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-checks-${{ matrix.system }}-${{ hashFiles('flake.lock', '**/*.nix') }}
@@ -147,7 +154,7 @@ jobs:
       # need a per-system derivation (the nmt builds), which is a bigger
       # change than this job's own cost justifies at four cheap systems.
       # Accepted, not fixed.
-      - run: nix shell --inputs-from . ${{ matrix.nixpkgs }}#just -c just flake-check ${{ matrix.system }}
+      - run: nix shell nixpkgs#just -c just flake-check ${{ matrix.system }}
 
   # ── Fast: eval every profile's derivation path without building ──────────────
   # Runs on every push/PR: catches type errors, missing options, and
@@ -236,6 +243,8 @@ jobs:
   # Native arm64 runners (free for public repos), not QEMU: emulation made
   # these the slowest jobs in the workflow, and a package Hydra hasn't cached
   # for aarch64 (duckdb once) couldn't compile within any usable timeout.
+  # The 60-minute limit leaves room for one such from-source build natively;
+  # the cache saved afterwards makes the following runs short again.
   # Gated to push-to-main + manual dispatch, same as build-linux-x86_64: every
   # PR still gets full eval coverage (eval-all) and assertion-level content
   # coverage for this arch (flake-check's aarch64-linux nmt entry).
@@ -243,7 +252,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -303,7 +312,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -325,10 +334,9 @@ jobs:
       - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
 
   # ── Full system build for every Darwin profile ────────────────────────────────
-  # Each config builds on a runner of its own arch, from get-profiles:
-  # macos-14 for aarch64-darwin, macos-15-intel for x86_64-darwin. That Intel
-  # image is GitHub's last, supported until about August 2027, which outlives
-  # x86_64-darwin's planned removal (docs/adr/0002).
+  # All builds run on macos-14 (Apple Silicon). x86_64-darwin configs are built
+  # via Rosetta 2 using extra-platforms = x86_64-darwin, same pattern as QEMU
+  # for aarch64-linux. macos-13 (Intel) runners are deprecated and unavailable.
   # Gated to push-to-main + manual dispatch, same reasoning as
   # build-linux-aarch64 above: real build coverage stays at the merge gate,
   # while flake-check's darwin nmt entries (both arches) give every PR
@@ -337,7 +345,7 @@ jobs:
   build-darwin:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-14
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -368,18 +376,19 @@ jobs:
         with:
           submodules: recursive
       - uses: cachix/install-nix-action@v31.11.1
+        with:
+          extra_nix_config: |
+            extra-platforms = x86_64-darwin
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
-          # Arch-scoped for the same reason as the Linux build keys: the two
-          # configs now build on different runners in parallel.
-          primary-key: nix-macos-build-${{ matrix.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
-          restore-prefixes-first-match: nix-macos-build-${{ matrix.arch }}-
+          primary-key: nix-macos-build-${{ hashFiles('flake.lock', '**/*.nix') }}
+          restore-prefixes-first-match: nix-macos-build-
           gc-max-store-size-macos: 4294967296
           # The single biggest contributor to the cache quota pressure:
           # two full generations of this cache alone measured ~4.7 GB before
           # this. Same generation-pruning reasoning as the other caches here.
           purge: true
-          purge-prefixes: nix-macos-build-${{ matrix.arch }}-
+          purge-prefixes: nix-macos-build-
           purge-created: 0
           purge-primary-key: never
-      - run: nix shell --inputs-from . ${{ matrix.nixpkgs }}#just -c just _build-darwin ${{ matrix.config }}
+      - run: nix shell nixpkgs#just -c just _build-darwin ${{ matrix.config }}
