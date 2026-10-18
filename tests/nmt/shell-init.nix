@@ -41,6 +41,26 @@
     '';
   };
 
+  nix-profile-bins-added-directly = {
+    nmt.description = ''
+      nixProfileInit adds the profile bins itself rather than trusting the
+      vendor scripts, which return early in a nested login shell. .bashrc
+      carries the same prepend ahead of its interactive-only guard, so
+      .bashrc sourced before .profile (SUSE) still finds Nix.
+    '';
+    nmt.script = ''
+      for f in .zshenv .profile .bashrc; do
+        assertFileContains home-files/$f 'for _p in /nix/var/nix/profiles/default/bin'
+        assertFileContains home-files/$f '*) PATH="$_p:$PATH" ;;'
+      done
+      prepend=$(grep -n 'for _p in /nix/var/nix/profiles/default/bin' "$TESTED/home-files/.bashrc" | head -1 | cut -d: -f1)
+      guard=$(grep -n 'interactive shells' "$TESTED/home-files/.bashrc" | head -1 | cut -d: -f1)
+      if [ -z "$prepend" ] || [ -z "$guard" ] || [ "$prepend" -ge "$guard" ]; then
+        fail ".bashrc: PATH prepend (line $prepend) must precede the interactive guard (line $guard)"
+      fi
+    '';
+  };
+
   zsh-compinit-cache-fires = {
     nmt.description = ''
       Regression guard: this cache was once committed in a state where it

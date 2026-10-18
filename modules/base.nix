@@ -13,6 +13,25 @@ let
   # 25.05, which predates those renames. See modules/lib/hm-compat.nix.
   compat = import ./lib/hm-compat.nix { inherit lib options; };
 
+  # The vendor scripts can't be relied on to put Nix on PATH: nix-daemon.sh
+  # returns early on the exported __ETC_PROFILE_NIX_SOURCED, so a nested
+  # login shell (a tmux pane) under an /etc/profile that assigns PATH
+  # (Debian) gets nothing back, and after a switch the user profile need not
+  # contain Nix's own etc/profile.d at all. So the profile bins are added
+  # directly, idempotently, with the user profile ahead of the default one.
+  nixProfilePath = ''
+    for _p in /nix/var/nix/profiles/default/bin "${config.home.profileDirectory}/bin"; do
+      if [ -d "$_p" ]; then
+        case ":$PATH:" in
+        *":$_p:"*) ;;
+        *) PATH="$_p:$PATH" ;;
+        esac
+      fi
+    done
+    unset _p
+    export PATH
+  '';
+
   # Both paths are tried: single-user Nix (common on WSL2/macOS standalone) sources
   # ~/.nix-profile/...; multi-user Nix daemon sources /nix/var/nix/profiles/...
   # Only the installed variant will exist; the other source is a no-op.
@@ -25,7 +44,8 @@ let
     if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
       . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
     fi
-  '';
+  ''
+  + nixProfilePath;
 
   # caret takes its colors from CARET_* at source time and, by design, shows
   # no hostname. Over SSH the directory turns magenta instead of blue, so a
@@ -180,15 +200,23 @@ in
 
     activation = {
       # entryAfter writeBoundary: ~/.ssh must exist (written by HM) before ssh-keygen runs.
+      # A failed ssh-keygen warns rather than aborting the switch: the key is
+      # a convenience nothing later in activation depends on, and Nix's
+      # ssh-keygen can't resolve users that come from the host's NSS (LDAP,
+      # sssd), since Nix's glibc never loads the host's NSS modules.
       sshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ ! -f "$HOME/.ssh/${user.sshKey}" ]; then
           $DRY_RUN_CMD mkdir -p "$HOME/.ssh"
           $DRY_RUN_CMD chmod 700 "$HOME/.ssh"
-          $DRY_RUN_CMD ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -C "${user.email}" \
-            -f "$HOME/.ssh/${user.sshKey}" -N ""
-          echo "SSH key generated: ~/.ssh/${user.sshKey}"
-          echo "Add to GitHub: https://github.com/settings/keys"
-          cat "$HOME/.ssh/${user.sshKey}.pub"
+          if $DRY_RUN_CMD ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -C "${user.email}" \
+            -f "$HOME/.ssh/${user.sshKey}" -N ""; then
+            echo "SSH key generated: ~/.ssh/${user.sshKey}"
+            echo "Add to GitHub: https://github.com/settings/keys"
+            cat "$HOME/.ssh/${user.sshKey}.pub"
+          else
+            echo "warning: could not generate ~/.ssh/${user.sshKey} (ssh-keygen failed);" >&2
+            echo "  create it yourself or symlink an existing key there, then re-run" >&2
+          fi
         fi
       '';
 
@@ -288,6 +316,10 @@ in
         enable = true;
         enableCompletion = true;
         profileExtra = nixProfileInit;
+        # Some distros' /etc/profile (SUSE) source ~/.bashrc before bash reads
+        # ~/.bash_profile, so .bashrc's first pass would otherwise run before
+        # .profile has put Nix on PATH.
+        bashrcExtra = lib.mkBefore nixProfilePath;
         initExtra = envLocalInit + caretSshInit.bash;
       };
 

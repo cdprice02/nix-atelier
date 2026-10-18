@@ -650,6 +650,35 @@
           perConfigFeaturesWithoutTmuxOk =
             !perConfigFeaturesConfigs.homeConfigurations.without-tmux.config.programs.tmux.enable;
 
+          # Per-config username: the override reaches home.username and
+          # homeDirectory without the consumer fighting base.nix's mkForce,
+          # a sibling config keeps identity.username, and the darwin kind
+          # keys its Home Manager user and system user by the override too.
+          perConfigUsernameConfigs = mkConfigsLib.mkConfigs {
+            identity = mkConfigsTestIdentity;
+            configs.home.default-user.system = "x86_64-linux";
+            configs.home.other-user = {
+              system = "x86_64-linux";
+              username = "keeper";
+            };
+            configs.darwin.other-user = {
+              system = "aarch64-darwin";
+              username = "keeper";
+            };
+          };
+          perConfigUsernameHome = perConfigUsernameConfigs.homeConfigurations.other-user.config.home;
+          perConfigUsernameDefault = perConfigUsernameConfigs.homeConfigurations.default-user.config.home;
+          perConfigUsernameDarwin = perConfigUsernameConfigs.darwinConfigurations.other-user.config;
+          perConfigUsernameOverrideOk =
+            perConfigUsernameHome.username == "keeper" && perConfigUsernameHome.homeDirectory == "/home/keeper";
+          perConfigUsernameDefaultOk =
+            perConfigUsernameDefault.username == "testuser"
+            && perConfigUsernameDefault.homeDirectory == "/home/testuser";
+          perConfigUsernameDarwinOk =
+            builtins.attrNames perConfigUsernameDarwin.home-manager.users == [ "keeper" ]
+            && perConfigUsernameDarwin.users.users.keeper.home == "/Users/keeper"
+            && perConfigUsernameDarwin.system.primaryUser == "keeper";
+
           # extraSystemModulePaths extends system/darwin.nix or
           # system/nixos.nix, so only systemModulesFor (darwin/nixos) reads
           # it: a configs.home entry setting it must be a real schema error,
@@ -893,6 +922,17 @@
                 withoutTmux=${builtins.toJSON perConfigFeaturesWithoutTmuxOk}
                 homeRejectsSystemPaths=${builtins.toJSON perConfigFeaturesHomeRejectsSystemPaths}
                 darwinAcceptsSystemPaths=${builtins.toJSON perConfigFeaturesDarwinAcceptsSystemPaths}.
+              '';
+
+          mkconfigs-per-config-username =
+            if perConfigUsernameOverrideOk && perConfigUsernameDefaultOk && perConfigUsernameDarwinOk then
+              pkgs.runCommand "check-mkconfigs-per-config-username" { } "touch $out"
+            else
+              throw ''
+                mkconfigs-per-config-username: configs.<kind>.<name>.username
+                isn't behaving as designed -- override=${builtins.toJSON perConfigUsernameOverrideOk}
+                default=${builtins.toJSON perConfigUsernameDefaultOk}
+                darwin=${builtins.toJSON perConfigUsernameDarwinOk}.
               '';
 
           template-default =
