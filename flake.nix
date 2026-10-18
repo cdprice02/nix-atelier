@@ -803,10 +803,12 @@
           secretsSopsOffWithSecretsDeclaredOk = secretsSopsOffWithSecretsDeclared.secrets == { };
 
           # The checks above only read option values, which never force the
-          # sops-install-secrets derivation. Building it per system is what
-          # catches a sops-nix input whose Go builder this system's nixpkgs
-          # lacks (an eval error) or whose go.mod outruns its go (a build
-          # error).
+          # sops-install-secrets derivation. Forcing its drvPath catches a
+          # sops-nix input whose Go builder this system's nixpkgs lacks (an
+          # eval error). Only x86_64-darwin also builds it: a go.mod that
+          # outruns its go (a build error) needs sops-nix pinned against an
+          # older nixpkgs, which only sops-nix-darwin is, and a Go build
+          # under aarch64-linux's emulation overruns the CI job timeout.
           sopsInstallSecrets =
             (mkConfigsLib.mkConfigs {
               identity = mkConfigsTestIdentity;
@@ -927,7 +929,14 @@
                 offWithSecretsDeclared=${builtins.toJSON secretsSopsOffWithSecretsDeclaredOk}).
               '';
 
-          sops-install-secrets = sopsInstallSecrets;
+          sops-install-secrets =
+            if systemsLib.isX86Darwin system then
+              sopsInstallSecrets
+            else
+              pkgs.runCommand "check-sops-install-secrets-eval" { } ''
+                # ${builtins.unsafeDiscardStringContext sopsInstallSecrets.drvPath}
+                touch $out
+              '';
 
           formatting = treefmtEval.${system}.config.build.check self;
         }

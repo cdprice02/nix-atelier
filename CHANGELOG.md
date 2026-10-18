@@ -20,8 +20,9 @@ system with `atelier.sops.file` set: that commit builds with
 `buildGo125Module`, which rolling nixpkgs has removed. sops-nix is now a
 release pair like nixpkgs and home-manager: x86_64-darwin gets the pinned
 `sops-nix-darwin` (following `nixpkgs-darwin`), every other system the
-rolling `sops-nix`. A new `sops-install-secrets` check builds the package
-on each system, so either mismatch now fails `flake-check`.
+rolling `sops-nix`. A new `sops-install-secrets` check evaluates the
+package on every system and builds it on x86_64-darwin, so either mismatch
+now fails `flake-check`.
 
 Patch: no option or schema change.
 
