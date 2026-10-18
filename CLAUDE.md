@@ -146,6 +146,10 @@ argument by design; never `nix flake update <single-input>`. Retargeting the
 pin means editing the `nixpkgs-darwin`, `nix-darwin-x86`, and
 `home-manager-darwin` refs in `flake.nix` by hand.
 
+x86_64-darwin is frozen best-effort: no nixpkgs security fixes, dropped in
+v5, with only its Nix daemon pinned to a patched release (`nix-x86-darwin`);
+see [ADR 0002](docs/adr/0002-x86_64-darwin-is-frozen-best-effort.md).
+
 Because Linux tracks rolling releases, some options must be spelled the way
 both HM versions accept. Where the newer HM has renamed or added an option,
 `base.nix` guards on `options.<path> ? <name>` (see `programs.ssh.enableDefaultConfig`
