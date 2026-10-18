@@ -11,6 +11,21 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.0.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.0.1) -- sops
+
+2026-10-17
+
+v4.0.0 doesn't build on x86_64-darwin when `atelier.sops.file` is set.
+The `flake.lock` update (#193) moved sops-nix past the commit that builds
+`sops-install-secrets` with `buildGo125Module`; later commits use the
+default `buildGoModule` and require go 1.26, but x86_64-darwin's pinned
+25.05 nixpkgs ships go 1.24. sops-nix is now pinned to that last
+compatible commit, until x86_64-darwin moves off 25.05. CI didn't catch it:
+its profiles leave `atelier.sops.file` unset, so sops-nix stays inert and
+`sops-install-secrets` is never built there.
+
+Patch: no option or schema change.
+
 ## [v4.0.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.0.0) -- toolchains
 
 2026-10-17
