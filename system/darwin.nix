@@ -48,7 +48,6 @@
     ];
     casks = [
       "logitech-options"
-      "copilot-cli@prerelease"
     ];
   };
 

@@ -377,7 +377,7 @@ jobs:
       # on this job's macos-14 runners with a spurious TLS error on the
       # public gitalias submodule. A bare retried `git submodule
       # update` isn't enough here: checkout's own submodule step rewrites
-      # the private config/claude and config/copilot submodules' git@
+      # the private config/claude submodule's git@
       # remotes to token-authenticated https ones internally, and that
       # rewrite doesn't happen for a submodule fetch run outside the action
       # (confirmed directly -- it fails with "Permission denied (publickey)"

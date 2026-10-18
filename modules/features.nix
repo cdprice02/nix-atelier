@@ -15,7 +15,6 @@
   lang-python = ./features/lang-python.nix;
   cloud = ./features/cloud.nix;
   claude = ./features/claude.nix;
-  copilot = ./features/copilot.nix;
   k8s = ./features/k8s.nix;
   tmux = ./features/tmux.nix;
   neovim = ./features/neovim.nix;

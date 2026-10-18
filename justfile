@@ -114,9 +114,10 @@ update:
     @echo "Inputs updated, run 'just check' before 'just switch'."
 
 [group('machine')]
-[doc('Update submodules to latest commit on their tracked branch')]
+[doc('Update submodules to their tracked branch, then relink skills')]
 sync:
     git submodule update --remote --merge
+    just link-skills
 
 # Propagate shared Claude config from the public repo into the private work
 # overlay. Profiles are separated by branch and remote: public `main` holds
@@ -134,7 +135,7 @@ sync-work:
     branch=$(git rev-parse --abbrev-ref HEAD)
     if [ "$branch" != "work" ]; then
         echo "config/claude is on '$branch', not 'work'; nothing to do." >&2
-        echo "This recipe is for work machines. See user.nix submodules." >&2
+        echo "This recipe is for work machines. See atelier.submodules in modules/machine.nix." >&2
         exit 1
     fi
     git fetch origin
@@ -157,8 +158,8 @@ sync-work:
 #
 # Idempotent: re-running regenerates every currently-promoted skill's symlink
 # and prunes any symlink left behind by a since-renamed or removed upstream
-# skill. Never touches vault/ or any other real (non-symlink) directory under
-# config/claude/skills/.
+# skill. Never touches a real (non-symlink) directory under
+# config/claude/skills/, such as synced/.
 [group('machine')]
 [doc('Symlink promoted config/skills entries into config/claude/skills/')]
 link-skills:
