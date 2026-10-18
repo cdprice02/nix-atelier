@@ -5,7 +5,7 @@
 # Four dependencies, each a genuinely distinct concern: `lib` (the standard
 # library), `systems` (lib/systems.nix -- which of the two release pairs a
 # system uses, and the resolved pkgs/home-manager/nix-darwin for it), and
-# `sopsNixModule`/`caretModule` (flake inputs' own outputs, needed by
+# `sopsNixModuleFor`/`caretModule` (flake inputs' own outputs, needed by
 # mkProfile.nix below, which this file imports directly rather than
 # receiving as an injected function -- the entry point owns its own
 # compositor). Identity handling (mkUser) is self-contained here: it has no
@@ -21,7 +21,7 @@
 {
   lib,
   systems,
-  sopsNixModule,
+  sopsNixModuleFor,
   caretModule,
 }:
 let
@@ -53,7 +53,7 @@ let
     inherit
       lib
       isLinux
-      sopsNixModule
+      sopsNixModuleFor
       caretModule
       ;
   };

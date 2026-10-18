@@ -162,6 +162,7 @@
         "nixpkgs-darwin": "nixpkgs-darwin",
         "nmt": "nmt",
         "sops-nix": "sops-nix",
+        "sops-nix-darwin": "sops-nix-darwin",
         "treefmt-nix": "treefmt-nix"
       }
     },
@@ -169,6 +170,26 @@
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792056300,
+        "narHash": "sha256-YU1LjDe1o2Ymg5zEiCHbmMXLkDCtxHQRiVqZ3nC5GGk=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "44931708c62937c2b1bf7953902989fa5bb9ee1b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "type": "github"
+      }
+    },
+    "sops-nix-darwin": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-darwin"
         ]
       },
       "locked": {

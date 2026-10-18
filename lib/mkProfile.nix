@@ -4,14 +4,14 @@
 # imports both mkProfile and tiers from here instead of each keeping its own
 # copy of the tier derivation.
 #
-# isLinux/sopsNixModule/caretModule are dependencies, not owned here: isLinux
+# isLinux/sopsNixModuleFor/caretModule are dependencies, not owned here: isLinux
 # is lib/systems.nix's concern (which systems count as Linux), and the sops-
 # nix/caret modules are flake inputs' own outputs, threaded in by whichever
 # caller actually has them (flake.nix, via lib/mkConfigs.nix).
 {
   lib,
   isLinux,
-  sopsNixModule,
+  sopsNixModuleFor,
   caretModule,
 }:
 let
@@ -104,7 +104,7 @@ in
           ../modules/base.nix
           ../modules/env.nix
           ../modules/machine.nix
-          sopsNixModule
+          (sopsNixModuleFor system)
           ../modules/secrets-sops.nix
           caretModule
         ]
