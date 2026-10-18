@@ -98,6 +98,14 @@ let
     description = "Absolute paths to private darwin/nixos system modules, same mechanism as extraModulePaths, for extending system/darwin.nix or system/nixos.nix. Not offered on a configs.home entry: a standalone Home Manager config has no system module layer to extend.";
   };
 
+  # Per-config, unlike the rest of identity: a machine whose account name
+  # differs still shares the call's git identity.
+  usernameOption.username = lib.mkOption {
+    type = lib.types.nullOr lib.types.str;
+    default = null;
+    description = "Unix username for this config only (home directory, Home Manager users.<username> key, sudo -u targets). Defaults to identity.username; git identity always stays the call-level one.";
+  };
+
   # Standalone Home Manager configs: no system module layer, so no
   # extraSystemModulePaths.
   homeFeaturesType = lib.types.submodule { options = homeFeaturesOptions; };
@@ -163,7 +171,7 @@ let
                 description = "Standalone Home Manager configs (any of the four systems, darwin included).";
                 type = lib.types.attrsOf (
                   lib.types.submodule {
-                    options = {
+                    options = usernameOption // {
                       system = lib.mkOption { type = lib.types.enum allSystems; };
                       tier = lib.mkOption {
                         type = lib.types.enum (builtins.attrNames tiers);
@@ -193,7 +201,7 @@ let
                 description = "nix-darwin + Home Manager configs. Always full tier, always GUI, matching this repo's existing darwin behavior.";
                 type = lib.types.attrsOf (
                   lib.types.submodule {
-                    options = {
+                    options = usernameOption // {
                       system = lib.mkOption { type = lib.types.enum darwinSystems; };
                       extraConfig = lib.mkOption {
                         type = lib.types.attrs;
@@ -215,7 +223,7 @@ let
                 description = "NixOS + Home Manager configs. Ships build-verified only in this repo; a real deployment needs a real hardwareModule.";
                 type = lib.types.attrsOf (
                   lib.types.submodule {
-                    options = {
+                    options = usernameOption // {
                       system = lib.mkOption { type = lib.types.enum linuxSystems; };
                       hardwareModule = lib.mkOption {
                         type = lib.types.str;
@@ -259,8 +267,10 @@ let
       };
       cfg = evaluated.config;
 
-      user = mkUser cfg.identity;
-      specialArgs = { inherit user; };
+      userFor =
+        entry:
+        mkUser (cfg.identity // lib.optionalAttrs (entry.username != null) { inherit (entry) username; });
+      specialArgsFor = entry: { user = userFor entry; };
 
       # Feeds mkProfile's existing userData override point (already used by
       # the nmt harness's testUser): no feature-resolution logic duplicated
@@ -283,7 +293,7 @@ let
         assert pairOkFor entry.system;
         (hmLibFor entry.system).homeManagerConfiguration {
           pkgs = pkgsFor entry.system;
-          extraSpecialArgs = specialArgs;
+          extraSpecialArgs = specialArgsFor entry;
           modules =
             (mkProfile {
               inherit (entry) tier;
@@ -302,7 +312,7 @@ let
         assert pairOkFor entry.system;
         (darwinLibFor entry.system).lib.darwinSystem {
           inherit (entry) system;
-          inherit specialArgs;
+          specialArgs = specialArgsFor entry;
           modules = [
             ../system/darwin.nix
           ]
@@ -315,8 +325,8 @@ let
                 useGlobalPkgs = true;
                 useUserPackages = false;
                 backupFileExtension = "bk";
-                extraSpecialArgs = specialArgs;
-                users.${user.username}.imports =
+                extraSpecialArgs = specialArgsFor entry;
+                users.${(userFor entry).username}.imports =
                   (mkProfile {
                     inherit (entry) system;
                     tier = "full";
@@ -333,7 +343,7 @@ let
         _name: entry:
         lib.nixosSystem {
           inherit (entry) system;
-          inherit specialArgs;
+          specialArgs = specialArgsFor entry;
           modules = [
             ../system/nixos.nix
             (import entry.hardwareModule)
@@ -352,8 +362,8 @@ let
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                extraSpecialArgs = specialArgs;
-                users.${user.username}.imports =
+                extraSpecialArgs = specialArgsFor entry;
+                users.${(userFor entry).username}.imports =
                   (mkProfile {
                     inherit (entry) system;
                     tier = "full";
