@@ -50,10 +50,6 @@
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     # follows nixpkgs-darwin (not nixpkgs) so caret's trivial file-copy
     # derivation still builds on x86_64-darwin, which rolling nixpkgs-unstable
     # has dropped; this pins caret's nixpkgs for every system, but caret has
@@ -111,7 +107,6 @@
       nix-darwin-x86,
       home-manager,
       home-manager-darwin,
-      rust-overlay,
       caret,
       sops-nix,
       treefmt-nix,
@@ -153,7 +148,6 @@
           home-manager-darwin
           nix-darwin
           nix-darwin-x86
-          rust-overlay
           ;
       };
       inherit (systemsLib)

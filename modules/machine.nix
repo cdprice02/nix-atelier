@@ -107,6 +107,24 @@ in
       description = "Private remote overrides for config/ submodules, keyed by submodule name. See base.nix's submoduleOverrides activation script.";
     };
 
+    rust = {
+      toolchains = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "stable" ];
+        example = [
+          "stable"
+          "beta"
+          "nightly"
+        ];
+        description = "rustup toolchains lang-rust installs at activation when missing. Never updated on switch: `rustup update` does that. A project's `rust-toolchain.toml` still wins inside that project.";
+      };
+      defaultToolchain = lib.mkOption {
+        type = lib.types.str;
+        default = "stable";
+        description = "Toolchain `rustup default` points at, used outside any project that pins its own. Must be one of atelier.rust.toolchains.";
+      };
+    };
+
     checkoutPath = lib.mkOption {
       type = lib.types.str;
       default = "${config.home.homeDirectory}/.nix-atelier";

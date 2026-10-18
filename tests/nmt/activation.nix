@@ -66,4 +66,24 @@
       assertFileContains activate '~/.aws/config created: edit to add named profiles.'
     '';
   };
+
+  rustup-installs-missing-default-toolchain-without-updating = {
+    nmt.description = ''
+      lang-rust.nix's rustupToolchains hook under the default
+      atelier.rust settings: guarded on the toolchain directory so an
+      existing toolchain is never reinstalled or updated, delegated to the
+      target user when run as root, non-fatal on failure, and pointing
+      `rustup default` at stable.
+    '';
+    nmt.script = ''
+      assertFileContains activate 'for _tc in "stable"; do'
+      assertFileRegex activate 'if \[ ! -d "\$HOME/.rustup/toolchains/\$_tc-[a-z0-9_]*-[a-z0-9_-]*" \]; then'
+      assertFileContains activate 'toolchain install "$_tc" --profile minimal'
+      assertFileContains activate ' --component clippy,rustfmt,rust-src,rust-analyzer'
+      assertFileContains activate '/usr/bin/sudo -u yourusername env HOME="$HOME"'
+      assertFileContains activate "|| echo \"WARNING: rustup toolchain install \$_tc failed; rerun 'just switch' to retry.\""
+      assertFileContains activate '_rustup default "stable" >/dev/null'
+      assertFileNotRegex activate 'rustup[^ ]* update'
+    '';
+  };
 }

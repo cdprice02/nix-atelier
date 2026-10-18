@@ -3,7 +3,7 @@
 [![CI](https://github.com/cdprice02/nix-atelier/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-atelier/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager), [nix-darwin](https://github.com/nix-darwin/nix-darwin), and [rust-overlay](https://github.com/oxalica/rust-overlay): macOS (Intel and Apple Silicon), any Linux/WSL2, and NixOS (build-verified), same modules, one command. Consumed, not forked: pin it as a flake input, call `lib.mkConfigs` with your identity, get a full dev environment on any machine.
+A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager) and [nix-darwin](https://github.com/nix-darwin/nix-darwin): macOS (Intel and Apple Silicon), any Linux/WSL2, and NixOS (build-verified), same modules, one command. Consumed, not forked: pin it as a flake input, call `lib.mkConfigs` with your identity, get a full dev environment on any machine.
 
 Machine-specific and private data (work identity, real secrets, anything that shouldn't be public) never has to live in this repo, or in a fork of it: it lives in your own flake.nix instead. See [docs/profiles.md](docs/profiles.md) for the profile system, [examples/private-config/](examples/private-config/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
 

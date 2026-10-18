@@ -39,7 +39,7 @@ Claude Code and Neovim configs are submodules under `config/`, provisioned autom
       gui-base.nix                # Shared GUI package/theme data for gui-linux.nix/gui-darwin.nix
     features/
       shell-tools.nix          # fonts, zoxide/fzf/direnv, ripgrep/bat/eza/hyperfine/etc.
-      lang-rust.nix             # rust-overlay toolchain + cargo tools
+      lang-rust.nix             # rustup toolchains + cargo tools
       lang-node.nix              # node, fnm, bun
       lang-python.nix            # python3, uv, jupyterlab
       cloud.nix                 # AWS tooling; reads atelier.aws.profile
@@ -123,7 +123,7 @@ A real machine's config lives in its own flake.nix, not in this repo:
 
 ### `flake.nix`
 
-Declares `nixpkgs`, `nix-darwin`, `home-manager`, `rust-overlay`, `caret`, `sops-nix`, `treefmt-nix`, `nmt` inputs.
+Declares `nixpkgs`, `nix-darwin`, `home-manager`, `caret`, `sops-nix`, `treefmt-nix`, `nmt` inputs.
 
 #### Input pairing invariant
 
