@@ -299,11 +299,8 @@ Encrypts/decrypts secrets in files using age or PGP recipients, keeping cipherte
 ### age
 Simple, modern file encryption tool; the recipient/key mechanism sops uses here. [age-encryption.org](https://age-encryption.org)
 
-### rbw
-Maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked broken in the current nixpkgs pin); its agent caches unlock for scripting. [github.com/doy/rbw](https://github.com/doy/rbw)
-
-### pinentry-tty
-Lets rbw prompt for the master password from the terminal (cross-platform; macOS has no pinentry by default). [gnupg.org/software/pinentry](https://gnupg.org/software/pinentry.html)
+### bitwarden-cli
+Official Bitwarden CLI (`bw`); on macOS the prebuilt release binary, since the nixpkgs source build fails on x86_64-darwin. No agent: `export BW_SESSION="$(bw unlock --raw)"` per shell. [bitwarden.com/help/cli](https://bitwarden.com/help/cli/)
 
 ---
 

@@ -623,18 +623,11 @@
       link = "[age-encryption.org](https://age-encryption.org)";
     }
     {
-      key = "rbw";
-      matches = [ "rbw" ];
+      key = "bitwarden-cli";
+      matches = [ "bitwarden-cli" ];
       category = "Secrets";
-      description = "Maintained Rust Bitwarden CLI (official `bitwarden-cli` is marked broken in the current nixpkgs pin); its agent caches unlock for scripting.";
-      link = "[github.com/doy/rbw](https://github.com/doy/rbw)";
-    }
-    {
-      key = "pinentry-tty";
-      matches = [ "pinentry-tty" ];
-      category = "Secrets";
-      description = "Lets rbw prompt for the master password from the terminal (cross-platform; macOS has no pinentry by default).";
-      link = "[gnupg.org/software/pinentry](https://gnupg.org/software/pinentry.html)";
+      description = "Official Bitwarden CLI (`bw`); on macOS the prebuilt release binary, since the nixpkgs source build fails on x86_64-darwin. No agent: `export BW_SESSION=\"$(bw unlock --raw)\"` per shell.";
+      link = "[bitwarden.com/help/cli](https://bitwarden.com/help/cli/)";
     }
 
     # ── Shell Multiplexing ─────────────────────────────────────────────────
