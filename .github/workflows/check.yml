@@ -247,19 +247,17 @@ jobs:
           purge-primary-key: never
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
-  # ── Full activation-package build, QEMU-emulated aarch64 Linux profiles ──────
-  # Gated to push-to-main + manual dispatch, not every PR: this is where the
-  # real wall-clock cost in this whole workflow lives, with full-gui-aarch64
-  # alone measuring 17.4 min under emulation on a recent main run. Real build
-  # coverage stays at the merge gate; every PR still gets full eval coverage
-  # (eval-all) and assertion-level content coverage for this exact arch
-  # (flake-check's aarch64-linux nmt entry), so this job is specifically the
-  # aarch64-under-QEMU backstop, not the only thing standing between a PR and
-  # a broken build.
+  # ── Full activation-package build, native aarch64 Linux profiles ────────────
+  # Native arm64 runners (free for public repos), not QEMU: emulation made
+  # these the slowest jobs in the workflow, and a package Hydra hasn't cached
+  # for aarch64 (duckdb once) couldn't compile within any usable timeout.
+  # Gated to push-to-main + manual dispatch, same as build-linux-x86_64: every
+  # PR still gets full eval coverage (eval-all) and assertion-level content
+  # coverage for this arch (flake-check's aarch64-linux nmt entry).
   build-linux-aarch64:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -269,13 +267,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: docker/setup-qemu-action@v4.4.0
-        with:
-          platforms: arm64
       - uses: cachix/install-nix-action@v31.11.1
-        with:
-          extra_nix_config: |
-            extra-platforms = aarch64-linux
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           # Arch-scoped, mirroring build-linux-x86_64 above: see that job's
@@ -319,13 +311,13 @@ jobs:
           purge-primary-key: never
       - run: nix shell nixpkgs#just -c just _build-nixos ${{ matrix.profile }}
 
-  # ── Full system.build.toplevel, QEMU-emulated aarch64 NixOS profiles ─────────
-  # Same QEMU setup and gating as build-linux-aarch64 above; same
+  # ── Full system.build.toplevel, native aarch64 NixOS profiles ───────────────
+  # Same native runner and gating as build-linux-aarch64 above; same
   # build-verified-only scope as build-nixos-x86_64 above.
   build-nixos-aarch64:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: get-profiles
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -335,13 +327,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: docker/setup-qemu-action@v4.4.0
-        with:
-          platforms: arm64
       - uses: cachix/install-nix-action@v31.11.1
-        with:
-          extra_nix_config: |
-            extra-platforms = aarch64-linux
       - uses: nix-community/cache-nix-action@v7.0.2
         with:
           primary-key: nix-nixos-build-aarch64-${{ hashFiles('flake.lock', '**/*.nix') }}
