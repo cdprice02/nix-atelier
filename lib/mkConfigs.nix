@@ -35,6 +35,7 @@ let
     hmLibFor
     hmDarwinModuleFor
     darwinLibFor
+    darwinNixModuleFor
     nixosHmModule
     isLinux
     ;
@@ -318,6 +319,7 @@ let
           ]
           ++ systemModulesFor entry
           ++ [
+            (darwinNixModuleFor entry.system)
             (hmDarwinModuleFor entry.system)
             {
               nixpkgs.pkgs = pkgsFor entry.system;

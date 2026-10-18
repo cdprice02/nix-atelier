@@ -72,6 +72,12 @@
       url = "github:Mic92/sops-nix/13616fff713a9f94055c66f15687ebdc17a335df";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
     };
+    # x86_64-darwin's Nix daemon, outside its frozen 25.05 pair: 25.05 ships a
+    # Nix series upstream no longer patches, and the daemon is the one root,
+    # network-facing part of the system (docs/adr/0002). 2.31.x is the newest
+    # series built on nixos-25.05, so it still runs on macOS 13. Its nixpkgs
+    # is deliberately not followed, which keeps cache.nixos.org hits.
+    nix-x86-darwin.url = "github:NixOS/nix/2.31.6";
     # Follows nixpkgs-darwin (not rolling nixpkgs), deliberately, on every
     # system including the three that aren't x86_64-darwin. The instinct is
     # "use rolling everywhere for the freshest formatter" -- checked
@@ -111,6 +117,7 @@
       nixpkgs-darwin,
       nix-darwin,
       nix-darwin-x86,
+      nix-x86-darwin,
       home-manager,
       home-manager-darwin,
       caret,
@@ -155,6 +162,7 @@
           home-manager-darwin
           nix-darwin
           nix-darwin-x86
+          nix-x86-darwin
           ;
       };
       inherit (systemsLib)

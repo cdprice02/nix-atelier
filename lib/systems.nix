@@ -10,6 +10,7 @@
   home-manager-darwin,
   nix-darwin,
   nix-darwin-x86,
+  nix-x86-darwin,
 }:
 let
   inherit (nixpkgs) lib;
@@ -84,6 +85,12 @@ let
     else
       home-manager.darwinModules.home-manager;
   darwinLibFor = system: if isX86Darwin system then nix-darwin-x86 else nix-darwin;
+  # Elsewhere nix-darwin's default (the pair's own pkgs.nix) is current.
+  darwinNixModuleFor =
+    system:
+    lib.optionalAttrs (isX86Darwin system) {
+      nix.package = nix-x86-darwin.packages.${system}.nix;
+    };
 
   # The one, single definition of this repo's homeConfigurations naming
   # scheme: flake.nix's own matrix construction and docs-gen.nix's
@@ -111,6 +118,7 @@ in
     hmLibFor
     hmDarwinModuleFor
     darwinLibFor
+    darwinNixModuleFor
     mkHomeConfigName
     ;
 
