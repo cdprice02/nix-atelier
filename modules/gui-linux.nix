@@ -11,6 +11,10 @@ in
 {
   home.packages = guiBase.packages;
 
+  # Without it fontconfig never looks in the Nix profile, so alacritty
+  # can't find the fonts above and silently falls back to a system font.
+  fonts.fontconfig.enable = true;
+
   programs = {
     alacritty = {
       enable = true;
