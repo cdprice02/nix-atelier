@@ -54,6 +54,13 @@
     # derivation still builds on x86_64-darwin, which rolling nixpkgs-unstable
     # has dropped; this pins caret's nixpkgs for every system, but caret has
     # no real version dependency so that's harmless.
+    # Backs the opt-in nix-index feature. Its Home Manager module builds from
+    # Home Manager's own pkgs, so following nixpkgs costs nothing and keeps a
+    # second nixpkgs out of the lock.
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     caret = {
       url = "github:cdprice02/caret";
       inputs.nixpkgs.follows = "nixpkgs-darwin";
@@ -121,6 +128,7 @@
       home-manager,
       home-manager-darwin,
       caret,
+      nix-index-database,
       sops-nix,
       sops-nix-darwin,
       treefmt-nix,
@@ -264,6 +272,7 @@
           else
             sops-nix.homeManagerModules.sops;
         caretModule = caret.homeManagerModules.default;
+        featureInputModules.nix-index = [ nix-index-database.homeModules.nix-index ];
       };
       inherit (mkConfigsLib) mkProfile tiers;
 
@@ -580,6 +589,37 @@
           platformFilteringKeptOnOther = builtins.elem ./tests/nmt/fixtures/inert-feature.nix (
             platformFilteringModsFor platformFilteringOtherSystem
           );
+
+          # An optIn feature stays out of `full`, and features.extra brings in
+          # both its own module and its input module (nix-index-database's,
+          # which enables programs.nix-index on import, so it must never ride
+          # along unselected). Evaluated on x86_64-linux whatever `system` is:
+          # x86_64-darwin is the one system the feature is unsupported on.
+          optInIndexModule = nix-index-database.homeModules.nix-index;
+          optInModsFor =
+            tier: extraFeatures:
+            mkProfile {
+              inherit tier;
+              withGui = false;
+              system = "x86_64-linux";
+              userData = testUser // {
+                inherit extraFeatures;
+              };
+            };
+          optInAbsentFromFull =
+            !(builtins.elem "nix-index" tiers.full)
+            && !(builtins.elem optInIndexModule (optInModsFor "full" [ ]));
+          optInSelectedByExtra = builtins.elem optInIndexModule (optInModsFor "minimal" [ "nix-index" ]);
+          optInCommaInstalled =
+            builtins.any (p: nixpkgs.lib.hasPrefix "comma-with-db-" (p.name or ""))
+              (mkConfigsLib.mkConfigs {
+                identity = mkConfigsTestIdentity;
+                configs.home.with-index = {
+                  system = "x86_64-linux";
+                  tier = "minimal";
+                  features.extra = [ "nix-index" ];
+                };
+              }).homeConfigurations.with-index.config.home.packages;
 
           # mkConfigs proof, pure eval-level like the check above: no
           # real config gets built through here, this is entirely about the
@@ -901,6 +941,18 @@
                 ${system} should be dropped from that system's module list and
                 kept on every other system (droppedOnSelf=${builtins.toJSON platformFilteringDroppedOnSelf}
                 keptOnOther=${builtins.toJSON platformFilteringKeptOnOther}).
+              '';
+
+          feature-opt-in =
+            if optInAbsentFromFull && optInSelectedByExtra && optInCommaInstalled then
+              pkgs.runCommand "check-feature-opt-in" { } "touch $out"
+            else
+              throw ''
+                feature-opt-in: nix-index should be absent from `full` and
+                selected by features.extra, with comma installed
+                (absentFromFull=${builtins.toJSON optInAbsentFromFull}
+                selectedByExtra=${builtins.toJSON optInSelectedByExtra}
+                commaInstalled=${builtins.toJSON optInCommaInstalled}).
               '';
 
           mkconfigs-schema =

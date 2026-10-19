@@ -4,10 +4,11 @@
 # always-on, not selectable features.
 #
 # A value is either a bare path (the common case, no platform constraint) or
-# an attrset { module = <path>; unsupported = [ "<system>" ... ]; } for a
-# feature that cannot build on some system this flake targets. mkProfile
-# drops an unsupported feature on that system and warns once at evaluation;
-# `features.exclude` in a mkConfigs call silences the warning.
+# an attrset { module = <path>; unsupported = [ "<system>" ... ]; optIn = bool; }.
+# `unsupported` names systems a feature cannot build on: mkProfile drops it
+# there and warns once at evaluation; `features.exclude` in a mkConfigs call
+# silences the warning. `optIn = true` keeps a feature out of `full`, so only
+# `features.extra` selects it.
 {
   shell-tools = ./features/shell-tools.nix;
   lang-rust = ./features/lang-rust.nix;
@@ -26,4 +27,11 @@
   # succeeds on this repo's own x86_64-darwin machine) -- no `unsupported`
   # entry here.
   qmk = ./features/qmk.nix;
+  # Opt-in: a weekly-moving input and a 64 to 103 MB index download per
+  # update. No prebuilt index exists for x86_64-darwin (docs/adr/0002).
+  nix-index = {
+    module = ./features/nix-index.nix;
+    unsupported = [ "x86_64-darwin" ];
+    optIn = true;
+  };
 }

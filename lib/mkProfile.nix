@@ -13,17 +13,22 @@
   isLinux,
   sopsNixModuleFor,
   caretModule,
+  # Feature name -> modules from flake inputs, imported only when that
+  # feature is selected: such a module can set config just by being imported
+  # (nix-index-database's turns on programs.nix-index).
+  featureInputModules ? { },
 }:
 let
   # features.nix: name -> module path registry. core/env aren't in it:
   # they're an always-on prefix mkProfile adds unconditionally, not a
   # selectable feature. tiers is derived from that same registry, so a new
   # feature joins `full` automatically and there is no second list to keep
-  # in sync.
+  # in sync. An `optIn` feature is the exception: only `features.extra`
+  # selects it.
   features = import ../modules/features.nix;
   tiers = {
     minimal = [ ];
-    full = builtins.attrNames features;
+    full = builtins.filter (n: !(featureOptIn features.${n})) (builtins.attrNames features);
   };
 
   # A features.nix entry is either a bare path or an attrset
@@ -31,6 +36,7 @@ let
   # accessors are the only place that shape distinction is unwrapped.
   featureModule = f: if builtins.isAttrs f then f.module else f;
   featureUnsupported = f: if builtins.isAttrs f then (f.unsupported or [ ]) else [ ];
+  featureOptIn = f: builtins.isAttrs f && (f.optIn or false);
 in
 {
   inherit tiers;
@@ -75,7 +81,9 @@ in
       usableNames = builtins.filter supportedOn keptNames;
       skippedNames = builtins.filter (n: !(supportedOn n)) keptNames;
 
-      featureMods = map (n: featureModule (resolveFeature n)) usableNames;
+      featureMods = lib.concatMap (
+        n: [ (featureModule (resolveFeature n)) ] ++ (featureInputModules.${n} or [ ])
+      ) usableNames;
 
       # Absolute paths to private, machine-specific modules outside this
       # repo: a string absolute path imports to a real module, and relative

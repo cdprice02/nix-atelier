@@ -125,8 +125,9 @@ let
       ```
 
       `tier` expands into a set of named features: `minimal` is `[]`, `full` is
-      every key in `modules/features.nix`, so a new feature joins `full`
-      automatically with no list to maintain. A `lib.mkConfigs` caller can add
+      every key in `modules/features.nix` except the opt-in ones, so a new
+      feature joins `full` automatically with no list to maintain. A
+      `lib.mkConfigs` caller can add
       features beyond a config's tier via `features.extra`, or drop specific
       ones via `features.exclude`: see `templates/default/flake.nix`.
 
@@ -138,7 +139,7 @@ let
       |--------|--------------|
       | `base.nix` ("core") | always |
       | `env.nix` | always |
-      | every `features/*.nix` | tier = full, or named in `features.extra`, minus anything in `features.exclude` |
+      | every `features/*.nix` | tier = full (unless opt-in), or named in `features.extra`, minus anything in `features.exclude` |
       | `features.extraModulePaths` entries | always, if set in a mkConfigs call (private, machine-specific modules) |
       | `gui-linux.nix` | withGui = true, Linux |
       | `gui-darwin.nix` | withGui = true, Darwin (always on macOS) |
@@ -200,7 +201,10 @@ let
       `templates/default/flake.nix` for the exact syntax):
 
       - `features.extra`: add named features (see `modules/features.nix`) on
-        top of a config's tier, e.g. `minimal` plus just `tmux`.
+        top of a config's tier, e.g. `minimal` plus just `tmux`. It is the
+        only way to get an opt-in feature: `nix-index` adds comma
+        (`, cowsay` runs a tool without installing it) and names the
+        package behind an unknown command. Not available on x86_64-darwin.
       - `features.exclude`: drop features regardless of tier, e.g. `full`
         without `lang-rust`.
       - `features.extraModulePaths`: absolute paths to private,
