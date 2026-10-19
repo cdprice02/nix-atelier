@@ -16,11 +16,17 @@ in
       enable = true;
       inherit (guiBase.alacritty) theme;
       settings = {
-        window = {
-          opacity = guiBase.alacritty.windowOpacity;
+        window = guiBase.alacritty.window // {
           decorations = "none";
         };
-        inherit (guiBase.alacritty) font colors;
+        inherit (guiBase.alacritty)
+          font
+          colors
+          scrolling
+          selection
+          mouse
+          cursor
+          ;
       };
     };
 

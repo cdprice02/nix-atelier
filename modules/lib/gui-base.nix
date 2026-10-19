@@ -1,5 +1,5 @@
 # Shared base for gui-linux.nix and gui-darwin.nix. Packages, the vscode
-# toggle, the alacritty theme/colors/font/opacity, and the git difftool/
+# toggle, the alacritty theme/colors/font/window, and the git difftool/
 # mergetool wiring are identical across both; only credential.helper (git)
 # and decorations/option_as_alt (alacritty) genuinely differ, so each caller
 # merges its own platform-specific bits around this rather than repeating
@@ -39,10 +39,26 @@
       primary.background = "#1a1921";
       selection.background = "#1e1d25";
     };
-    windowOpacity = 0.9;
+    # Opaque: translucency lowers text contrast against whatever sits
+    # behind the window, an accessibility cost for no functional gain.
+    # Maximized rather than Fullscreen, which on macOS opens its own Space.
+    window = {
+      opacity = 1.0;
+      startup_mode = "Maximized";
+    };
     font = {
       size = 14;
       normal.family = "Fira Code";
+    };
+    # history and clipboard match the tmux feature (historyLimit,
+    # set-clipboard), so scrollback and copy behave the same in and out of
+    # tmux.
+    scrolling.history = 50000;
+    selection.save_to_clipboard = true;
+    mouse.hide_when_typing = true;
+    cursor.style = {
+      shape = "Block";
+      blinking = "Never";
     };
   };
 }
