@@ -90,6 +90,7 @@ just switch        # apply this machine's config (detects OS + architecture)
 just check         # nix flake check, includes formatting/lints
 just eval-all      # fast: evaluate every profile without building
 just update        # re-resolve all flake inputs together
+just audit         # list known CVEs in what this machine runs (vulnix)
 just --list        # everything else
 ```
 

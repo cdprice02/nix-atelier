@@ -90,6 +90,7 @@ Prefer `just`: it is the sole interface and handles OS/arch dispatch. These are 
 | First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-atelier#<config>` |
 | Update flake inputs                            | `just update`                                                       |
 | Validate                                       | `just check` (`nix flake check`, includes formatting/lints)         |
+| List known CVEs in what this machine runs      | `just audit` (vulnix, runtime closure; manual, not a CI gate)       |
 | Regenerate docs                                | `just docs`                                                         |
 
 No `--impure` anywhere: this repo's own flake.nix uses a placeholder identity (a literal, not read from any external file), so `nix flake check`/every apply above is fully pure. `-b bk` is required on a Linux first apply, or Home Manager refuses to overwrite the distro's `~/.bashrc`/`~/.profile`.
