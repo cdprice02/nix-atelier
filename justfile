@@ -311,6 +311,94 @@ docs:
     chmod +w docs/profiles.md docs/tools.md
     echo "docs/profiles.md and docs/tools.md regenerated."
 
+# Records docs/assets/nh-switch.gif from this checkout: a machine on the
+# minimal tier dry-running a switch to full, so the README shows the diff
+# nh prints before activating. Run before a release so the GIF matches it.
+[group('generate')]
+[doc('Re-record docs/assets/nh-switch.gif (nh diff, minimal -> full)')]
+demo:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    repo="$PWD"
+    # Rolling nixpkgs no longer evaluates on x86_64-darwin.
+    pkgs=nixpkgs
+    if [ "$(uname)" = Darwin ] && [ "$(uname -m)" = x86_64 ]; then
+        pkgs=nixpkgs-darwin
+    fi
+    system="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
+    work="$(mktemp -d)"
+    trap 'chmod -R u+w "$work"; rm -rf "$work"' EXIT
+    mkdir -p "$work/config" "$work/home/.cache/tmp" "$work/home/.local/state/nix/profiles" "$work/fonts"
+    tools="$(nix build --no-link --print-out-paths --inputs-from . \
+        "$pkgs#nh" "$pkgs#asciinema" "$pkgs#asciinema-agg" "$pkgs#python3")"
+    for t in $tools; do PATH="$t/bin:$PATH"; done
+    for f in "$pkgs#nerd-fonts.fira-code" "$pkgs#noto-fonts-monochrome-emoji"; do
+        find "$(nix build --no-link --print-out-paths --inputs-from . "$f")" \
+            \( -name 'FiraCodeNerdFontMono-*.ttf' -o -name 'NotoEmoji*.ttf' \) -exec cp {} "$work/fonts/" \;
+    done
+    chmod u+w "$work"/fonts/*
+    printf '%s\n' \
+        '{' \
+        "  inputs.nix-atelier.url = \"path:$repo\";" \
+        '  outputs = { nix-atelier, ... }: nix-atelier.lib.mkConfigs {' \
+        '    identity = {' \
+        '      username = "yourusername";' \
+        '      name = "Your Name";' \
+        '      email = "you@example.com";' \
+        '      github.user = "yourgithubname";' \
+        '    };' \
+        "    configs.home.minimal = { tier = \"minimal\"; system = \"$system\"; };" \
+        "    configs.home.full = { tier = \"full\"; system = \"$system\"; };" \
+        '  };' \
+        '}' > "$work/config/flake.nix"
+    # A scratch HOME has no nix.conf, no earlier generation and no real
+    # username, so the recording shows nothing of the machine it ran on.
+    # Nix's fetcher cache stays the real one, so inputs aren't downloaded again.
+    export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+    export HOME="$work/home" TMPDIR="$work/home/.cache/tmp" USER=yourusername
+    export NIX_CONFIG="experimental-features = nix-command flakes"
+    cd "$work/config"
+    echo "Building the minimal baseline generation..." >&2
+    nix build --profile "$HOME/.local/state/nix/profiles/home-manager" \
+        .#homeConfigurations.minimal.activationPackage
+    # Builds full off camera, so the recording is the diff, not the build.
+    echo "Building full..." >&2
+    nh home switch -n -c full . > /dev/null 2>&1
+    printf '%s\n' \
+        '#!/bin/sh' \
+        "printf '\033[2m%s\033[0m\n' '# a machine on the minimal tier, moving to full'" \
+        'sleep 1.2' \
+        "printf '\033[1;32m\$\033[0m %s' 'nh home switch -n -c full .'" \
+        'sleep 0.6; echo' \
+        'nh home switch -n -c full .' \
+        'sleep 2' > "$work/demo.sh"
+    chmod +x "$work/demo.sh"
+    echo "Recording..." >&2
+    TERM=xterm-256color SHELL=/bin/sh asciinema rec --overwrite -q \
+        --cols 100 --rows 30 -i 1.5 -c "$work/demo.sh" "$work/raw.cast" > /dev/null
+    # Plays the evaluation phase at 5x, and shows the scratch HOME as ~.
+    python3 -I - "$work/raw.cast" "$work/demo.cast" "$HOME" <<'EOF'
+    import json, sys
+    src, dst, home = sys.argv[1:4]
+    lines = open(src).read().splitlines()
+    out, prev, now, phase = [lines[0]], 0.0, 0.0, "pre"
+    for line in lines[1:]:
+        t, kind, data = json.loads(line)
+        if "Building Home-Manager" in data:
+            phase = "build"
+        if "Comparing changes" in data:
+            phase = "post"
+        now += (t - prev) / (5 if phase == "build" else 1)
+        prev = t
+        data = data.replace("/private" + home, "~").replace(home, "~")
+        out.append(json.dumps([round(now, 6), kind, data]))
+    open(dst, "w").write("\n".join(out) + "\n")
+    EOF
+    mkdir -p "$repo/docs/assets"
+    agg --font-dir "$work/fonts" --font-family "FiraCode Nerd Font Mono,Noto Emoji" \
+        --font-size 14 --last-frame-duration 8 "$work/demo.cast" "$repo/docs/assets/nh-switch.gif" > /dev/null
+    echo "docs/assets/nh-switch.gif recorded." >&2
+
 [private]
 _list-linux-profiles:
     @nix eval --json .#homeConfigurations --apply builtins.attrNames
