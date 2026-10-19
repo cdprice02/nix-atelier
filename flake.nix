@@ -752,15 +752,14 @@
             }).homeConfigurations.examples-check.config;
           examplesHasPackage =
             name: builtins.any (p: (p.pname or p.name or "") == name) examplesConfig.home.packages;
-          # userName/userEmail (25.05, pinned x86_64-darwin) vs
-          # settings.user.name/.email (rolling, everywhere else): checking
-          # both `or` branches rather than picking one keeps this check
-          # honest across whichever pin backs the system under test, same
-          # as hm-compat.nix itself.
+          # settings.user.name/.email (rolling) vs userName/userEmail (25.05,
+          # pinned x86_64-darwin), probed in that order: rolling HM has
+          # removed userName, and reading a removed option throws rather than
+          # falling through `or`. 25.05 has no `settings`, so it falls through.
           examplesGitName =
-            examplesConfig.programs.git.userName or examplesConfig.programs.git.settings.user.name or null;
+            examplesConfig.programs.git.settings.user.name or examplesConfig.programs.git.userName or null;
           examplesGitEmail =
-            examplesConfig.programs.git.userEmail or examplesConfig.programs.git.settings.user.email or null;
+            examplesConfig.programs.git.settings.user.email or examplesConfig.programs.git.userEmail or null;
           examplesOk =
             (examplesHasPackage "hello")
             && (examplesHasPackage "borgbackup")
