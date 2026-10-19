@@ -3,7 +3,7 @@
 [![CI](https://github.com/cdprice02/nix-atelier/actions/workflows/check.yml/badge.svg)](https://github.com/cdprice02/nix-atelier/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager) and [nix-darwin](https://github.com/nix-darwin/nix-darwin): macOS (Intel and Apple Silicon), any Linux/WSL2, and NixOS (build-verified), same modules, one command. Consumed, not forked: pin it as a flake input, call `lib.mkConfigs` with your identity, get a full dev environment on any machine.
+A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager) and [nix-darwin](https://github.com/nix-darwin/nix-darwin): macOS (Apple Silicon; Intel best-effort), any Linux/WSL2, and NixOS (build-verified), same modules, one command. Consumed, not forked: pin it as a flake input, call `lib.mkConfigs` with your identity, get a full dev environment on any machine.
 
 Machine-specific and private data (work identity, real secrets, anything that shouldn't be public) never has to live in this repo, or in a fork of it: it lives in your own flake.nix instead. See [docs/profiles.md](docs/profiles.md) for the profile system, [examples/private-config/](examples/private-config/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
 
@@ -21,6 +21,7 @@ See [docs/bootstrap.md](docs/bootstrap.md) for the full setup checklist. The sho
 # 1. Install Nix
 sh <(curl -L https://nixos.org/nix/install) --no-daemon   # WSL2 / single-user Linux
 sh <(curl -L https://nixos.org/nix/install)                # macOS / multi-user Linux
+. ~/.nix-profile/etc/profile.d/nix.sh   # single-user: put nix on PATH now (multi-user: open a new terminal)
 
 # 2. Enable required experimental features
 mkdir -p ~/.config/nix
@@ -67,6 +68,9 @@ Some comfort with the language helps for extending the framework (adding a featu
 
 **Why not flake-parts?**
 Genuinely considered and declined: see [Discussion #74](https://github.com/cdprice02/nix-atelier/discussions/74). Short version: a plain, typed function (`lib.mkConfigs`) is simpler to understand and debug than a module-system layer on top of one, for the kind of composition this framework needs.
+
+**Does it work on an Intel Mac?**
+Yes, best-effort: Intel Macs stay on nixpkgs 25.05 (the last release that runs on macOS 13) and get no nixpkgs security fixes, except a patched Nix daemon. Support ends in v5. See [ADR 0002](docs/adr/0002-x86_64-darwin-is-frozen-best-effort.md).
 
 **Is NixOS supported?**
 Yes, as a third config kind alongside Home Manager and nix-darwin, but build-verified only: there's no real NixOS hardware in this project's own CI loop, so a NixOS config is proven to evaluate and build, not to boot.
