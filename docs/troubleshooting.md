@@ -143,11 +143,11 @@ ______________________________________________________________________
 
 ## SSH key not added to GitHub → submodule fetch fails
 
-**Symptom:** During `home-manager switch`, the activation script prints:
+**Symptom:** During a switch, the activation script prints:
 
 ```text
 WARNING: submodule claude: fetch from private remote failed.
-  Ensure your SSH key is added to GitHub, then rerun: home-manager switch --flake ~/.nix-atelier
+  Ensure your SSH key is added to GitHub, then rerun the switch.
 ```
 
 **Fix:**
@@ -157,8 +157,8 @@ WARNING: submodule claude: fetch from private remote failed.
 cat ~/.ssh/<sshKey>.pub
 
 # Paste it at: https://github.com/settings/keys
-# Then re-run:
-home-manager switch --flake ~/.nix-atelier#<profile>
+# Then re-run the switch:
+nh home switch -c <name> .        # or: nh darwin switch -H <name> .
 ```
 
 `<sshKey>` is the prefix of your identity's email (the `email` field in your
@@ -170,7 +170,7 @@ ______________________________________________________________________
 
 **Symptom:** Home Manager warns about a backup file or fails to create `~/.claude`.
 
-**Cause:** `~/.claude` exists as a real directory (e.g. from a previous manual install) rather than a symlink. `just switch`/`just rebuild` pass `backupFileExtension = "bk"` (Linux via `-b bk`, darwin via the persistent module option), so it will rename the existing path to `~/.claude.bk` instead of failing outright. A bare `home-manager switch` invocation without `-b bk` does not get this automatic backup and will fail on the conflict instead.
+**Cause:** `~/.claude` exists as a real directory (e.g. from a previous manual install) rather than a symlink. `just switch`/`just rebuild` pass `backupFileExtension = "bk"` (Linux via `-b bk`, darwin via the persistent module option), so it will rename the existing path to `~/.claude.bk` instead of failing outright. A bare `nh home switch` or `home-manager switch` without `-b bk` does not get this automatic backup and will fail on the conflict instead.
 
 **Fix:** After the switch, verify the symlink is in place:
 
@@ -196,7 +196,7 @@ sudo mv /etc/bashrc /etc/bashrc.before-nix-darwin
 sudo mv /etc/zshrc /etc/zshrc.before-nix-darwin
 ```
 
-nix-darwin regenerates all three from your config on the switch that follows. This is a one-time, first-activation-only step: every later `darwin-rebuild switch` manages these files itself and won't hit this again.
+nix-darwin regenerates all three from your config on the switch that follows. This is a one-time, first-activation-only step: every later switch manages these files itself and won't hit this again.
 
 ______________________________________________________________________
 
@@ -216,7 +216,7 @@ Afterwards the machine is in a half-applied state that is easy to misread as a n
 **Fix:** this framework now ships `cleanup = "none"` in `system/darwin.nix`, so an up-to-date nix-atelier does not hit it. If you override that option in your own config, set it to `"none"` as well, then rerun the switch:
 
 ```sh
-sudo darwin-rebuild switch --flake .#<name>
+nh darwin switch -H <name> .
 ```
 
 The rerun builds a fresh generation and completes activation, including the Home Manager step that was skipped.
@@ -262,16 +262,16 @@ run straight from the flake:
 
 ```sh
 # Linux / WSL2
-nix run home-manager -- switch --flake .#<name> -b bk
+nix run nixpkgs#nh -- home switch -c <name> -b bk .
 
 # macOS, Apple Silicon
 sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin -- switch --flake .#<name>
 ```
 
-After the first apply, `home-manager`/`darwin-rebuild` are on PATH and you can use the short form directly: `home-manager switch --flake .#<name>` or `sudo darwin-rebuild switch --flake .#<name>`.
+After the first apply, `nh` is on PATH: `nh home switch -c <name> .` or `nh darwin switch -H <name> .`, each printing the package diff before activating.
 
-If you're working inside a clone of this repo itself (not a consumer flake scaffolded from `templates/default`), `just`/`nh` are also installed, and `just switch <profile>` detects the platform itself and applies via `nh home switch` or `nh darwin switch` accordingly:
+If you're working inside a clone of this repo itself (not a consumer flake scaffolded from `templates/default`), `just switch <profile>` detects the platform itself and applies via `nh home switch` or `nh darwin switch` accordingly:
 
 ```sh
 just switch <profile>   # e.g. just switch minimal

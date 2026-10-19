@@ -128,12 +128,11 @@ jobs:
       # bootstrap sequence itself still works.
       - name: Run the documented bootstrap sequence
         env:
-          # nix run home-manager -- switch resolves the home-manager
-          # flakeref against the GitHub API. Unauthenticated, that's a
-          # per-IP rate limit shared by every runner on the range, and it
-          # trips intermittently with no code change involved (see the
-          # issue this fixes). GITHUB_TOKEN authenticates the same lookups
-          # under this job's own quota instead.
+          # nix run nixpkgs#nh resolves the nixpkgs flakeref against the
+          # GitHub API. Unauthenticated, that's a per-IP rate limit shared
+          # by every runner on the range, and it trips intermittently with
+          # no code change involved. GITHUB_TOKEN authenticates the same
+          # lookups under this job's own quota instead.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cat > /tmp/bootstrap-test.sh <<'SCRIPT'
@@ -155,7 +154,8 @@ jobs:
           grep -q "username = \"$(id -un)\";" flake.nix \
             || { echo "flake.nix username substitution failed:"; cat flake.nix; exit 1; }
           nix flake check --override-input nix-atelier "path:$GITHUB_WORKSPACE"
-          # -b bk mirrors the documented command. useradd -m seeds
+          # -b bk mirrors the documented command; arguments after `--` go
+          # to nh's nix build. useradd -m seeds
           # /home/ciuser with /etc/skel's .bashrc and .profile, exactly like a
           # real distro or WSL2 install, and Home Manager aborts rather than
           # clobber them. This is the single most likely first-run failure for
@@ -164,7 +164,7 @@ jobs:
           # actually runs here, same as the Nix installer curl above -- not
           # stubbed, since the point is proving the real script, not a mock
           # of it.
-          nix run home-manager -- switch --override-input nix-atelier "path:$GITHUB_WORKSPACE" --flake .#full -b bk
+          nix run nixpkgs#nh -- home switch -c full -b bk . -- --override-input nix-atelier "path:$GITHUB_WORKSPACE"
           SCRIPT
           chmod +x /tmp/bootstrap-test.sh
           chown ciuser:ciuser /tmp/bootstrap-test.sh

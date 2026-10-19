@@ -353,7 +353,7 @@ Installed via its official native installer (curl-piped script), not npm or nixp
 Code editor. Binary managed by Nix; extensions and settings via GitHub Settings Sync. [code.visualstudio.com](https://code.visualstudio.com)
 
 ### alacritty
-GPU-accelerated terminal emulator. Configured with Fira Code font and VS Code-style colors. [alacritty.org](https://alacritty.org)
+GPU-accelerated terminal emulator. Configured with FiraCode Nerd Font Mono and VS Code-style colors. [alacritty.org](https://alacritty.org)
 
 ### obsidian
 Markdown knowledge base. Notes repo is a separate clone. [obsidian.md](https://obsidian.md)
