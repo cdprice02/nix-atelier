@@ -11,13 +11,13 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
-## [v4.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.1.0) -- welcome
+## [v4.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.1.0) -- comma
 
 2026-10-19
 
-The first release meant for people other than its author. The README
-quickstart now works from a clean machine: a single-user Nix install never
-put `nix` on PATH, so step 2 failed with `nix: command not found` (#222).
+The README quickstart now works from a clean machine: a single-user Nix
+install never put `nix` on PATH, so step 2 failed with
+`nix: command not found` (#222).
 Intel Macs are supported best-effort: they stay frozen on nixpkgs 25.05
 until v5 drops them, and `docs/adr/0002` records why (#215).
 
