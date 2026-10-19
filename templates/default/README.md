@@ -2,15 +2,43 @@
 
 Scaffolded by `nix flake init -t github:cdprice02/nix-atelier`.
 
+```text
+flake.nix              # identity + one entry per machine
+machines/work.nix      # settings only the `work` machine gets
+secrets/*.yaml.example # the shape of a machine's sops secrets file
+.sops.yaml.example     # who can decrypt them
+```
+
 ## Next steps
 
-1. Edit `flake.nix`: fill in your real `identity` and at least one entry
-   under `configs`.
-2. `nix flake check` to validate: a misspelled field is a real error, not a
+1. Edit `flake.nix`: fill in your real `identity`, then keep, rename or
+   delete the example configs. Copy `machines/work.nix` for another machine
+   that needs its own settings.
+
+2. `git init && git add -A`: a flake only sees files git tracks.
+
+3. `nix flake check` to validate: a misspelled field is a real error, not a
    silent no-op.
-3. Apply it:
-   - Home Manager: `nix run home-manager -- switch --flake .#<name>`
-   - nix-darwin: `sudo darwin-rebuild switch --flake .#<name>`
+
+4. Apply it with [nh](https://github.com/nix-community/nh), which shows the
+   package and closure-size diff before activating (`-n` stops after the
+   diff). nix-atelier installs nh, so the first switch runs it with
+   `nix run nixpkgs#nh --` and later ones call `nh` directly:
+
+   - Home Manager: `nix run nixpkgs#nh -- home switch -c <name> -b bk .`
+   - nix-darwin: `nix run nixpkgs#nh -- darwin switch -H <name> .`
+
+   nh needs `experimental-features = nix-command flakes` in `nix.conf`.
+
+## Secrets
+
+Optional: without them, nix-atelier reads `~/.config/secrets/env` instead.
+
+1. `age-keygen -o ~/.config/sops/age/keys.txt` prints your public key.
+2. Rename `.sops.yaml.example` to `.sops.yaml` and put that key in it.
+3. `sops secrets/work.yaml` and add the keys `secrets/work.yaml.example`
+   lists.
+4. Uncomment `atelier.sops` in the `work` config.
 
 ## Where to look next
 
@@ -22,3 +50,5 @@ Scaffolded by `nix flake init -t github:cdprice02/nix-atelier`.
   documents `atelier.*` options (AWS profile, native installers, private
   config repo clones, sops secrets): set any of them per-config via
   `configs.home.<name>.extraConfig`.
+- [`docs/bootstrap.md`](https://github.com/cdprice02/nix-atelier/blob/main/docs/bootstrap.md)
+  covers installing Nix and per-platform setup.

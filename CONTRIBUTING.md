@@ -6,7 +6,7 @@ Two kinds of contributions make sense here, and it helps to know the difference 
 
 ### Consume it for personal preferences
 
-Tool choices, dotfile content, prompt theming, personal modules, your own identity: these belong in your own flake.nix, calling `lib.mkConfigs`, not in a PR here. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted. See [docs/profiles.md](docs/profiles.md) for the `features.extra`/`features.exclude`/`features.extraModulePaths` escape hatches, and [examples/private-config/](examples/private-config/) for a worked example of machine-specific customization living entirely outside this repo.
+Tool choices, dotfile content, prompt theming, personal modules, your own identity: these belong in your own flake.nix, calling `lib.mkConfigs`, not in a PR here. PRs that change personal preferences (e.g. "use neovim instead of vim", "add my preferred aliases") won't be accepted. See [docs/profiles.md](docs/profiles.md) for the `features.extra`/`features.exclude`/`features.extraModulePaths` escape hatches, and [templates/default/](templates/default/) for a worked example of machine-specific customization living entirely outside this repo.
 
 ### PRs welcome for framework improvements
 

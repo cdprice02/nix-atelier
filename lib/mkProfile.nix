@@ -91,7 +91,8 @@ in
       # absolute path outside the flake's own source needs --impure on
       # whichever real switch/build actually sets this field; the schema
       # itself (mkConfigs's features.extraModulePaths) doesn't require it.
-      # See examples/private-config/ for a worked example. Empty by default.
+      # A module inside the consumer's own flake needs neither: see
+      # templates/default's extraConfig.imports. Empty by default.
       privateMods = map import (userData.extraModulePaths or [ ]);
 
       guiMods =

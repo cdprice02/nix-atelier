@@ -24,7 +24,7 @@ Claude Code and Neovim configs are submodules under `config/`, provisioned autom
     mkConfigs.nix               # The consumable entry point: typed schema (lib.evalModules), per-kind builders
     systems.nix                 # Which release pair a system uses, and the resolved pkgs/home-manager/nix-darwin for it
   templates/
-    default/                    # `nix flake init -t github:cdprice02/nix-atelier` scaffold: a minimal consumer flake.nix
+    default/                    # `nix flake init -t github:cdprice02/nix-atelier` scaffold: consumer flake.nix, a machine module, sops examples
   modules/
     base.nix                   # "core", always on: shell, git, caret prompt, ssh, secrets tooling, submodule overrides
     env.nix                    # Always on: PATH / writable-prefix policy for Nix-managed runtimes
@@ -70,7 +70,6 @@ Claude Code and Neovim configs are submodules under `config/`, provisioned autom
   tests/
     fixtures/                  # nixos-hardware-stub.nix: synthetic hardware-configuration.nix for build-verify only
     nmt/                       # nmt module tests; wired into `checks` via flake.nix
-  examples/private-config/     # Worked example: identity override, private packages, secrets -- copy out, don't run in place
   .github/workflows/
     check.yml                  # get-profiles, flake-check matrix (incl. formatting), eval-all, build matrices
     bootstrap-smoke-test.yml   # Documented bootstrap (template scaffold), from scratch, in a container

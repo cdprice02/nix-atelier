@@ -21,7 +21,7 @@
   extra-module-path-overrides-git-identity = {
     nmt.description = ''
       extraModulePaths layers a private module on top of the profile;
-      fixtures/private-identity.nix mirrors examples/private-config's own
+      fixtures/private-identity.nix mirrors templates/default/machines/work.nix's
       identity-override shape (hm-compat's gitIdentity with force = true) to
       prove the mechanism a real private module actually relies on: base.nix
       sets the personal identity at a real priority (not mkDefault), so an

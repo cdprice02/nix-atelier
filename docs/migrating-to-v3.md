@@ -59,7 +59,7 @@ profiles.
    work unmodified. One exception: a private module that resolved this
    repo's own `modules/lib/hm-compat.nix` via a hardcoded `~/.nix-atelier`
    path needs to resolve it through the flake input instead. See
-   `examples/private-config/machines/workstation.nix` for the pattern (a
+   `templates/default/machines/work.nix` for the pattern (a
    module factory taking `hmCompatPath`, resolved by the caller from
    `"${nix-atelier}/modules/lib/hm-compat.nix"`).
 6. Delete your fork. There's nothing left in it to keep in sync.
@@ -68,5 +68,5 @@ profiles.
 See [templates/default/flake.nix](../templates/default/flake.nix) for the
 scaffold, [lib/mkConfigs.nix](../lib/mkConfigs.nix) for every field each
 config kind accepts, and
-[examples/private-config/](../examples/private-config/) for a worked
+[templates/default/machines/](../templates/default/machines/) for a worked
 machine-module example.
