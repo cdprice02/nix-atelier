@@ -23,6 +23,7 @@
   systems,
   sopsNixModuleFor,
   caretModule,
+  featureInputModules ? { },
 }:
 let
   inherit (systems)
@@ -56,6 +57,7 @@ let
       isLinux
       sopsNixModuleFor
       caretModule
+      featureInputModules
       ;
   };
   inherit (mkProfileLib) mkProfile tiers;
