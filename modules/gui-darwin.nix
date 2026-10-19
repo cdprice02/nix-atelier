@@ -84,8 +84,7 @@ in
       enable = true;
       inherit (guiBase.alacritty) theme;
       settings = {
-        window = {
-          opacity = guiBase.alacritty.windowOpacity;
+        window = guiBase.alacritty.window // {
           decorations = "buttonless";
           option_as_alt = "Both";
         };
