@@ -105,7 +105,7 @@ configs.home.full.extraConfig.atelier.sops = {
 };
 ```
 
-`home-manager switch` then renders those vars straight to
+The next switch then renders those vars straight to
 `~/.config/secrets/env` from your `atelier.sops.file`: the manual copy/fill step
 above becomes unnecessary. To edit the encrypted values later: `sops secrets.yaml` in your private repo (opens `$EDITOR` with the decrypted
 plaintext; saving re-encrypts automatically). If a token genuinely differs
@@ -142,7 +142,7 @@ Use the config name you gave it in `flake.nix` (`full` in the example above).
 
 ```sh
 nix flake check                                          # validate first
-nix run home-manager -- switch --flake .#full -b bk
+nix run nixpkgs#nh -- home switch -c full -b bk .
 ```
 
 > **`-b bk` is required on the first switch** of any machine that already has
@@ -151,19 +151,18 @@ nix run home-manager -- switch --flake .#full -b bk
 > this is the normal case, not the exception. `-b bk` renames each conflicting
 > file to `<name>.bk` instead of failing.
 
-After first apply, `home-manager` is on PATH:
+[nh](https://github.com/nix-community/nh) builds the config, prints the
+package and closure-size diff, then activates. After the first apply
+nix-atelier's own `nh` is on PATH:
 
 ```sh
 # subsequent applies
-home-manager switch --flake .#full
+nh home switch -c full .
 ```
 
-If you're working inside a clone of this repo itself (not a separate
-consumer directory), `just`/`nh` are also available: `just switch <name>`
-detects the platform and applies via `nh`, printing a package/closure diff
-before activating. Trailing args pass through: `just switch full -n` shows
-the diff without activating, `just switch full -a` pauses for confirmation
-first.
+`-n` shows the diff without activating; `-a` asks before activating. Inside
+a clone of this repo itself, `just switch <name>` does the same and detects
+the platform for you.
 
 ### 7. SSH key
 
@@ -186,7 +185,7 @@ has. Skip this step unless you're also working inside a clone of nix-atelier
 itself, e.g. to submit a framework improvement (see CONTRIBUTING.md).
 
 `pre-commit` is installed by the `full` tier: no separate install needed.
-After first `home-manager switch` inside a clone of this repo, wire up the
+After the first switch inside a clone of this repo, wire up the
 hooks for that clone:
 
 ```sh
@@ -275,15 +274,18 @@ sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin -- switch --flake .#<name>
 ```
 
-After that first apply, `darwin-rebuild` is on PATH and every later apply is just:
+nh can't do this first apply: it runs its profile step under `sudo` with a
+reset environment, and root's nix has no flakes until nix-darwin manages
+`/etc/nix/nix.conf`. After that first apply, every later one goes through
+nh, which prints the package and closure-size diff before activating and
+elevates on its own (no leading `sudo`):
 
 ```sh
-sudo darwin-rebuild switch --flake .#<name>
+nh darwin switch -H <name> .
 ```
 
-If you're working inside a clone of this repo itself, `just switch` also
-works: it detects OS and architecture, appends the right suffix, and applies
-via `nh`, printing a diff before activating.
+Inside a clone of this repo itself, `just switch` does the same and appends
+the right suffix for your architecture.
 
 There's no separate "set default shell" step here the way WSL2 has one: nix-darwin's `system/darwin.nix` sets `programs.zsh.enable = true` at the system level, which (unlike standalone home-manager) registers zsh as an available login shell automatically.
 
@@ -306,7 +308,7 @@ Not part of consuming this framework, same as the WSL2 section's equivalent
 step: skip unless you're also working inside a clone of nix-atelier itself.
 
 `pre-commit` is installed by the `full` tier: no separate install needed.
-After first `darwin-rebuild switch` inside a clone of this repo, wire up the
+After the first switch inside a clone of this repo, wire up the
 hooks for that clone:
 
 ```sh
