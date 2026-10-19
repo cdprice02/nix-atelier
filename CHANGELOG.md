@@ -11,6 +11,42 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.1.0) -- comma
+
+2026-10-19
+
+The README quickstart now works from a clean machine: a single-user Nix
+install never put `nix` on PATH, so step 2 failed with
+`nix: command not found` (#222).
+Intel Macs are supported best-effort: they stay frozen on nixpkgs 25.05
+until v5 drops them, and `docs/adr/0002` records why (#215).
+
+Three bugs found on real machines are fixed (#212). A
+`configs.<kind>.<name>` entry takes an optional `username`, for machines
+whose login name differs from `identity.username` (an LDAP-backed HPC
+node). A failing `ssh-keygen` warns instead of aborting the switch. Nested
+login shells on Debian and SUSE get the Nix profile's bins on PATH, where
+the vendor script returned early.
+
+Nix itself moves to patched releases for the 2026-10-13 advisory: 2.34.9
+from nixpkgs on Linux, NixOS and Apple Silicon (#223), and a separately
+pinned 2.31.6 daemon on Intel Macs, whose 25.05 release ships 2.28.5
+and gets no more updates (#215).
+
+Two additions. An opt-in `nix-index` feature
+(`features.extra = [ "nix-index" ]`) adds comma, so `, cowsay` runs a tool
+without installing it, and names the package behind an unknown command;
+not available on Intel Macs (#225). In a checkout of this repo,
+`just audit` lists known CVEs in what the machine runs, using vulnix (#224).
+
+CI builds aarch64-linux on native arm64 runners instead of QEMU (#214),
+and the weekly `flake.lock` PR now runs every profile build and posts a
+closure diff before it can merge (#221). Its first run caught a
+Home Manager change that broke an internal check (#220).
+
+Minor: `username` is a new optional field and `nix-index` a new opt-in
+feature; no existing `mkConfigs` call changes behavior.
+
 ## [v4.0.2](https://github.com/cdprice02/nix-atelier/releases/tag/v4.0.2) -- sops-pair
 
 2026-10-17
