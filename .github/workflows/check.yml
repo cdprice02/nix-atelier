@@ -21,11 +21,13 @@ permissions:
 
 jobs:
   # ── Evaluate the flake and output profile name lists for downstream matrices ──
-  # Feeds build-linux-x86_64/build-linux-aarch64/build-darwin below, all three
-  # of which only run at the push/dispatch gate, so this stays gated the same
-  # way rather than paying its eval cost on every PR for no consumer there.
+  # Feeds the build-* jobs below, which run at the push/dispatch gate and on
+  # update-flake-lock's PR, so this is gated the same way. A relock is the one
+  # PR that can break a build with no .nix change at all (an input pulling in
+  # a package Hydra hasn't cached for some system), so it faces the full
+  # matrix before merge rather than first failing on main.
   get-profiles:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.head_ref == 'update-flake-lock'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -198,12 +200,12 @@ jobs:
       - run: nix shell nixpkgs#just -c just eval-all
 
   # ── Full activation-package build, native x86_64 Linux profiles ──────────────
-  # Gated to push-to-main + manual dispatch, same as build-linux-aarch64 and
-  # build-darwin below: none of the three is a required check, and eval-all
+  # Gated to push-to-main, manual dispatch and the lock-update PR (see
+  # get-profiles), same as the other build-* jobs: none is a required check, and eval-all
   # plus flake-check's nmt checks already give every PR real coverage without
   # a full build. Real build coverage stays at the merge gate.
   build-linux-x86_64:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.head_ref == 'update-flake-lock'
     needs: get-profiles
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -239,6 +241,53 @@ jobs:
           purge-primary-key: never
       - run: nix shell nixpkgs#just -c just _build-linux ${{ matrix.profile }}
 
+  # ── Closure diff for the lock-update PR ──────────────────────────────────────
+  # Comments what a relock changes (package versions, closure size) on its PR,
+  # so judging the merge needs no local build. full-gui on x86_64-linux: the
+  # broadest profile on the cheapest runner. Base is the PR's base commit, so
+  # the diff is exactly what merging brings in.
+  closure-diff:
+    if: github.head_ref == 'update-flake-lock'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          path: head
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - uses: cachix/install-nix-action@v31.11.1
+      - uses: nix-community/cache-nix-action@v7.0.2
+        with:
+          # Restore-only: build-linux-x86_64 owns this key.
+          primary-key: nix-linux-build-x86_64-${{ hashFiles('head/flake.lock', 'head/**/*.nix') }}
+          restore-prefixes-first-match: nix-linux-build-x86_64-
+          save: false
+      - run: |
+          attr='homeConfigurations.full-gui.activationPackage'
+          nix build "./base#$attr" -o base-result
+          nix build "./head#$attr" -o head-result
+          {
+            echo '### Closure diff: full-gui (x86_64-linux)'
+            echo
+            echo '~~~'
+            nix run nixpkgs#nvd -- diff base-result head-result
+            echo '~~~'
+          } > diff.md
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh pr comment ${{ github.event.pull_request.number }}
+          -R ${{ github.repository }} --body-file diff.md
+          --edit-last --create-if-none
+
   # ── Full activation-package build, native aarch64 Linux profiles ────────────
   # Native arm64 runners (free for public repos), not QEMU: emulation made
   # these the slowest jobs in the workflow, and a package Hydra hasn't cached
@@ -249,7 +298,7 @@ jobs:
   # PR still gets full eval coverage (eval-all) and assertion-level content
   # coverage for this arch (flake-check's aarch64-linux nmt entry).
   build-linux-aarch64:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.head_ref == 'update-flake-lock'
     needs: get-profiles
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
@@ -281,7 +330,7 @@ jobs:
   # real hardware -- there is none in this loop. Same gating and cache-key
   # reasoning as build-linux-x86_64 above.
   build-nixos-x86_64:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.head_ref == 'update-flake-lock'
     needs: get-profiles
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -309,7 +358,7 @@ jobs:
   # Same native runner and gating as build-linux-aarch64 above; same
   # build-verified-only scope as build-nixos-x86_64 above.
   build-nixos-aarch64:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.head_ref == 'update-flake-lock'
     needs: get-profiles
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
@@ -343,7 +392,7 @@ jobs:
   # assertion-level coverage of the two darwin systems, including
   # modules/lib/hm-compat.nix's x86_64-darwin/25.05-pin shim.
   build-darwin:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.head_ref == 'update-flake-lock'
     needs: get-profiles
     runs-on: macos-14
     timeout-minutes: 15

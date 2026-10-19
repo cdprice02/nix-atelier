@@ -51,10 +51,11 @@ jobs:
           body: |
             Automated weekly `nix flake update`, re-resolving all inputs together.
 
-            If CI checks appear on this PR, they are the same gate as any other
-            change, including `flake-check`'s release-pairing assert; a failure
-            means a real pairing mismatch, not a bug in this workflow (see
-            CLAUDE.md's "Input pairing invariant").
+            If CI checks appear on this PR, they are main's full gate: every
+            build-* job plus `flake-check`'s release-pairing assert (a failure
+            there means a real pairing mismatch, see CLAUDE.md's "Input pairing
+            invariant"). A `closure-diff` comment lists the package versions
+            and closure size this relock changes.
 
             **If no checks appear at all**, this repo has no `FLAKE_UPDATE_TOKEN`
             secret and the PR was opened with the default `GITHUB_TOKEN`, which
