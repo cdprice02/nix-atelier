@@ -48,7 +48,10 @@
     };
     font = {
       size = 14;
-      normal.family = "Fira Code";
+      # The Nerd Font, so file-type icons (oil, devicons) render from the
+      # configured font instead of an OS fallback; Mono keeps each icon one
+      # cell wide so icon columns stay aligned.
+      normal.family = "FiraCode Nerd Font Mono";
     };
     # history and clipboard match the tmux feature (historyLimit,
     # set-clipboard), so scrollback and copy behave the same in and out of

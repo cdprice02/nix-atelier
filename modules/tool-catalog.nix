@@ -711,7 +711,7 @@
       key = "alacritty";
       matches = [ "alacritty" ];
       category = "GUI (gui-linux / gui-darwin profiles only)";
-      description = "GPU-accelerated terminal emulator. Configured with Fira Code font and VS Code-style colors.";
+      description = "GPU-accelerated terminal emulator. Configured with FiraCode Nerd Font Mono and VS Code-style colors.";
       link = "[alacritty.org](https://alacritty.org)";
     }
     {
