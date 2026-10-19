@@ -113,6 +113,42 @@ update:
     nix flake update
     @echo "Inputs updated, run 'just check' before 'just switch'."
 
+# Scans what this machine is running, not a flake output: the active system
+# closure where one exists (nix-darwin, NixOS; it includes the Home Manager
+# generation), otherwise the standalone Home Manager generation. `-C` limits
+# the scan to runtime references; vulnix's default walks the build-time
+# derivation graph too and reports compilers that never ship. vulnix matches
+# CVEs on package name and version, so one nixpkgs patched without a version
+# bump still reports: the output is a list to triage, which is why this is a
+# manual recipe and not a CI gate. On x86_64-darwin, docs/adr/0002 explains
+# why the list is long. Extra args pass through to vulnix (e.g. `--json`).
+[group('machine')]
+[doc('List known CVEs in what this machine runs (vulnix)')]
+audit *VULNIX_ARGS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -e /run/current-system ]; then
+        target=/run/current-system
+    else
+        target="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager"
+        [ -e "$target" ] || target="/nix/var/nix/profiles/per-user/$USER/home-manager"
+    fi
+    if [ ! -e "$target" ]; then
+        echo "error: no active system or Home Manager generation; run 'just switch' first." >&2
+        exit 1
+    fi
+    # Rolling nixpkgs no longer evaluates on x86_64-darwin.
+    pkgs=nixpkgs
+    if [ "$(uname)" = Darwin ] && [ "$(uname -m)" = x86_64 ]; then
+        pkgs=nixpkgs-darwin
+    fi
+    echo "Scanning $(readlink "$target") (runtime closure)" >&2
+    status=0
+    nix run --inputs-from . "$pkgs#vulnix" -- -C {{ VULNIX_ARGS }} "$target" || status=$?
+    # vulnix exits 2 when it reports findings: that is this recipe's output.
+    [ "$status" -eq 2 ] && status=0
+    exit "$status"
+
 [group('machine')]
 [doc('Update submodules to their tracked branch, then relink skills')]
 sync:
