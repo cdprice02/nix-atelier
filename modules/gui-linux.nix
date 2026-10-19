@@ -19,7 +19,14 @@ in
         window = guiBase.alacritty.window // {
           decorations = "none";
         };
-        inherit (guiBase.alacritty) font colors;
+        inherit (guiBase.alacritty)
+          font
+          colors
+          scrolling
+          selection
+          mouse
+          cursor
+          ;
       };
     };
 

@@ -88,7 +88,14 @@ in
           decorations = "buttonless";
           option_as_alt = "Both";
         };
-        inherit (guiBase.alacritty) font colors;
+        inherit (guiBase.alacritty)
+          font
+          colors
+          scrolling
+          selection
+          mouse
+          cursor
+          ;
         general.import = [
           "~/.config/alacritty/keybindings.toml"
         ];

@@ -50,5 +50,15 @@
       size = 14;
       normal.family = "Fira Code";
     };
+    # history and clipboard match the tmux feature (historyLimit,
+    # set-clipboard), so scrollback and copy behave the same in and out of
+    # tmux.
+    scrolling.history = 50000;
+    selection.save_to_clipboard = true;
+    mouse.hide_when_typing = true;
+    cursor.style = {
+      shape = "Block";
+      blinking = "Never";
+    };
   };
 }
