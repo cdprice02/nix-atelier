@@ -72,6 +72,8 @@ ______________________________________________________________________
 A release marks a meaningful milestone, not a schedule: there's no fixed
 cadence, and not every merged PR needs one. `CHANGELOG.md` gets a new entry,
 and a GitHub Release with the real substance, when a tag actually goes out.
+Before tagging, `just demo` re-records the README's `docs/assets/nh-switch.gif`
+from the release commit; commit it if the diff it shows has changed.
 
 Version numbers follow semver against `lib.mkConfigs`'s public contract,
 since that contract is the thing consumers actually depend on:
