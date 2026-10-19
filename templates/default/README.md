@@ -22,13 +22,15 @@ secrets/*.yaml.example # the shape of a machine's sops secrets file
 
 4. Apply it with [nh](https://github.com/nix-community/nh), which shows the
    package and closure-size diff before activating (`-n` stops after the
-   diff). nix-atelier installs nh, so the first switch runs it with
-   `nix run nixpkgs#nh --` and later ones call `nh` directly:
+   diff). nix-atelier installs nh, so only the first switch differs:
 
    - Home Manager: `nix run nixpkgs#nh -- home switch -c <name> -b bk .`
-   - nix-darwin: `nix run nixpkgs#nh -- darwin switch -H <name> .`
-
-   nh needs `experimental-features = nix-command flakes` in `nix.conf`.
+     the first time, then `nh home switch -c <name> .`. nh needs
+     `experimental-features = nix-command flakes` in `nix.conf`.
+   - nix-darwin: the first switch has to be
+     `sudo nix --extra-experimental-features "nix-command flakes" run nix-darwin -- switch --flake .#<name>`,
+     because flakes aren't enabled for root until nix-darwin manages
+     `/etc/nix/nix.conf`. After that, `nh darwin switch -H <name> .`
 
 ## Secrets
 
