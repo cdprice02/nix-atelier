@@ -235,7 +235,8 @@ Apple Silicon, `x86_64-darwin` for Intel (check with `uname -m`: `arm64` means
 Apple Silicon, `x86_64` means Intel). They're not interchangeable: this
 repo's own Intel config is pinned to nixpkgs 25.05, because
 nixpkgs-unstable has dropped x86_64-darwin; Apple Silicon rides the same
-rolling inputs as Linux. Picking the wrong one gets you a build for the wrong
+rolling inputs as Linux. Intel is frozen best-effort and ends in v5 (see
+[ADR 0002](adr/0002-x86_64-darwin-is-frozen-best-effort.md)). Picking the wrong one gets you a build for the wrong
 platform, not a slower build of the right one. See the WSL2 section's step 2
 above for the `submodules`/private-overlay pattern, which works the same way
 here.
