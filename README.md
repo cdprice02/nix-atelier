@@ -5,7 +5,7 @@
 
 A Nix framework for reproducible dev environments, built on [Home Manager](https://github.com/nix-community/home-manager) and [nix-darwin](https://github.com/nix-darwin/nix-darwin): macOS (Apple Silicon; Intel best-effort), any Linux/WSL2, and NixOS (build-verified), same modules, one command. Consumed, not forked: pin it as a flake input, call `lib.mkConfigs` with your identity, get a full dev environment on any machine.
 
-Machine-specific and private data (work identity, real secrets, anything that shouldn't be public) never has to live in this repo, or in a fork of it: it lives in your own flake.nix instead. See [docs/profiles.md](docs/profiles.md) for the profile system, [examples/private-config/](examples/private-config/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
+Machine-specific and private data (work identity, real secrets, anything that shouldn't be public) never has to live in this repo, or in a fork of it: it lives in your own flake.nix instead. See [docs/profiles.md](docs/profiles.md) for the profile system, [templates/default/](templates/default/) for the private-data pattern, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to adapt the framework itself.
 
 ## Why this, not something else
 
@@ -76,7 +76,7 @@ Yes, best-effort: Intel Macs stay on nixpkgs 25.05 (the last release that runs o
 Yes, as a third config kind alongside Home Manager and nix-darwin, but build-verified only: there's no real NixOS hardware in this project's own CI loop, so a NixOS config is proven to evaluate and build, not to boot.
 
 **What if I need a tool that isn't in the default feature set?**
-`features.extra`/`features.exclude` add or drop named features per config; `features.extraModulePaths` layers in your own private Home Manager modules entirely outside this repo. See [docs/profiles.md](docs/profiles.md) and [examples/private-config/](examples/private-config/).
+`features.extra`/`features.exclude` add or drop named features per config; `features.extraModulePaths` layers in your own private Home Manager modules entirely outside this repo. See [docs/profiles.md](docs/profiles.md) and [templates/default/](templates/default/).
 
 **Why does the `full` tier run a vendor install script on first activation?**
 It does, for Claude Code specifically (and anything you declare via `atelier.nativeInstallers`). See [SECURITY.md](SECURITY.md)'s scope section for what that means.
@@ -96,16 +96,16 @@ just --list        # everything else
 
 ## Docs
 
-|                                                      |                                                                      |
-| ---------------------------------------------------- | -------------------------------------------------------------------- |
-| [ARCHITECTURE.md](ARCHITECTURE.md)                   | How the framework thinks: compositor, extension points, drift guards |
-| [CHANGELOG.md](CHANGELOG.md)                         | Version history, and where to find each release's full notes         |
-| [docs/bootstrap.md](docs/bootstrap.md)               | First-time setup, per target                                         |
-| [docs/profiles.md](docs/profiles.md)                 | Every profile and how they compose                                   |
-| [docs/tools.md](docs/tools.md)                       | What each profile installs                                           |
-| [docs/troubleshooting.md](docs/troubleshooting.md)   | Common first-boot failures                                           |
-| [examples/private-config/](examples/private-config/) | Worked example: identity overrides, private packages, secrets        |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                   | Consuming vs. contributing, local validation, PR standards           |
+|                                                    |                                                                              |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                 | How the framework thinks: compositor, extension points, drift guards         |
+| [CHANGELOG.md](CHANGELOG.md)                       | Version history, and where to find each release's full notes                 |
+| [docs/bootstrap.md](docs/bootstrap.md)             | First-time setup, per target                                                 |
+| [docs/profiles.md](docs/profiles.md)               | Every profile and how they compose                                           |
+| [docs/tools.md](docs/tools.md)                     | What each profile installs                                                   |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Common first-boot failures                                                   |
+| [templates/default/](templates/default/)           | What `nix flake init -t` scaffolds: a flake, a machine module, sops examples |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                 | Consuming vs. contributing, local validation, PR standards                   |
 
 ## Contributing
 

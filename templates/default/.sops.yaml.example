@@ -1,0 +1,13 @@
+# Rename to .sops.yaml and replace the placeholder with your own age public
+# key (`age-keygen` prints it). Nobody holds the placeholder's private half,
+# so nothing encrypted for it could ever be decrypted.
+#
+# A machine whose secrets another machine must not read gets its own key
+# and its own rule, listed before this catch-all.
+keys:
+  - &owner age1PLACEHOLDER-REPLACE-WITH-YOUR-OWN-AGE-PUBLIC-KEY-EXAMPLE00
+creation_rules:
+  - path_regex: ^secrets/[^/]+\.yaml$
+    key_groups:
+      - age:
+          - *owner

@@ -763,50 +763,31 @@
           # flake.nix would (nix-atelier = self simulates the real flake
           # input), no nix flake init round-trip needed to catch a stale
           # field name.
-          templateOutputs = (import ./templates/default/flake.nix).outputs { nix-atelier = self; };
-          templateDispatchOk = builtins.attrNames templateOutputs.homeConfigurations == [ "full" ];
+          templateOutputs = (import ./templates/default/flake.nix).outputs {
+            self = ./templates/default;
+            nix-atelier = self;
+          };
+          templateDispatchOk =
+            builtins.attrNames templateOutputs.homeConfigurations == [
+              "full"
+              "work"
+            ];
 
-          # examples/private-config was previously never evaluated by
-          # anything in CI -- only its general shape was loosely mirrored by
-          # tests/nmt/fixtures/private-identity.nix. Wired through the real
-          # consumer mechanism its own README documents (a config's
-          # extraConfig.imports), not a synthetic shortcut: this is the same
-          # path a real private machine module goes through, proving the
-          # examples actually work with that mechanism rather than merely
-          # parsing as valid Nix. workstation.nix is a module factory (needs
-          # hmCompatPath); laptop.nix/build-server.nix are plain modules.
-          examplesModules = [
-            (import ./examples/private-config/machines/workstation.nix {
-              hmCompatPath = ./modules/lib/hm-compat.nix;
-            })
-            (import ./examples/private-config/machines/laptop.nix)
-            (import ./examples/private-config/machines/build-server.nix)
-          ];
-          examplesConfig =
-            (mkConfigsLib.mkConfigs {
-              identity = mkConfigsTestIdentity;
-              configs.home.examples-check = {
-                inherit system;
-                extraConfig.imports = examplesModules;
-              };
-            }).homeConfigurations.examples-check.config;
-          examplesHasPackage =
-            name: builtins.any (p: (p.pname or p.name or "") == name) examplesConfig.home.packages;
-          # settings.user.name/.email (rolling) vs userName/userEmail (25.05,
-          # pinned x86_64-darwin), probed in that order: rolling HM has
-          # removed userName, and reading a removed option throws rather than
-          # falling through `or`. 25.05 has no `settings`, so it falls through.
-          examplesGitName =
-            examplesConfig.programs.git.settings.user.name or examplesConfig.programs.git.userName or null;
-          examplesGitEmail =
-            examplesConfig.programs.git.settings.user.email or examplesConfig.programs.git.userEmail or null;
-          examplesOk =
-            (examplesHasPackage "hello")
-            && (examplesHasPackage "borgbackup")
+          # The template's `work` config wires machines/work.nix through
+          # extraConfig.imports, the path a consumer's own machine module
+          # takes, so evaluating it proves the module, not just its syntax.
+          templateWorkConfig = templateOutputs.homeConfigurations.work.config;
+          templateWorkHasPackage =
+            name: builtins.any (p: (p.pname or p.name or "") == name) templateWorkConfig.home.packages;
+          # The template's configs are x86_64-linux, so always the rolling
+          # release pair's option names, never 25.05's userName/userEmail.
+          templateWorkGit = templateWorkConfig.programs.git.settings.user;
+          templateWorkOk =
+            (templateWorkHasPackage "hello")
             &&
-              (examplesConfig.home.sessionVariables.MY_LAPTOP_ONLY_VAR or null) == "some-machine-specific-value"
-            && examplesGitName == "Your Workstation Name"
-            && examplesGitEmail == "you@workstation.example.com";
+              (templateWorkConfig.home.sessionVariables.MY_WORK_ONLY_VAR or null) == "some-machine-specific-value"
+            && (templateWorkGit.name or null) == "Your Work Name"
+            && (templateWorkGit.email or null) == "you@work.example.com";
 
           # modules/secrets-sops.nix coverage: no fixture, test, or CI
           # path had ever set atelier.sops.file, so the module was
@@ -1004,16 +985,14 @@
                 drifted from lib.mkConfigs's real schema.
               '';
 
-          examples-private-config =
-            if examplesOk then
-              pkgs.runCommand "check-examples-private-config" { } "touch $out"
+          template-machine-module =
+            if templateWorkOk then
+              pkgs.runCommand "check-template-machine-module" { } "touch $out"
             else
               throw ''
-                examples-private-config: examples/private-config/machines/*.nix
-                no longer evaluate to what their own README documents
-                (hello/borgbackup packages, MY_LAPTOP_ONLY_VAR, workstation.nix's
-                forced git identity override) through a real extraConfig.imports
-                wiring.
+                template-machine-module: templates/default's `work` config no
+                longer gets what machines/work.nix sets (the hello package,
+                MY_WORK_ONLY_VAR, the forced git identity override).
               '';
 
           secrets-sops =

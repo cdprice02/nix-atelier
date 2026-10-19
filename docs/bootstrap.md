@@ -91,7 +91,7 @@ age-keygen -o ~/.config/sops/age/keys.txt   # prints your public key
 chmod 600 ~/.config/sops/age/keys.txt
 
 # 2. In your own private repo: create .sops.yaml with your public key as the
-#    recipient (see examples/private-config/.sops.yaml.example for the shape,
+#    recipient (see templates/default/.sops.yaml.example for the shape,
 #    or this repo's own .sops.yaml), then:
 sops secrets.yaml   # opens $EDITOR on a new file; save to encrypt
 ```
