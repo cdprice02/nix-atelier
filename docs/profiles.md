@@ -78,9 +78,9 @@ machine: `nix flake init -t github:cdprice02/nix-atelier`, fill in your
 identity, then apply the config you named (see
 `templates/default/README.md`):
 ```sh
-nix run home-manager -- switch --flake .#<name> -b bk
-# After first apply, home-manager is on PATH:
-home-manager switch --flake .#<name> -b bk
+nix run nixpkgs#nh -- home switch -c <name> -b bk .
+# After first apply, nh is on PATH:
+nh home switch -c <name> .
 ```
 
 ## darwinConfigurations (macOS)
@@ -107,9 +107,9 @@ sudo nix --extra-experimental-features "nix-command flakes" \
   run nix-darwin -- switch --flake .#<name>
 ```
 
-Every later apply can just use `darwin-rebuild switch --flake .#<name>`
-directly (or `just switch`, if working inside a clone of this repo
-itself rather than a consumer's own flake.nix).
+Every later apply goes through nh, `nh darwin switch -H <name> .`
+(or `just switch`, if working inside a clone of this repo itself
+rather than a consumer's own flake.nix).
 
 ## Customizing your machine
 

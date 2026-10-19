@@ -34,9 +34,11 @@ $EDITOR flake.nix   # fill in identity + at least one config
 nix flake check
 
 # 4. Apply (-b bk backs up any pre-existing ~/.bashrc etc. instead of failing)
-nix run home-manager -- switch --flake .#<name> -b bk        # Linux/WSL2
+nix run nixpkgs#nh -- home switch -c <name> -b bk .           # Linux/WSL2
 sudo nix run nix-darwin -- switch --flake .#<name>            # macOS, first apply
 ```
+
+After the first apply, nix-atelier's own `nh` is on PATH and every later switch goes through it, printing the package and closure-size diff before activating: `nh home switch -c <name> .` or `nh darwin switch -H <name> .` (add `-n` to stop after the diff).
 
 See [templates/default/README.md](templates/default/README.md) for what the scaffolded `flake.nix` looks like and where to find every field it accepts.
 

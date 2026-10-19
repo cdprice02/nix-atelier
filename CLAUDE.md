@@ -79,13 +79,13 @@ Claude Code and Neovim configs are submodules under `config/`, provisioned autom
 
 ## Key Commands
 
-Prefer `just`: it is the sole interface and handles OS/arch dispatch. These are for working inside a clone of this repo itself; a real consumer's own flake.nix (see "Consuming this framework" below) uses plain `home-manager switch`/`darwin-rebuild switch` directly, no justfile.
+Prefer `just`: it is the sole interface and handles OS/arch dispatch. These are for working inside a clone of this repo itself; a real consumer's own flake.nix (see "Consuming this framework" below) calls `nh home switch`/`nh darwin switch` directly, no justfile.
 
 | Task                                           | Command                                                             |
 | ---------------------------------------------- | ------------------------------------------------------------------- |
 | Apply config (any OS)                          | `just switch [profile]`                                             |
-| Apply config (Mac, explicit)                   | `sudo darwin-rebuild switch --flake ~/.nix-atelier#<config>`        |
-| Apply config (Linux/WSL, explicit)             | `home-manager switch --flake ~/.nix-atelier#<profile> -b bk`        |
+| Apply config (Mac, explicit)                   | `nh darwin switch -H <config> ~/.nix-atelier`                       |
+| Apply config (Linux/WSL, explicit)             | `nh home switch -c <profile> -b bk ~/.nix-atelier`                  |
 | First apply on a Mac (no `darwin-rebuild` yet) | `sudo nix run nix-darwin -- switch --flake ~/.nix-atelier#<config>` |
 | Update flake inputs                            | `just update`                                                       |
 | Validate                                       | `just check` (`nix flake check`, includes formatting/lints)         |
@@ -183,7 +183,7 @@ Two tiers:
 
 ### Submodule overrides
 
-`atelier.submodules` (set via a config's `extraConfig`) accepts an optional attrset. For each key matching a submodule name, Home Manager activation adds a `private` remote and checks out a tracking branch automatically; no manual git setup needed after `home-manager switch`. Leave the block empty to use the default public submodule remotes.
+`atelier.submodules` (set via a config's `extraConfig`) accepts an optional attrset. For each key matching a submodule name, Home Manager activation adds a `private` remote and checks out a tracking branch automatically; no manual git setup needed after a switch. Leave the block empty to use the default public submodule remotes.
 
 ### VS Code
 
