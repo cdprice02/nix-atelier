@@ -11,6 +11,24 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.1.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.1.1) -- glyphs
+
+2026-10-19
+
+Alacritty renders in FiraCode Nerd Font Mono, so file-type icons in oil
+and devicons come from the configured font instead of an OS fallback. On
+Linux, fontconfig is enabled: without it Alacritty couldn't find any of
+the profile's fonts (#230). Alacritty also opens opaque and maximized,
+with 50,000 lines of scrollback to match tmux, copy-on-select, a steady
+block cursor, and the mouse hidden while typing (#228).
+
+Every switch in the README, bootstrap guide and template goes through nh,
+first applies included (#229). The template carries the private-config
+example as a `work` config (#227), and the README shows nh's diff before
+activating, re-recorded each release by `just demo` (#231).
+
+Patch: no option or schema change.
+
 ## [v4.1.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.1.0) -- comma
 
 2026-10-19
