@@ -11,6 +11,24 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.2.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.2.0) -- chroot
+
+2026-10-21
+
+Secrets activate on machines without a user systemd, such as an HPC login
+node running Home Manager inside nix-user-chroot. Setting
+`atelier.sops.userSystemd = false` runs the sops-nix install script
+directly during activation, skips the user-service restart, and renders
+secrets under `$XDG_STATE_HOME/sops-nix/secrets.d` (#235, closes #210).
+
+Every profile gets `yq` (the Go one, for YAML, JSON and TOML) next to `jq`.
+`lang-node` pins Node 24 and adds pnpm, with `PNPM_HOME` on the session
+path so `pnpm add -g` works without `pnpm setup` editing rc files (#233).
+The shared skills submodule picks up the Node package-manager rules (#234).
+
+Minor: `atelier.sops.userSystemd` is a new option, defaulting to the
+existing behavior; `lang-node` moves from the nixpkgs default Node to 24.
+
 ## [v4.1.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.1.1) -- glyphs
 
 2026-10-19
