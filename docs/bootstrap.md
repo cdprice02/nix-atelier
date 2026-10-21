@@ -112,6 +112,12 @@ plaintext; saving re-encrypts automatically). If a token genuinely differs
 between two of your machines, give each machine's config its own
 `atelier.sops.file` pointing at a separate encrypted file, rather than sharing one.
 
+On a Linux host with no user systemd manager (Nix under `nix-user-chroot`, a
+container), also set `atelier.sops.userSystemd = false`. sops-nix normally
+decrypts through a systemd user service; with this off, activation runs the
+same install script directly and secrets are kept under
+`~/.local/state/sops-nix/` instead of `$XDG_RUNTIME_DIR`.
+
 ### 4. Corporate or self-signed CA certificate (if applicable)
 
 `env.nix` points Nix-managed tools (curl, AWS CLI, Python `requests`, npm) at
