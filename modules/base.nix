@@ -180,6 +180,10 @@ in
       # fastfetch, zoxide/fzf/direnv) lives in the shell-tools feature
       # instead, which `minimal` doesn't pull in.
       jq
+      # The Go yq (mikefarah), not the Python jq wrapper: `yq '.a.b' file`
+      # reads yaml, json and toml alike, so scripts and agents have one
+      # structured-data parser to reach for beside jq.
+      yq-go
       git-lfs
       wget
       rsync
