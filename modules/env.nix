@@ -29,6 +29,9 @@ in
       UV_TOOL_BIN_DIR = "${homeDir}/.local/bin";
       # bun: install root; bun drops executables in $BUN_INSTALL/bin.
       BUN_INSTALL = "${homeDir}/.bun";
+      # pnpm: global store and bin dir, so `pnpm add -g` works without
+      # `pnpm setup` editing the shell rc files.
+      PNPM_HOME = "${homeDir}/.local/share/pnpm";
       # pixi: global install root; `pixi global install` links into $PIXI_HOME/bin.
       PIXI_HOME = "${homeDir}/.pixi";
       # XDG user bin dir: uv (and pipx/others) default tool installs here.
@@ -64,6 +67,7 @@ in
       "${homeDir}/.cargo/bin"
       "${homeDir}/.npm-global/bin"
       "${homeDir}/.bun/bin"
+      "${homeDir}/.local/share/pnpm"
       "${homeDir}/.pixi/bin"
     ];
 
