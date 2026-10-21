@@ -62,6 +62,9 @@ TUI git client: stage hunks, rebase interactively, manage branches visually. [gi
 ### jq
 JSON processor and query language for the command line. [jqlang.org](https://jqlang.org)
 
+### yq
+YAML, JSON and TOML processor with jq-like syntax (the Go yq). [github.com/mikefarah/yq](https://github.com/mikefarah/yq)
+
 ### wget
 Non-interactive network downloader. [gnu.org/software/wget](https://www.gnu.org/software/wget/)
 
@@ -217,7 +220,10 @@ Background code checker: reruns `cargo check`/`test`/`clippy` on file change, in
 ## Node
 
 ### nodejs
-JavaScript runtime. Managed version pinned here; use fnm for per-project switching. [nodejs.org](https://nodejs.org)
+JavaScript runtime, pinned to Node 24; use fnm for per-project switching. [nodejs.org](https://nodejs.org)
+
+### pnpm
+Fast, disk-efficient package manager with a content-addressed store. [pnpm.io](https://pnpm.io)
 
 ### fnm
 Fast Node version manager: `.nvmrc` auto-switching on `cd`. [github.com/Schniz/fnm](https://github.com/Schniz/fnm)
