@@ -118,6 +118,13 @@
       link = "[jqlang.org](https://jqlang.org)";
     }
     {
+      key = "yq";
+      matches = [ "yq-go" ];
+      category = "CLI Utilities";
+      description = "YAML, JSON and TOML processor with jq-like syntax (the Go yq).";
+      link = "[github.com/mikefarah/yq](https://github.com/mikefarah/yq)";
+    }
+    {
       key = "wget";
       matches = [ "wget" ];
       category = "CLI Utilities";
@@ -476,8 +483,15 @@
       key = "nodejs";
       matches = [ "nodejs" ];
       category = "Node";
-      description = "JavaScript runtime. Managed version pinned here; use fnm for per-project switching.";
+      description = "JavaScript runtime, pinned to Node 24; use fnm for per-project switching.";
       link = "[nodejs.org](https://nodejs.org)";
+    }
+    {
+      key = "pnpm";
+      matches = [ "pnpm" ];
+      category = "Node";
+      description = "Fast, disk-efficient package manager with a content-addressed store.";
+      link = "[pnpm.io](https://pnpm.io)";
     }
     {
       key = "fnm";

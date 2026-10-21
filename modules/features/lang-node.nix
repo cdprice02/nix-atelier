@@ -5,8 +5,11 @@
 }:
 {
   home.packages = with pkgs; [
-    # Node ecosystem
-    nodejs
+    # Node ecosystem. Pinned to a major rather than the nixpkgs `nodejs`
+    # alias, so a lock update can't silently move it; fnm still switches
+    # per project.
+    nodejs_24
+    pnpm
     fnm
     bun
   ];
