@@ -149,7 +149,9 @@ Two tiers, deliberately not one:
   `atelier.sops.file`'s presence is the on/off switch for the whole
   mechanism, no separate boolean, and it's deliberately a per-machine
   setting rather than one shared file, since the same secret name can carry
-  a genuinely different value on a work machine than on a personal one. See
+  a genuinely different value on a work machine than on a personal one.
+  `atelier.sops.userSystemd = false` is for Linux hosts with no user systemd
+  manager: activation runs sops-nix's install script directly. See
   `modules/secrets-sops.nix`.
 
 ## Decisions worth knowing

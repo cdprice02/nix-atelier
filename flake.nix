@@ -859,6 +859,40 @@
           };
           secretsSopsOffWithSecretsDeclaredOk = secretsSopsOffWithSecretsDeclared.secrets == { };
 
+          # userSystemd = false (#210): activation runs sops-nix's install
+          # script directly instead of restarting its user service, Home
+          # Manager's own systemd steps are off, and secrets mount under
+          # $XDG_STATE_HOME. The default (true) leaves all of that to
+          # sops-nix and Home Manager.
+          mkSecretsSopsConfig =
+            userSystemd:
+            (mkConfigsLib.mkConfigs {
+              identity = mkConfigsTestIdentity;
+              configs.home.secrets-sops-systemd-check = {
+                system = "x86_64-linux";
+                extraConfig.atelier.sops = {
+                  file = secretsSopsFixtureFile;
+                  secrets = [ "GITHUB_PERSONAL_ACCESS_TOKEN" ];
+                  inherit userSystemd;
+                };
+              };
+            }).homeConfigurations.secrets-sops-systemd-check.config;
+          secretsSopsNoSystemd = mkSecretsSopsConfig false;
+          secretsSopsWithSystemd = mkSecretsSopsConfig true;
+          hasSubstr = needle: haystack: builtins.match ".*${needle}.*" haystack != null;
+          secretsSopsNoSystemdOk =
+            !(hasSubstr "systemctl" secretsSopsNoSystemd.home.activation.sops-nix.data)
+            && hasSubstr "run " secretsSopsNoSystemd.home.activation.sops-nix.data
+            && builtins.elem "writeBoundary" secretsSopsNoSystemd.home.activation.sops-nix.after
+            && secretsSopsNoSystemd.home.activation.reloadSystemd.data == ""
+            && !secretsSopsNoSystemd.systemd.user.startServices
+            &&
+              secretsSopsNoSystemd.sops.defaultSecretsMountPoint
+              == "${secretsSopsHomeDir}/.local/state/sops-nix/secrets.d"
+            && hasSubstr "systemctl" secretsSopsWithSystemd.home.activation.sops-nix.data
+            && secretsSopsWithSystemd.home.activation.reloadSystemd.data != ""
+            && secretsSopsWithSystemd.sops.defaultSecretsMountPoint == "%r/secrets.d";
+
           # The checks above only read option values, which never force the
           # sops-install-secrets derivation. Forcing its drvPath catches a
           # sops-nix input whose Go builder this system's nixpkgs lacks (an
@@ -996,7 +1030,9 @@
               '';
 
           secrets-sops =
-            if secretsSopsOnOk && secretsSopsOffOk && secretsSopsOffWithSecretsDeclaredOk then
+            if
+              secretsSopsOnOk && secretsSopsOffOk && secretsSopsOffWithSecretsDeclaredOk && secretsSopsNoSystemdOk
+            then
               pkgs.runCommand "check-secrets-sops" { } "touch $out"
             else
               throw ''
@@ -1004,7 +1040,8 @@
                 atelier.sops.file/.secrets into sops.* the way it's supposed
                 to (on=${builtins.toJSON secretsSopsOnOk}
                 off=${builtins.toJSON secretsSopsOffOk}
-                offWithSecretsDeclared=${builtins.toJSON secretsSopsOffWithSecretsDeclaredOk}).
+                offWithSecretsDeclared=${builtins.toJSON secretsSopsOffWithSecretsDeclaredOk}
+                noSystemd=${builtins.toJSON secretsSopsNoSystemdOk}).
               '';
 
           sops-install-secrets =

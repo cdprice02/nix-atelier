@@ -99,6 +99,11 @@ in
         default = [ ];
         description = "Secret names to decrypt from atelier.sops.file. Only meaningful when file is set.";
       };
+      userSystemd = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Whether this Linux host runs a user systemd manager sops-nix can drive. Set false where it can't (nix-user-chroot, containers): activation then runs sops-nix's install script directly, skips Home Manager's systemd steps, and keeps decrypted secrets under $XDG_STATE_HOME instead of $XDG_RUNTIME_DIR. No effect on darwin.";
+      };
     };
 
     submodules = lib.mkOption {
