@@ -11,6 +11,17 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.2.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.2.1) -- ceiling
+
+2026-10-22
+
+The claude config defaults to `opusplan`: Opus plans, Sonnet implements.
+Every subagent is capped at Sonnet whatever the parent model, by
+`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` alongside the existing
+`CLAUDE_CODE_SUBAGENT_MODEL=sonnet` (#237).
+
+Patch: no schema change; the claude submodule pointer moves.
+
 ## [v4.2.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.2.0) -- chroot
 
 2026-10-21
