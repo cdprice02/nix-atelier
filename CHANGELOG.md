@@ -11,6 +11,16 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.3.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.3.0) -- stopwatch
+
+2026-10-23
+
+macOS has no `timeout`, and Claude Code shells out to it often. Every darwin
+config now installs Homebrew `coreutils` and exposes a `timeout` command that
+runs `gtimeout`, without putting GNU `gnubin` ahead of the BSD tools (#239).
+
+Minor: new darwin-wide Homebrew formula; no schema change.
+
 ## [v4.2.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.2.1) -- ceiling
 
 2026-10-22
