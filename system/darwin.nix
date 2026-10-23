@@ -1,4 +1,4 @@
-{ user, ... }:
+{ pkgs, user, ... }:
 {
   nix.settings.experimental-features = [
     "nix-command"
@@ -13,6 +13,15 @@
   };
 
   programs.zsh.enable = true;
+
+  # macOS ships no `timeout`, and Claude Code shells out to it often. The
+  # Homebrew coreutils formula installs it only as `gtimeout` (the unprefixed
+  # names live in libexec/gnubin, which would shadow every BSD tool if put on
+  # PATH), so expose just this one command. The aisk/tap `timeout` formula was
+  # rejected: it is a source-built Haskell binary with no x86_64-darwin bottle.
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "timeout" ''exec gtimeout "$@"'')
+  ];
 
   # Enable TouchID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
@@ -44,6 +53,7 @@
       cleanup = "none";
     };
     brews = [
+      "coreutils"
       "screenresolution"
     ];
     casks = [
