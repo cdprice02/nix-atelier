@@ -5,6 +5,19 @@
     "flakes"
   ];
 
+  # Runs from the system launchd as root so it expires every profile's
+  # generations, not just the invoking user's; each Home Manager switch
+  # otherwise leaves a generation, and its closure, pinned forever.
+  nix.gc = {
+    automatic = true;
+    interval = {
+      Weekday = 0;
+      Hour = 3;
+      Minute = 15;
+    };
+    options = "--delete-older-than 14d";
+  };
+
   # Define user for Home Manager compatibility
   users.users.${user.username} = {
     name = user.username;
