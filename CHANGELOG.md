@@ -11,6 +11,22 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.4.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.4.0) -- waypoint
+
+2026-10-28
+
+tmux-sessionizer reaches places that are not a repo. A `~ (home)` entry
+opens the `main` session at `$HOME` (also `prefix h`), a typed name that
+matches nothing becomes a scratch session, and the new
+`atelier.tmux.sshSessions` option adds one session per ssh host alias (#243).
+
+Session autosave works again: tmux-continuum hooks `status-right`, and the
+config set `status-right` after loading it, which deleted the hook. Resurrect
+now also captures pane contents and restores `ssh`. The claude, gitalias and
+skills submodule pointers move; flake inputs are refreshed (#242). Closes #211.
+
+Minor: new `atelier.tmux.sshSessions` option; no schema change.
+
 ## [v4.3.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.3.0) -- stopwatch
 
 2026-10-23
