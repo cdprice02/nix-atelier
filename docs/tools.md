@@ -319,7 +319,7 @@ Official Bitwarden CLI (`bw`); on macOS the prebuilt release binary, since the n
 Terminal multiplexer: persistent sessions, split panes, detach/reattach. Vi key bindings configured. tmux-resurrect and tmux-continuum are also installed, so sessions survive a reboot: continuum wraps resurrect for automatic save and restore; neither works without the other. [github.com/tmux/tmux](https://github.com/tmux/tmux)
 
 ### tmux-sessionizer
-ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo and create or switch to a tmux session named after it. Searches `$TMUX_SESSIONIZER_DIRS` (colon-separated), defaulting to `~/repos`, this repo's own checkout plus its `config/` submodules, and every `atelier.configRepos` clone. [github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)
+ThePrimeagen's session-per-project flow (`prefix f`, or `<C-f>` in Neovim): fuzzy-pick a repo and create or switch to a tmux session named after it. Searches `$TMUX_SESSIONIZER_DIRS` (colon-separated), defaulting to `~/repos`, this repo's own checkout plus its `config/` submodules, and every `atelier.configRepos` clone. The picker also offers `~ (home)` (the `main` session at `$HOME`, also `prefix h`) and one entry per `atelier.tmux.sshSessions` host (a session running `ssh <host>`); typing a name that matches nothing creates a scratch session of that name at `$HOME`. [github.com/ThePrimeagen/tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer)
 
 ---
 

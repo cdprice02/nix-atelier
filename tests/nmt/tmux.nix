@@ -42,8 +42,28 @@
       assertFileContains "$conf" 'bind -T copy-mode-vi v send-keys -X begin-selection'
       assertFileContains "$conf" 'bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel'
       assertFileRegex "$conf" '^bind f new-window .*/bin/tmux-sessionizer$'
+      assertFileRegex "$conf" '^bind h run-shell ".*/bin/tmux-sessionizer --home"$'
       assertFileContains "$conf" 'bind C split-window -h -c "#{pane_current_path}" claude'
       assertFileContains "$conf" 'bind g display-popup -E -w 90% -h 90% -d "#{pane_current_path}" lazygit'
+    '';
+  };
+
+  tmux-continuum-autosave-hook-survives = {
+    nmt.description = ''
+      Continuum autosaves by appending a hook to status-right when it loads,
+      so status-right must be set before continuum's run-shell line: set
+      after, it overwrites the hook and nothing is ever saved. Asserts the
+      order in the rendered file, plus the resurrect options that ride along.
+    '';
+    nmt.script = ''
+      conf=home-files/.config/tmux/tmux.conf
+      assertFileContains "$conf" "set -g @resurrect-processes 'ssh'"
+      assertFileContains "$conf" "set -g @resurrect-capture-pane-contents 'on'"
+      status_line="$(grep -n '^set -g status-right' "$(_abs "$conf")" | cut -d: -f1)"
+      continuum_line="$(grep -n 'continuum.tmux$' "$(_abs "$conf")" | cut -d: -f1)"
+      if [[ -z "$status_line" || -z "$continuum_line" || "$status_line" -ge "$continuum_line" ]]; then
+        fail "status-right (line '$status_line') must precede continuum's run-shell (line '$continuum_line')"
+      fi
     '';
   };
 }
