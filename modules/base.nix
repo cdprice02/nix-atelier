@@ -381,19 +381,32 @@ in
         enable = true;
         includes = [ "~/.ssh/config.d/*" ]; # unmanaged: machine-specific stubs live here, hand-written or dropped by an extraModulePaths module
       }
-      // compat.sshBlocks {
-        "*" = {
-          IdentityFile = "~/.ssh/${user.sshKey}";
-          AddKeysToAgent = "yes";
+      // compat.sshBlocks (
+        {
+          "*" = {
+            IdentityFile = "~/.ssh/${user.sshKey}";
+            AddKeysToAgent = "yes";
+          }
+          // lib.optionalAttrs pkgs.stdenv.isDarwin {
+            UseKeychain = "yes";
+          };
+          "github.com" = {
+            User = "git";
+            IdentitiesOnly = true;
+          };
         }
-        // lib.optionalAttrs pkgs.stdenv.isDarwin {
-          UseKeychain = "yes";
-        };
-        "github.com" = {
-          User = "git";
-          IdentitiesOnly = true;
-        };
-      }
+        # Every pane of an ssh session is its own connection (see tmux.nix);
+        # multiplexing makes the second and later ones instant and
+        # prompt-free. %C is a hash, so the socket path stays under the
+        # 104-byte unix socket limit whatever the host name.
+        // lib.optionalAttrs (config.atelier.tmux.sshSessions != [ ]) {
+          ${lib.concatStringsSep " " config.atelier.tmux.sshSessions} = {
+            ControlMaster = "auto";
+            ControlPath = "~/.ssh/cm-%C";
+            ControlPersist = "10m";
+          };
+        }
+      )
       // compat.sshDefaultConfigOff;
 
       # ── Git ───────────────────────────────────────────────────────────────────
