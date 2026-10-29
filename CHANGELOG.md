@@ -11,6 +11,18 @@ actually constitutes a release here, and
 [docs/migrating-to-v3.md](docs/migrating-to-v3.md) if you're on v2 and
 upgrading.
 
+## [v4.4.1](https://github.com/cdprice02/nix-atelier/releases/tag/v4.4.1) -- tether
+
+2026-10-29
+
+New windows and splits in an `atelier.tmux.sshSessions` session now run
+`ssh <host>` too, instead of a local shell at `$HOME`: the sessionizer sets
+the session's `default-command`, and re-sets it on every open so a resurrect
+restore re-arms it (#245). Those hosts also get `ControlMaster` multiplexing,
+so extra panes reuse one connection.
+
+Patch: no schema change.
+
 ## [v4.4.0](https://github.com/cdprice02/nix-atelier/releases/tag/v4.4.0) -- waypoint
 
 2026-10-28
