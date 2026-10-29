@@ -48,7 +48,10 @@ let
       ssh_prefix="ssh: "
 
       # Create the session detached if it is missing, then switch to it.
-      # Any further arguments are the session's initial command.
+      # Any further arguments are the session's initial command, which
+      # also becomes its default-command: new windows and splits run it too.
+      # Re-set on every open because resurrect restores panes but not
+      # session options.
       open_session() {
         local name="$1" dir="$2"
         shift 2
@@ -56,6 +59,9 @@ let
         name="$(printf '%s' "$name" | tr '.:' '__')"
         if ! tmux has-session -t "=$name" 2>/dev/null; then
           tmux new-session -d -s "$name" -c "$dir" "$@"
+        fi
+        if [[ $# -gt 0 ]]; then
+          tmux set-option -t "=$name:" default-command "$*"
         fi
         if [[ -n "''${TMUX:-}" ]]; then
           tmux switch-client -t "=$name"

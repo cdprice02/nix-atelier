@@ -110,7 +110,7 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       example = [ "denali" ];
-      description = "ssh host aliases tmux-sessionizer offers as sessions. Each opens a session of that name running `ssh <host>`, falling back to a local shell when ssh exits. The aliases themselves are resolved by ~/.ssh/config, not defined here.";
+      description = "ssh host aliases tmux-sessionizer offers as sessions. Each opens a session of that name running `ssh <host>`, falling back to a local shell when ssh exits; new windows and splits in it run the same command. The hosts also get ssh connection multiplexing. The aliases themselves are resolved by ~/.ssh/config, not defined here.";
     };
 
     submodules = lib.mkOption {

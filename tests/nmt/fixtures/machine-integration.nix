@@ -33,6 +33,10 @@
       ];
       defaultToolchain = "nightly";
     };
+    tmux.sshSessions = [
+      "hosta"
+      "hostb"
+    ];
     submodules = {
       claude = "git@example.com:you/private-claude.git";
     };

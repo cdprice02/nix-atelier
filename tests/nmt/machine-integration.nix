@@ -87,4 +87,20 @@ in
       assertFileContains activate '_rustup default "nightly" >/dev/null'
     '';
   };
+
+  ssh-sessions-get-connection-multiplexing = {
+    nmt.description = ''
+      atelier.tmux.sshSessions (machine.nix): every pane of an ssh session is
+      its own connection (the sessionizer sets the session's default-command),
+      so the same hosts get one multiplexed ssh_config block rather than a
+      login per pane. The sessionizer entries themselves are asserted in
+      tmux.nix's tests against the fixture.
+    '';
+    nmt.script = ''
+      assertFileContains home-files/.ssh/config 'Host hosta hostb'
+      assertFileContains home-files/.ssh/config 'ControlMaster auto'
+      assertFileContains home-files/.ssh/config 'ControlPath ~/.ssh/cm-%C'
+      assertFileContains home-files/.ssh/config 'ControlPersist 10m'
+    '';
+  };
 }
