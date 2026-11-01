@@ -209,7 +209,7 @@ jobs:
       # the `nix flake check` that runs before the move and nothing after
       # it. The switch itself re-supplies the token via NIX_CONFIG; see the
       # comment there.
-      - uses: cachix/install-nix-action@v31.11.1
+      - uses: cachix/install-nix-action@v31.11.3
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
